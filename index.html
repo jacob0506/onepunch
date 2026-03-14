@@ -2263,8 +2263,26 @@
       
       const filter = document.getElementById('characterFilter').value;
       const filtered = filter === 'all' ? gameData.characters : gameData.characters.filter(c => c.rarity === filter);
+      ensureFormation();
+      const formationIds = new Set((gameData.formation || []).filter(Boolean));
+      const rarityOrder = { 'R': 1, 'SR': 2, 'SSR': 3, 'UR': 4, 'SUR': 5 };
+      const sorted = [...filtered].sort((a, b) => {
+        const aIn = formationIds.has(a.id) ? 1 : 0;
+        const bIn = formationIds.has(b.id) ? 1 : 0;
+        if (aIn !== bIn) return bIn - aIn;
 
-      filtered.forEach(char => {
+        const ar = rarityOrder[a.rarity] || 0;
+        const br = rarityOrder[b.rarity] || 0;
+        if (ar !== br) return br - ar;
+
+        const ap = calculateCharacterPower(a);
+        const bp = calculateCharacterPower(b);
+        if (ap !== bp) return bp - ap;
+
+        return String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hans-CN');
+      });
+
+      sorted.forEach(char => {
         const item = document.createElement('div');
         const isActive = selectedCharacter && selectedCharacter.instanceId === char.instanceId;
         item.className = `flex-shrink-0 w-16 h-16 rounded-lg border-2 cursor-pointer transition-all snap-start overflow-hidden relative ${isActive ? 'border-primary scale-110 z-10' : 'border-gray-800 opacity-70 hover:opacity-100'}`;
@@ -2359,6 +2377,16 @@
           skillIcon.onclick = () => showSkillPopup(skill);
           skillsContainer.appendChild(skillIcon);
         });
+
+        const passiveIcon = document.createElement('div');
+        const hasPassive = !!(char.passive && String(char.passive).trim());
+        passiveIcon.className = `w-10 h-10 bg-gray-800 rounded border border-gray-700 flex items-center justify-center transition-all relative group ${hasPassive ? 'cursor-pointer hover:border-purple-500' : 'opacity-50 cursor-not-allowed'}`;
+        passiveIcon.innerHTML = `
+          <i class="fa fa-star text-gray-400 ${hasPassive ? 'group-hover:text-purple-300' : ''}"></i>
+          <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-[8px] text-center font-black text-purple-300">被动</div>
+        `;
+        if (hasPassive) passiveIcon.onclick = () => showPassivePopup(char.passive);
+        skillsContainer.appendChild(passiveIcon);
       }
 
       // 更新属性
@@ -2531,6 +2559,18 @@
       document.getElementById('skillPopupLevel').textContent = `等级: ${skill.level || 1}`;
       document.getElementById('skillPopupDesc').textContent = skill.description;
       document.getElementById('skillPopupCD').textContent = skill.cooldown;
+      document.getElementById('skillDetailModal').classList.remove('hidden');
+    }
+
+    function showPassivePopup(passiveText) {
+      const text = String(passiveText || '').trim();
+      const parts = text.split('：');
+      const name = parts.length > 1 ? parts[0] : '被动';
+      const desc = parts.length > 1 ? parts.slice(1).join('：') : (text || '无');
+      document.getElementById('skillPopupName').textContent = name;
+      document.getElementById('skillPopupLevel').textContent = '类型: 被动';
+      document.getElementById('skillPopupDesc').textContent = desc || '无';
+      document.getElementById('skillPopupCD').textContent = '-';
       document.getElementById('skillDetailModal').classList.remove('hidden');
     }
 
@@ -3513,6 +3553,7 @@
           bleed: { t: '血', c: 'bg-red-900 text-red-200' },
           poison: { t: '毒', c: 'bg-green-900 text-green-200' },
           stun: { t: '晕', c: 'bg-yellow-900 text-yellow-200' },
+          charm: { t: '魅', c: 'bg-pink-900 text-pink-200' },
           taunt: { t: '嘲', c: 'bg-blue-900 text-blue-200' },
           immune: { t: '免', c: 'bg-purple-900 text-purple-200' },
           silence: { t: '封', c: 'bg-gray-800 text-gray-200' },
@@ -3658,6 +3699,7 @@
         addPct(/伤害减免(增加|提升)(\d+)%/, 'dmgReduc');
         addPct(/效果命中(增加|提升)(\d+)%/, 'effectHit');
         addPct(/效果抵抗(增加|提升)(\d+)%/, 'tenacity');
+        addPct(/对负面状态的抗性提升(\d+)%/, 'tenacity');
         return stats;
       };
 
@@ -4017,6 +4059,20 @@
         if (round === 1) {
           initCoreIfNeeded();
           initCatLinkIfNeeded();
+          team.forEach(u => {
+            if (u.currentHp <= 0) return;
+            const text = (u.passive && u.passive.text) || '';
+            const mRevive = text.match(/复活(\d+)次/);
+            if (mRevive) {
+              const charges = Math.max(1, parseInt(mRevive[1], 10));
+              const mHp = text.match(/每次复活恢复(\d+)%生命/);
+              const hpPct = mHp ? Math.max(0.05, Math.min(0.9, parseInt(mHp[1], 10) / 100)) : 0.3;
+              addStatus(u, 'revive', 1, 999, { charges, hpPct });
+            }
+            if (/非暴击不死/.test(text)) {
+              addStatus(u, 'nonCritUndying', 1, 999, { charges: 1 });
+            }
+          });
         }
         giveCoreEnergy();
 
@@ -4577,10 +4633,12 @@
             if (effect.type === 'dot') {
               const dot = effect.dot;
               const turns = typeof effect.turns === 'number' ? effect.turns : 2;
+              const chance = typeof effect.chance === 'number' ? effect.chance : 100;
               const extra = dot === 'burn' ? affixValue('burnAmp') : affixValue('dotUp');
               const value = Math.floor(unit.attack * (effect.scale || 0.1) * lvlBoost * scaleFactor * (1 + extra / 100));
               pickTargets(targetType).forEach(t => {
                 if (!t || t.currentHp <= 0) return;
+                if (chance < 100 && Math.random() * 100 >= chance) return;
                 addStatus(t, dot, value, turns);
               });
               markKey();
@@ -4590,9 +4648,11 @@
             if (effect.type === 'cc') {
               const cc = effect.cc;
               const turns = typeof effect.turns === 'number' ? effect.turns : 1;
+              const chance = typeof effect.chance === 'number' ? effect.chance : 100;
               pickTargets(targetType).forEach(t => {
                 if (!t || t.currentHp <= 0) return;
                 if (getStatus(t, 'ccImmune')) return;
+                if (chance < 100 && Math.random() * 100 >= chance) return;
                 if (t.isPlayer) {
                   const ccResist = affixValue('ccResist');
                   if (ccResist > 0 && Math.random() * 100 < ccResist) return;
@@ -4622,6 +4682,8 @@
 
             if (effect.type === 'taunt') {
               addStatus(unit, 'taunt', 1, typeof effect.turns === 'number' ? effect.turns : 2);
+              appendBattleLog(logs, roundContainer, `<div class="text-blue-300 font-bold">${unit.name} 进入嘲讽姿态</div>`);
+              markKey();
               return;
             }
           });
