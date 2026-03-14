@@ -1059,48 +1059,74 @@
 
     // 初始化新游戏
     function initializeNewGame() {
-      // 给玩家一些初始角色
+      const pickChar = (predicate, fallbackIndex) => {
+        const found = charactersData.find(c => c && predicate(c));
+        if (found) return found;
+        return charactersData[fallbackIndex] || charactersData[0] || null;
+      };
+
       const starterCharacters = [
-        charactersData.find(char => char.id === 'char_001'), // R角色
-        charactersData.find(char => char.id === 'char_002')  // SR角色
-      ];
-      
-      gameData.characters = starterCharacters.map(char => ({
-        ...char,
-        level: 1,
-        exp: 0,
-        stars: 1,
-        skills: char.skills.map(skill => ({
-          ...skill,
-          level: 1
-        })),
-        equipment: [null, null, null, null, null],
-        inscriptions: [null, null, null, null, null, null]
-      }));
-      
-      // 给玩家一些初始装备
+        pickChar(c => c.id === 'char_001' || c.rarity === 'R', 0),
+        pickChar(c => c.id === 'char_002' || c.rarity === 'SR', 1)
+      ].filter(Boolean);
+
+      gameData.characters = starterCharacters.map(char => {
+        const cloned = JSON.parse(JSON.stringify(char));
+        return {
+          ...cloned,
+          level: 1,
+          exp: 0,
+          stars: 1,
+          skills: (cloned.skills || []).map(skill => ({
+            ...skill,
+            level: 1
+          })),
+          equipments: {
+            weapon: null,
+            armor: null,
+            helmet: null,
+            shoes: null,
+            accessory: null
+          },
+          inscriptions: [null, null]
+        };
+      });
+
+      const pickItem = (predicate, fallbackIndex) => {
+        const found = equipmentData.find(i => i && predicate(i));
+        if (found) return found;
+        return equipmentData[fallbackIndex] || equipmentData[0] || null;
+      };
+
       const starterEquipment = [
-        equipmentData.find(item => item.id === 'item_001'), // R武器
-        equipmentData.find(item => item.id === 'item_004')  // R鞋子
-      ];
-      
+        pickItem(i => i.id === 'item_001', 0),
+        pickItem(i => i.id === 'item_004', 1)
+      ].filter(Boolean);
+
       gameData.equipment = starterEquipment.map(item => ({
-        ...item,
+        ...JSON.parse(JSON.stringify(item)),
         level: 1,
         refine: 0
       }));
-      
-      // 给玩家一些初始铭文
+
+      const pickIns = (predicate, fallbackIndex) => {
+        const found = inscriptionsData.find(i => i && predicate(i));
+        if (found) return found;
+        return inscriptionsData[fallbackIndex] || inscriptionsData[0] || null;
+      };
+
       const starterInscriptions = [
-        inscriptionsData.find(ins => ins.id === 'ins_001'), // R攻击铭文
-        inscriptionsData.find(ins => ins.id === 'ins_002')  // R防御铭文
-      ];
-      
+        pickIns(i => i.id === 'ins_001', 0),
+        pickIns(i => i.id === 'ins_002', 1)
+      ].filter(Boolean);
+
       gameData.inscriptions = starterInscriptions.map(ins => ({
-        ...ins,
+        ...JSON.parse(JSON.stringify(ins)),
         level: 1,
         exp: 0
       }));
+
+      fixMissingInstanceIds();
       
       // 保存游戏进度
       saveGameProgress();

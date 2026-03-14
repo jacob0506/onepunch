@@ -1,4 +1,4 @@
-const CACHE_NAME = 'card-game-v2'; // 更新版本号以强制刷新
+const CACHE_NAME = 'card-game-v3'; // 更新版本号以强制刷新
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
