@@ -517,6 +517,9 @@
             </div>
             <div id="stagesList" class="flex-1 overflow-y-auto space-y-4 px-4 pb-8 custom-scrollbar"></div>
           </div>
+          <button id="lastBattleReportBtn" class="hidden fixed bottom-28 right-3 z-[90] md:right-6 glass-panel border border-gray-800 rounded-full px-4 py-3 text-[12px] font-black hover:bg-gray-800">
+            上次战报
+          </button>
         </section>
       </div>
     </main>
@@ -967,6 +970,321 @@
           }
           s.effects = seq;
         }
+
+        if (char.id === 'char_sur_001' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'dispel', target: 'allEnemies', statuses: ['immune'] },
+            { type: 'damage', target: 'allEnemies', scale: 3.8, hits: 1 },
+            { type: 'trueDamage', target: 'allEnemies', scaleFrom: 'targetMaxHp', scale: 0.12, hits: 1 },
+            { type: 'debuff', target: 'allEnemies', stat: 'defDown', value: 15, turns: 2 }
+          ];
+        }
+
+        if (char.id === 'char_sur_003' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'randomEnemies', scale: 3.5, hits: 4 },
+            { type: 'cc', target: 'randomEnemies', cc: 'stun', turns: 1, chance: 40 }
+          ];
+        }
+
+        if (char.id === 'char_sur_004' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 5;
+          s.effects = [
+            { type: 'taunt', turns: 2 },
+            { type: 'buff', target: 'ally', stat: 'dmgReducUp', value: 50, turns: 2 },
+            { type: 'shield', target: 'ally', scale: 0.9, turns: 2 }
+          ];
+        }
+
+        if (char.id === 'char_sur_006' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'enemyLowest', scale: 7.0, hits: 1 },
+            { type: 'buff', target: 'ally', stat: 'spdUp', value: 25, turns: 1 }
+          ];
+        }
+
+        if (char.id === 'char_sur_009' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 1;
+          s.cooldown = 3;
+          s.effects = [
+            { type: 'selfCost', costType: 'currentHpPct', value: 10 },
+            { type: 'damage', target: 'enemy', scale: 8.0, hits: 1 },
+            { type: 'buff', target: 'ally', stat: 'nonCritReduc', value: 25, turns: 1 }
+          ];
+        }
+
+        if (char.id === 'char_sur_011' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 5;
+          s.effects = [
+            { type: 'damage', target: 'allEnemies', scale: 3.8, hits: 1 },
+            { type: 'damage', target: 'allEnemies', scale: 3.8, hits: 1, requireStatus: 'shock' }
+          ];
+        }
+
+        if (char.id === 'char_sur_012' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'randomEnemies', scale: 5.0, hits: 2 },
+            { type: 'buff', target: 'ally', stat: 'immune', value: 1, turns: 1 }
+          ];
+        }
+
+        if (char.id === 'char_ur_001' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'enemy', scale: 2.8, hits: 1 },
+            { type: 'debuff', target: 'enemy', stat: 'spdDown', value: 30, turns: 2 }
+          ];
+        }
+
+        if (char.id === 'char_ur_002' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'allEnemies', scale: 1.8, hits: 1 },
+            { type: 'dot', target: 'allEnemies', dot: 'burn', scale: 0.12, turns: 3, chance: 100 }
+          ];
+        }
+
+        if (char.id === 'char_ur_003' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 3;
+          s.effects = [
+            { type: 'damage', target: 'enemy', scale: 3.0, hits: 1 },
+            { type: 'shield', target: 'ally', scale: 1.0, turns: 2 }
+          ];
+        }
+
+        if (char.id === 'char_ur_004' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 3;
+          s.effects = [
+            { type: 'damage', target: 'enemy', scale: 4.5, hits: 1 },
+            { type: 'dot', target: 'enemy', dot: 'bleed', scale: 0.14, turns: 3, chance: 100 }
+          ];
+        }
+
+        if (char.id === 'char_ur_005' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'randomEnemies', scale: 2.0, hits: 2 },
+            { type: 'cc', target: 'randomEnemies', cc: 'stun', turns: 1, chance: 30 }
+          ];
+        }
+
+        if (char.id === 'char_ur_006' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'enemy', scale: 5.0, hits: 1 },
+            { type: 'damage', target: 'enemy', scale: 5.0, hits: 1, requireStatus: 'stun' }
+          ];
+        }
+
+        if (char.id === 'char_ur_007' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'randomEnemies', scale: 2.2, hits: 3 },
+            { type: 'debuff', target: 'randomEnemies', stat: 'atkUp', value: -20, turns: 2 }
+          ];
+        }
+
+        if (char.id === 'char_ur_008' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'heal', target: 'allAllies', scale: 1.5, hits: 1 },
+            { type: 'shield', target: 'allAllies', scale: 0.35, turns: 2 }
+          ];
+        }
+
+        if (char.id === 'char_ur_009' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 3;
+          s.effects = [
+            { type: 'buff', target: 'ally', stat: 'lifestealUp', value: 50, turns: 2 },
+            { type: 'damage', target: 'enemy', scale: 4.0, hits: 1 }
+          ];
+        }
+
+        if (char.id === 'char_ur_010' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'allEnemies', scale: 1.5, hits: 1 },
+            { type: 'dot', target: 'allEnemies', dot: 'poison', scale: 0.12, turns: 3, chance: 100 }
+          ];
+        }
+
+        if (char.id === 'char_ur_011' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'allEnemies', scale: 1.6, hits: 1 },
+            { type: 'buff', target: 'ally', stat: 'dmgReducUp', value: 20, turns: 2 }
+          ];
+        }
+
+        if (char.id === 'char_ur_012' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'enemy', scale: 4.0, hits: 1 },
+            { type: 'cc', target: 'enemy', cc: 'silence', turns: 2, chance: 100 }
+          ];
+        }
+
+        if (char.id === 'char_ur_013' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 3;
+          s.effects = [
+            { type: 'heal', target: 'allyLowest', scale: 3.0, hits: 1 },
+            { type: 'dispel', target: 'allyLowest', statuses: ['burn', 'bleed', 'poison', 'stun', 'silence', 'charm', 'spdDown', 'spdFlatDown', 'defDown', 'healDownDebuff'] }
+          ];
+        }
+
+        if (char.id === 'char_ur_014' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 5;
+          s.effects = [
+            { type: 'damage', target: 'allEnemies', scale: 1.6, hits: 1 },
+            { type: 'cc', target: 'randomEnemies', cc: 'stun', turns: 1, chance: 20 }
+          ];
+        }
+
+        if (char.id === 'char_ur_015' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 3;
+          s.effects = [
+            { type: 'damage', target: 'randomEnemies', scale: 0.8, hits: 6 },
+            { type: 'buff', target: 'ally', stat: 'atkUp', value: 15, turns: 2 }
+          ];
+        }
+
+        if (char.id === 'char_ur_016' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 5;
+          s.effects = [
+            { type: 'taunt', turns: 2 },
+            { type: 'buff', target: 'ally', stat: 'dmgReducUp', value: 35, turns: 2 },
+            { type: 'shield', target: 'ally', scale: 1.0, turns: 2 },
+            { type: 'damage', target: 'enemy', scale: 2.0, hits: 1 }
+          ];
+        }
+
+        if (char.id === 'char_ur_017' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 3;
+          s.effects = [
+            { type: 'damage', target: 'enemy', scale: 4.0, hits: 1 },
+            { type: 'energySteal', target: 'enemy', amount: 2 }
+          ];
+        }
+
+        if (char.id === 'char_ur_018' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 6;
+          s.effects = [
+            { type: 'buff', target: 'ally', stat: 'atkUp', value: 30, turns: 3 },
+            { type: 'shield', target: 'ally', scale: 1.2, turns: 3 },
+            { type: 'buff', target: 'ally', stat: 'nonCritUndying', value: 1, turns: 3 }
+          ];
+        }
+
+        if (char.id === 'char_ur_019' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'randomEnemies', scale: 0.8, hits: 6 }
+          ];
+        }
+
+        if (char.id === 'char_ur_020' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 5;
+          s.effects = [
+            { type: 'execute', target: 'enemy', threshold: 0.2 },
+            { type: 'damage', target: 'enemy', scale: 3.0, hits: 1 }
+          ];
+        }
+
+        if (char.id === 'char_ur_021' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 3;
+          s.effects = [
+            { type: 'damage', target: 'enemy', scale: 3.5, hits: 1 },
+            { type: 'debuff', target: 'enemy', stat: 'defDown', value: 40, turns: 2 }
+          ];
+        }
+
+        if (char.id === 'char_ur_022' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'allEnemies', scale: 1.8, hits: 1 },
+            { type: 'cc', target: 'randomEnemies', cc: 'charm', turns: 1, chance: 35 }
+          ];
+        }
+
+        if (char.id === 'char_ur_023' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 3;
+          s.effects = [
+            { type: 'damage', target: 'enemy', scale: 1.2, hits: 3 },
+            { type: 'buff', target: 'ally', stat: 'dodgeUp', value: 20, turns: 2 }
+          ];
+        }
+
+        if (char.id === 'char_ur_024' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'damage', target: 'randomEnemies', scale: 3.5, hits: 2 }
+          ];
+        }
       });
     }
 
@@ -977,6 +1295,11 @@
       const percent = (() => {
         const m = desc.match(/(\d+)\s*%/);
         return m ? (parseInt(m[1], 10) / 100) : null;
+      })();
+
+      const turns = (() => {
+        const m = desc.match(/持续(\d+)回合/);
+        return m ? parseInt(m[1], 10) : 2;
       })();
 
       const targetAllEnemies = /敌方全体/.test(desc);
@@ -996,8 +1319,33 @@
         return m ? parseInt(m[1], 10) : null;
       })();
       const stunTurns = /(\d+)回合/.test(desc) ? parseInt(desc.match(/(\d+)回合/)[1], 10) : 1;
+      const silenceTurns = /沉默(\d+)回合/.test(desc) ? parseInt(desc.match(/沉默(\d+)回合/)[1], 10) : 0;
       const ignoreDef = (() => {
         const m = desc.match(/无视目标(\d+)\s*%防御/);
+        return m ? parseInt(m[1], 10) : null;
+      })();
+      const spdDownPct = (() => {
+        const m = desc.match(/降低其(\d+)\s*%速度/);
+        return m ? parseInt(m[1], 10) : null;
+      })();
+      const spdDownFlat = (() => {
+        const m = desc.match(/减少目标(\d+)点速度/);
+        return m ? parseInt(m[1], 10) : null;
+      })();
+      const atkDownPct = (() => {
+        const m = desc.match(/降低其(\d+)\s*%攻击力/);
+        return m ? parseInt(m[1], 10) : null;
+      })();
+      const energySteal = (() => {
+        const m = desc.match(/偷取目标(\d+)点能量/);
+        return m ? parseInt(m[1], 10) : null;
+      })();
+      const selfCostCurrentHpPct = (() => {
+        const m = desc.match(/消耗自身(\d+)\s*%当前生命/);
+        return m ? parseInt(m[1], 10) : null;
+      })();
+      const executePct = (() => {
+        const m = desc.match(/血量低于(\d+)\s*%[^，。]*直接斩杀/);
         return m ? parseInt(m[1], 10) : null;
       })();
 
@@ -1015,10 +1363,14 @@
             target: targetAllAllies ? 'allAllies' : 'ally',
             stat: 'atkUp',
             value: parseInt(atkBuff[1], 10),
-            turns: 2
+            turns
           });
         }
         return effects;
+      }
+
+      if (selfCostCurrentHpPct) {
+        effects.push({ type: 'selfCost', costType: 'currentHpPct', value: selfCostCurrentHpPct });
       }
 
       if (/造成/.test(desc) && percent) {
@@ -1048,7 +1400,39 @@
         if (stunChance) {
           effects.push({ type: 'cc', target, cc: 'stun', turns: stunTurns, chance: stunChance });
         }
+        if (silenceTurns) {
+          const m = desc.match(/(\d+)\s*%[^。\n]*沉默/);
+          const chance = m ? parseInt(m[1], 10) : 100;
+          effects.push({ type: 'cc', target, cc: 'silence', turns: silenceTurns, chance });
+        }
+        if (spdDownPct !== null) {
+          effects.push({ type: 'debuff', target, stat: 'spdDown', value: spdDownPct, turns });
+        }
+        if (spdDownFlat !== null) {
+          effects.push({ type: 'debuff', target, stat: 'spdFlatDown', value: spdDownFlat, turns });
+        }
+        if (atkDownPct !== null) {
+          effects.push({ type: 'debuff', target, stat: 'atkUp', value: -atkDownPct, turns });
+        }
+        if (energySteal !== null) {
+          effects.push({ type: 'energySteal', target, amount: Math.max(1, Math.floor(energySteal / 10) || 1) });
+        }
+        if (executePct !== null) {
+          effects.push({ type: 'execute', target, threshold: executePct / 100 });
+        }
         return effects;
+      }
+
+      if (/嘲讽/.test(desc)) {
+        effects.push({ type: 'taunt', turns });
+      }
+      const dmgReduc = desc.match(/获得(\d+)\s*%减伤/);
+      if (dmgReduc) {
+        effects.push({ type: 'buff', target: 'ally', stat: 'dmgReducUp', value: parseInt(dmgReduc[1], 10), turns });
+      }
+      const immuneTurns = desc.match(/进入(\d+)回合[^，。]*免疫/);
+      if (immuneTurns) {
+        effects.push({ type: 'buff', target: 'ally', stat: 'immune', value: 1, turns: parseInt(immuneTurns[1], 10) });
       }
 
       return effects;
@@ -1632,7 +2016,7 @@
       // 战斗结果
       const continueBattleBtn = document.getElementById('continueBattle');
       if (continueBattleBtn) continueBattleBtn.addEventListener('click', () => {
-        document.getElementById('battleResultModal').classList.add('hidden');
+        closeBattleModal();
       });
 
       const battleSpeed1 = document.getElementById('battleSpeed1');
@@ -1645,6 +2029,9 @@
       if (battleSkipBtn) battleSkipBtn.addEventListener('click', () => skipBattle());
       const battleFoldBtn = document.getElementById('battleFoldBtn');
       if (battleFoldBtn) battleFoldBtn.addEventListener('click', () => toggleBattleFold());
+
+      const lastBattleReportBtn = document.getElementById('lastBattleReportBtn');
+      if (lastBattleReportBtn) lastBattleReportBtn.addEventListener('click', () => openLastBattleReport());
       
       // 领取离线收益
       const claimRewardsBtn = document.getElementById('claimOfflineRewards');
@@ -3044,7 +3431,49 @@
       if (b4) b4.classList.toggle('text-primary', multiplier === 4);
     }
 
+    let lastBattleRecord = null;
+
+    function closeBattleModal() {
+      document.getElementById('battleResultModal').classList.add('hidden');
+      battleRuntime.skip = false;
+      battleRuntime.running = false;
+      battleRuntime.historyMode = false;
+    }
+
+    function updateLastBattleReportButton() {
+      const btn = document.getElementById('lastBattleReportBtn');
+      if (!btn) return;
+      btn.classList.toggle('hidden', !lastBattleRecord);
+    }
+
+    function openLastBattleReport() {
+      if (!lastBattleRecord) return;
+      battleRuntime.historyMode = true;
+      const record = lastBattleRecord;
+      document.getElementById('battleResultTitle').textContent = record.isWin ? '战斗胜利!' : '战斗失败!';
+      document.getElementById('battleResultTitle').className = record.isWin ? 'text-2xl font-bold text-green-400' : 'text-2xl font-bold text-red-400';
+      document.getElementById('battleResultStage').textContent = record.stageName;
+      document.getElementById('battleResultRounds').textContent = record.rounds;
+      document.getElementById('battleResultMaxDamage').textContent = record.maxDamage;
+      document.getElementById('battleResultHealing').textContent = record.healing;
+      document.getElementById('battleResultExp').textContent = record.rewardsExp;
+      document.getElementById('battleResultGold').textContent = record.rewardsGold;
+      const logsContainer = document.getElementById('battleLogs');
+      logsContainer.innerHTML = record.logsHtml || '';
+      const itemsContainer = document.getElementById('battleResultItems');
+      itemsContainer.innerHTML = record.itemsHtml || '';
+      document.getElementById('battleResultModal').classList.remove('hidden');
+      updateLastBattleReportButton();
+      setTimeout(() => {
+        logsContainer.scrollTop = logsContainer.scrollHeight;
+      }, 50);
+    }
+
     function skipBattle() {
+      if (!battleRuntime.running) {
+        closeBattleModal();
+        return;
+      }
       battleRuntime.skip = true;
     }
 
@@ -3205,26 +3634,106 @@
 
       const applyPassiveStats = (stats, passiveText) => {
         const text = passiveText || '';
-        const mCrit = text.match(/暴击率增加(\d+)%/);
-        if (mCrit) stats.critRate = (stats.critRate || 0) + parseInt(mCrit[1], 10);
-        const mCritDmg = text.match(/暴击伤害增加(\d+)%/);
-        if (mCritDmg) stats.critDmg = (stats.critDmg || 150) + parseInt(mCritDmg[1], 10);
-        const mDodge = text.match(/闪避率增加(\d+)%/);
-        if (mDodge) stats.dodgeRate = (stats.dodgeRate || 0) + parseInt(mDodge[1], 10);
-        const mDmgReduc = text.match(/伤害减免增加(\d+)%/);
-        if (mDmgReduc) stats.dmgReduc = (stats.dmgReduc || 0) + parseInt(mDmgReduc[1], 10);
+        const addPct = (re, key, base) => {
+          const m = text.match(re);
+          if (!m) return;
+          const v = parseInt(m[1], 10);
+          if (key === 'critDmg') stats.critDmg = (stats.critDmg || base) + v;
+          else stats[key] = (stats[key] || 0) + v;
+        };
+        const subPct = (re, key, base) => {
+          const m = text.match(re);
+          if (!m) return;
+          const v = parseInt(m[1], 10);
+          if (key === 'critDmg') stats.critDmg = (stats.critDmg || base) - v;
+          else stats[key] = (stats[key] || 0) - v;
+        };
+        addPct(/暴击率(增加|提升)(\d+)%/, 'critRate');
+        addPct(/暴击伤害(增加|提升)(\d+)%/, 'critDmg', 150);
+        subPct(/暴击伤害降低(\d+)%/, 'critDmg', 150);
+        addPct(/闪避率(增加|提升)(\d+)%/, 'dodgeRate');
+        addPct(/伤害减免(增加|提升)(\d+)%/, 'dmgReduc');
+        addPct(/效果命中(增加|提升)(\d+)%/, 'effectHit');
+        addPct(/效果抵抗(增加|提升)(\d+)%/, 'tenacity');
         return stats;
       };
 
       const buildPassiveRuntime = (char, stats) => {
         const text = char.passive || '';
-        const runtime = { id: char.id, text, reflectPct: 0, sharePct: 0, berserkPer10: 0 };
+        const runtime = {
+          id: char.id,
+          text,
+          reflectPct: 0,
+          sharePct: 0,
+          berserkPer10: 0,
+          bonusVs: [],
+          onHitCc: null,
+          onHitMark: null,
+          skillAtkStack: null,
+          critBonusPct: 0,
+          penIgnorePct: 0,
+          firstHitImmuneChance: 0,
+          firstHitUsed: false,
+          onEnemyDeathAtkUp: 0,
+          critDmgPerHit: 0,
+          critDmgStacks: 0,
+          onKillImmuneTurns: 0,
+          followUpOnBasic: null,
+          counter: null
+        };
         const mReflect = text.match(/反弹(\d+)%伤害/);
         if (mReflect) runtime.reflectPct = parseInt(mReflect[1], 10);
         const mShare = text.match(/分摊(\d+)%伤害/);
         if (mShare) runtime.sharePct = parseInt(mShare[1], 10);
         const mBerserk = text.match(/生命值每降低10%[^，。]*攻击力提升(\d+)%/);
         if (mBerserk) runtime.berserkPer10 = parseInt(mBerserk[1], 10);
+
+        const mSkillStack = text.match(/每释放一次技能，攻击力永久增加(\d+)%（最高叠加(\d+)层）/);
+        if (mSkillStack) runtime.skillAtkStack = { value: parseInt(mSkillStack[1], 10), max: parseInt(mSkillStack[2], 10), stacks: 0 };
+
+        const mFirstImmune = text.match(/每回合有(\d+)%几率免疫受到的第一次伤害/);
+        if (mFirstImmune) runtime.firstHitImmuneChance = parseInt(mFirstImmune[1], 10);
+
+        const mEnemyDeath = text.match(/敌方每死亡一人[^，。]*增加(\d+)%攻击力/);
+        if (mEnemyDeath) runtime.onEnemyDeathAtkUp = parseInt(mEnemyDeath[1], 10);
+
+        const mCritExtra = text.match(/暴击时伤害额外增加(\d+)%/);
+        if (mCritExtra) runtime.critBonusPct = parseInt(mCritExtra[1], 10);
+
+        const mPen = text.match(/无视目标(\d+)%防御/);
+        if (mPen) runtime.penIgnorePct = parseInt(mPen[1], 10);
+
+        const mCdg = text.match(/每攻击一次，暴击伤害提升(\d+)%（无上限）/);
+        if (mCdg) runtime.critDmgPerHit = parseInt(mCdg[1], 10);
+
+        const mKillImmune = text.match(/击杀目标后进入隐身状态一回合/);
+        if (mKillImmune) runtime.onKillImmuneTurns = 1;
+
+        const mFollow = text.match(/普通攻击有(\d+)%几率触发追击，造成(\d+)%伤害/);
+        if (mFollow) runtime.followUpOnBasic = { chance: parseInt(mFollow[1], 10), scale: parseInt(mFollow[2], 10) / 100 };
+
+        const mCounter = text.match(/受到攻击时有(\d+)%几率反击，造成(\d+)%攻击伤害/);
+        if (mCounter) runtime.counter = { chance: parseInt(mCounter[1], 10), scale: parseInt(mCounter[2], 10) / 100 };
+
+        const mShock = text.match(/攻击时有(\d+)%几率给目标添加“感电”标记/);
+        if (mShock) runtime.onHitMark = { type: 'shock', chance: parseInt(mShock[1], 10), turns: 2 };
+
+        const mCc = text.match(/攻击时有(\d+)%几率.*(麻痹|冻结|眩晕).*?(\d+)?回合?/);
+        if (mCc) {
+          const t = mCc[2] || '1';
+          runtime.onHitCc = { type: 'stun', chance: parseInt(mCc[1], 10), turns: parseInt(t, 10) || 1 };
+        }
+
+        const bonusMatchers = [
+          { re: /对灼烧目标伤害提升(\d+)%/, status: 'burn' },
+          { re: /对中毒目标伤害提升(\d+)%/, status: 'poison' },
+          { re: /对流血目标伤害提升(\d+)%/, status: 'bleed' },
+          { re: /攻击带有减速效果的目标时，伤害提升(\d+)%/, status: 'spdDown' }
+        ];
+        bonusMatchers.forEach(b => {
+          const m = text.match(b.re);
+          if (m) runtime.bonusVs.push({ status: b.status, value: parseInt(m[1], 10) });
+        });
         return runtime;
       };
 
@@ -3493,42 +4002,9 @@
         const { cat, partner } = info;
         if (!partner || partner.currentHp <= 0 || cat.currentHp <= 0) return;
         if (roundFollowUpUsed) return;
-
-        const skill = partner.skills && partner.skills[0];
-        if (!skill || !Array.isArray(skill.effects) || skill.effects.length === 0) return;
-        const effect = skill.effects.find(e => e.type === 'damage' || e.type === 'heal');
-        if (!effect) return;
-
-        const power = 0.8;
-        if (effect.type === 'damage') {
-          const mult = (effect.scale || 1) * power;
-          const targets =
-            effect.target === 'allEnemies' ? enemies.filter(e => e.currentHp > 0) :
-            effect.target === 'enemyLowest' ? [enemies.filter(e => e.currentHp > 0).sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0]].filter(Boolean) :
-            [chooseTarget(partner, enemies.filter(e => e.currentHp > 0))].filter(Boolean);
-          targets.forEach(t => t && applyHit(partner, t, mult, '蓄能追击'));
+        const used = castSkill(partner, team, enemies, { bypassCost: true, bypassCd: true, bypassSilence: true, scaleFactor: 0.8, announcePrefix: '蓄能追击' });
+        if (used) {
           roundFollowUpUsed = true;
-          appendBattleLog(logs, roundContainer, `<div class="text-blue-300 font-black">蓄能追击：${partner.name} 跟进攻击</div>`);
-          markKey();
-          return;
-        }
-
-        if (effect.type === 'heal') {
-          const healDown = Math.min(80, affixValue('healDown') + affixValue('antiHeal'));
-          const healBase = partner.attack * (effect.scale || 1) * power * (1 - healDown / 100);
-          let healed = 0;
-          team.filter(a => a.currentHp > 0).forEach(a => {
-            const extraDebuff = getStatusValue(a, 'healDownDebuff');
-            const debuff = Math.min(90, healDown + extraDebuff);
-            const amount = Math.min(a.maxHp - a.currentHp, Math.floor(healBase * (1 - debuff / 100)));
-            if (amount > 0) {
-              a.currentHp += amount;
-              healed += amount;
-            }
-          });
-          totalHealing += healed;
-          roundFollowUpUsed = true;
-          appendBattleLog(logs, roundContainer, `<div class="text-blue-300 font-black">蓄能追击：${partner.name} 追击治疗 ${healed}</div>`);
           markKey();
         }
       };
@@ -3636,6 +4112,13 @@
         if (getStatus(target, 'immune')) {
           return { immune: true, dodged: false, crit: false, block: false, damage: 0, shieldAbsorb: 0 };
         }
+        if (target.isPlayer && target.passive && target.passive.firstHitImmuneChance > 0 && !target.passive.firstHitUsed) {
+          if (Math.random() * 100 < target.passive.firstHitImmuneChance) {
+            target.passive.firstHitUsed = true;
+            return { immune: true, dodged: false, crit: false, block: false, damage: 0, shieldAbsorb: 0 };
+          }
+          target.passive.firstHitUsed = true;
+        }
 
         const atkUp = getStatusValue(attacker, 'atkUp');
         const defDown = getStatusValue(target, 'defDown');
@@ -3648,11 +4131,17 @@
         }
         const base = rawOverride != null ? rawOverride : (atk * multiplier);
         const raw = base * (0.9 + Math.random() * 0.2) * (1 + dmgUp / 100);
-        const effectiveDef = Math.max(0, target.defense * (1 - defDown / 100) * (1 - attacker.penetration / 200));
+        const penIgnore = attacker.passive && attacker.passive.penIgnorePct ? attacker.passive.penIgnorePct : 0;
+        const effectiveDef = Math.max(0, target.defense * (1 - defDown / 100) * (1 - attacker.penetration / 200) * (1 - Math.min(80, penIgnore) / 100));
         let dmg = Math.max(1, Math.floor(raw * (100 / (100 + effectiveDef))));
+        if (attacker.passive && Array.isArray(attacker.passive.bonusVs) && attacker.passive.bonusVs.length > 0) {
+          attacker.passive.bonusVs.forEach(b => {
+            if (b && b.status && getStatus(target, b.status)) dmg = Math.floor(dmg * (1 + (b.value || 0) / 100));
+          });
+        }
 
         const dodgeRoll = Math.random() * 100;
-        const dodgeChance = Math.max(0, target.dodgeRate - attacker.effectHit * 0.5);
+        const dodgeChance = Math.max(0, (target.dodgeRate + getStatusValue(target, 'dodgeUp')) - attacker.effectHit * 0.5);
         if (dodgeRoll < dodgeChance) return { dodged: true, crit: false, block: false, damage: 0 };
 
         const critRoll = Math.random() * 100;
@@ -3661,6 +4150,11 @@
         const forceCrit = !!getStatus(attacker, 'nextCrit');
         const crit = forceCrit || (critRoll < critRate);
         if (crit) dmg = Math.floor(dmg * (Math.max(150, attacker.critDmg) / 100));
+        if (crit && attacker.passive && attacker.passive.critBonusPct) dmg = Math.floor(dmg * (1 + attacker.passive.critBonusPct / 100));
+        if (!crit) {
+          const nonCritReduc = getStatusValue(target, 'nonCritReduc');
+          if (nonCritReduc > 0) dmg = Math.floor(dmg * (1 - Math.min(80, nonCritReduc) / 100));
+        }
 
         const blockRoll = Math.random() * 100;
         const block = blockRoll < target.blockRate;
@@ -3735,6 +4229,20 @@
           attacker.energy = Math.min(attacker.maxEnergy || 4, (attacker.energy || 0) + gain);
         }
 
+        if (r.damage > 0 && attacker.passive && attacker.passive.critDmgPerHit > 0) {
+          attacker.passive.critDmgStacks = (attacker.passive.critDmgStacks || 0) + 1;
+          attacker.critDmg = (attacker.critDmg || 150) + attacker.passive.critDmgPerHit;
+        }
+
+        if (r.damage > 0 && attacker.passive && attacker.passive.onHitMark && target.currentHp > 0) {
+          const mk = attacker.passive.onHitMark;
+          if (Math.random() * 100 < (mk.chance || 0)) addStatus(target, mk.type, 1, mk.turns || 2);
+        }
+        if (r.damage > 0 && attacker.passive && attacker.passive.onHitCc && target.currentHp > 0) {
+          const cc = attacker.passive.onHitCc;
+          if (!getStatus(target, 'ccImmune') && Math.random() * 100 < (cc.chance || 0)) addStatus(target, cc.type, 1, cc.turns || 1);
+        }
+
         let parts = [];
         if (r.crit) parts.push(`<span class="text-orange-500 font-black">暴击</span>`);
         if (r.block) parts.push(`<span class="text-blue-300 font-bold">格挡</span>`);
@@ -3748,8 +4256,9 @@
         );
         if (r.crit || r.damage >= Math.floor(target.maxHp * 0.25)) markKey();
 
-        if (attacker.lifesteal > 0 && r.damage > 0) {
-          const heal = Math.floor(r.damage * attacker.lifesteal / 100);
+        const lifestealTotal = (attacker.lifesteal || 0) + getStatusValue(attacker, 'lifestealUp');
+        if (lifestealTotal > 0 && r.damage > 0) {
+          const heal = Math.floor(r.damage * lifestealTotal / 100);
           const actual = Math.min(attacker.maxHp - attacker.currentHp, heal);
           if (actual > 0) {
             attacker.currentHp += actual;
@@ -3762,12 +4271,62 @@
           if (target.isPlayer && tryPreventLifeLinkDeath(target)) {
             return { damage: r.damage };
           }
+          const undying = getStatus(target, 'nonCritUndying');
+          if (undying && !r.crit) {
+            const charges = undying.meta && typeof undying.meta.charges === 'number' ? undying.meta.charges : 1;
+            if (charges > 0) {
+              undying.meta = { ...(undying.meta || {}), charges: charges - 1 };
+              target.currentHp = 1;
+              appendBattleLog(logs, roundContainer, `<div class="text-yellow-300 font-black">不屈：${target.name} 在非暴击致命伤下存活</div>`);
+              markKey();
+              if (undying.meta.charges <= 0) undying.turns = 0;
+              cleanStatuses(target);
+              return { damage: r.damage };
+            }
+          }
+
+          const revive = getStatus(target, 'revive');
+          if (revive && revive.meta && typeof revive.meta.charges === 'number' && revive.meta.charges > 0) {
+            revive.meta.charges -= 1;
+            const hpPct = revive.meta.hpPct || 0.3;
+            target.currentHp = Math.max(1, Math.floor(target.maxHp * hpPct));
+            target.statuses = (target.statuses || []).filter(s => ['revive', 'lifeLink'].includes(s.type));
+            appendBattleLog(logs, roundContainer, `<div class="text-green-300 font-black">复活：${target.name} 重新站起（剩余 ${revive.meta.charges}）</div>`);
+            markKey();
+            return { damage: r.damage };
+          }
           appendBattleLog(logs, roundContainer, `<div class="text-gray-500">[${target.name}] 已倒下</div>`);
           markKey();
           if (target.isPlayer && target.id === catLinkState.catId) {
             transferLifeLink();
           } else if (target.isPlayer && getStatus(target, 'lifeLink') && getStatus(target, 'lifeLink').meta && getStatus(target, 'lifeLink').meta.role === 'partner') {
             transferLifeLink();
+          }
+          if (!target.isPlayer && attacker.isPlayer && attacker.passive && attacker.passive.onKillImmuneTurns) {
+            addStatus(attacker, 'immune', 1, attacker.passive.onKillImmuneTurns);
+            markKey();
+          }
+          if (!target.isPlayer && attacker.isPlayer && attacker.id === 'char_sur_006' && label === '技能') {
+            attacker.skillCd = 0;
+            attacker.energy = attacker.maxEnergy || 4;
+            appendBattleLog(logs, roundContainer, `<div class="text-blue-300 font-black">收割：${attacker.name} 重置冷却</div>`);
+            markKey();
+          }
+          if (!target.isPlayer) {
+            team.forEach(u => {
+              if (u.currentHp <= 0) return;
+              if (u.passive && u.passive.onEnemyDeathAtkUp) {
+                u.attack = Math.floor(u.attack * (1 + u.passive.onEnemyDeathAtkUp / 100));
+              }
+            });
+          }
+        }
+
+        if (label === '普攻' && !opts.isFollowUp && attacker.passive && attacker.passive.followUpOnBasic && target.currentHp > 0) {
+          const f = attacker.passive.followUpOnBasic;
+          if (Math.random() * 100 < (f.chance || 0)) {
+            applyHit(attacker, target, f.scale || 0.8, '追击', { isFollowUp: true });
+            markKey();
           }
         }
 
@@ -3776,6 +4335,13 @@
           attacker.currentHp = Math.max(0, attacker.currentHp - reflect);
           appendBattleLog(logs, roundContainer, `<div><span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span> 反弹伤害 <span class="text-red-400 font-bold">${reflect}</span> 给 <span class="${attacker.isPlayer ? 'text-blue-400' : 'text-red-400'}">${attacker.name}</span></div>`);
           markKey();
+        }
+
+        if (!opts.isCounter && target.isPlayer && target.currentHp > 0 && target.passive && target.passive.counter && attacker.currentHp > 0) {
+          if (Math.random() * 100 < (target.passive.counter.chance || 0)) {
+            applyHit(target, attacker, target.passive.counter.scale || 1.0, '反击', { isCounter: true });
+            markKey();
+          }
         }
 
         if (!opts.isCounter && target.isBoss && target.currentHp > 0 && target.bossMechanics && target.bossMechanics.retaliateChance) {
@@ -3788,19 +4354,23 @@
         return { damage: r.damage };
       };
 
-      const castSkill = (unit, allies, foes) => {
+      const castSkill = (unit, allies, foes, opts = {}) => {
         const skill = unit.skills[0];
         if (!skill) return false;
-        if (getStatus(unit, 'silence')) return false;
+        if (!opts.bypassSilence && getStatus(unit, 'silence')) return false;
         const cost = typeof skill.cost === 'number' ? skill.cost : (unit.isPlayer ? 2 : 0);
-        if (unit.isPlayer && cost > 0 && (unit.energy || 0) < cost) return false;
-        if (unit.isPlayer && cost > 0) unit.energy = Math.max(0, (unit.energy || 0) - cost);
+        if (!opts.bypassCost) {
+          if (unit.isPlayer && cost > 0 && (unit.energy || 0) < cost) return false;
+          if (unit.isPlayer && cost > 0) unit.energy = Math.max(0, (unit.energy || 0) - cost);
+        }
         const cd = (skill && skill.cooldown) ? skill.cooldown : 4;
-        unit.skillCd = cd;
+        if (!opts.bypassCd) unit.skillCd = cd;
         const skillName = skill ? skill.name : '技能';
         const level = (skill && skill.level) ? skill.level : 1;
         const rarityBoost = unit.rarity === 'SUR' ? 0.18 : (unit.rarity === 'UR' ? 0.10 : (unit.rarity === 'SSR' ? 0.06 : 0));
         const lvlBoost = 1 + (level - 1) * 0.05;
+        const scaleFactor = typeof opts.scaleFactor === 'number' ? opts.scaleFactor : 1;
+        const announcePrefix = opts.announcePrefix || '';
 
         const applyStructuredEffects = () => {
           const effects = skill && Array.isArray(skill.effects) ? skill.effects : [];
@@ -3819,13 +4389,15 @@
           const pickTargets = (targetType) => {
             if (targetType === 'allEnemies') return aliveFoes;
             if (targetType === 'allAllies') return aliveAllies;
+            if (targetType === 'randomEnemies') return aliveFoes.length ? [aliveFoes[Math.floor(Math.random() * aliveFoes.length)]] : [];
+            if (targetType === 'randomAllies') return aliveAllies.length ? [aliveAllies[Math.floor(Math.random() * aliveAllies.length)]] : [];
             if (targetType === 'enemyLowest') return pickLowest(aliveFoes) ? [pickLowest(aliveFoes)] : [];
             if (targetType === 'allyLowest') return pickLowest(aliveAllies) ? [pickLowest(aliveAllies)] : [];
             if (targetType === 'ally') return [unit];
             return aliveFoes.length ? [chooseTarget(unit, aliveFoes)] : [];
           };
 
-          appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span></div>`);
+          appendBattleLog(logs, roundContainer, `<div>${announcePrefix ? `<span class="text-blue-300 font-black">${announcePrefix}</span> ` : ''}<span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span></div>`);
           markKey();
 
           effects.forEach(effect => {
@@ -3844,9 +4416,46 @@
               return;
             }
 
+            if (effect.type === 'selfCost') {
+              if (effect.costType === 'currentHpPct' && typeof effect.value === 'number') {
+                const cost = Math.floor(unit.currentHp * Math.min(95, effect.value) / 100);
+                unit.currentHp = Math.max(1, unit.currentHp - cost);
+                appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 消耗生命 <span class="text-red-400 font-bold">${cost}</span></div>`);
+                markKey();
+              }
+              return;
+            }
+
+            if (effect.type === 'energySteal') {
+              const amount = typeof effect.amount === 'number' ? effect.amount : 1;
+              pickTargets(targetType).forEach(t => {
+                if (!t || t.currentHp <= 0) return;
+                const steal = Math.max(0, Math.min(amount, t.energy || 0));
+                t.energy = Math.max(0, (t.energy || 0) - steal);
+                unit.energy = Math.min(unit.maxEnergy || 4, (unit.energy || 0) + steal);
+              });
+              markKey();
+              return;
+            }
+
+            if (effect.type === 'execute') {
+              const threshold = typeof effect.threshold === 'number' ? effect.threshold : 0.2;
+              pickTargets(targetType).forEach(t => {
+                if (!t || t.currentHp <= 0) return;
+                if (t.currentHp / t.maxHp <= threshold) {
+                  t.currentHp = 0;
+                  appendBattleLog(logs, roundContainer, `<div class="text-red-400 font-black">斩杀：<span class="${t.isPlayer ? 'text-blue-300' : 'text-red-300'}">${t.name}</span> 被处决</div>`);
+                  markKey();
+                  appendBattleLog(logs, roundContainer, `<div class="text-gray-500">[${t.name}] 已倒下</div>`);
+                  markKey();
+                }
+              });
+              return;
+            }
+
             if (effect.type === 'damage') {
               const hits = Math.max(1, effect.hits || 1);
-              const mult = (effect.scale || 1) * (1 + rarityBoost) * lvlBoost;
+              const mult = (effect.scale || 1) * (1 + rarityBoost) * lvlBoost * scaleFactor;
               const ignoreDef = typeof effect.ignoreDef === 'number' ? effect.ignoreDef : null;
               for (let h = 0; h < hits; h++) {
                 const targets = targetType === 'randomEnemies'
@@ -3854,12 +4463,13 @@
                   : pickTargets(targetType);
                 targets.forEach(t => {
                   if (!t || t.currentHp <= 0) return;
+                  if (effect.requireStatus && !getStatus(t, effect.requireStatus)) return;
                   const prevPen = unit.penetration;
                   if (ignoreDef !== null) unit.penetration = Math.min(200, prevPen + ignoreDef * 2);
                   const scaleFrom = effect.scaleFrom || 'atk';
                   const rawOverride =
-                    scaleFrom === 'maxHp' ? Math.floor(unit.maxHp * (effect.scale || 1) + (effect.addFlat || 0)) :
-                    scaleFrom === 'targetMaxHp' ? Math.floor(t.maxHp * (effect.scale || 1) + (effect.addFlat || 0)) :
+                    scaleFrom === 'maxHp' ? Math.floor(unit.maxHp * (effect.scale || 1) * scaleFactor + (effect.addFlat || 0) * scaleFactor) :
+                    scaleFrom === 'targetMaxHp' ? Math.floor(t.maxHp * (effect.scale || 1) * scaleFactor + (effect.addFlat || 0) * scaleFactor) :
                     null;
                   applyHit(unit, t, mult, '技能', { rawOverride });
                   unit.penetration = prevPen;
@@ -3880,10 +4490,10 @@
                 targets.forEach(t => {
                   if (!t || t.currentHp <= 0) return;
                   const base =
-                    scaleFrom === 'atk' ? unit.attack * (effect.scale || 1) :
-                    scaleFrom === 'targetMaxHp' ? t.maxHp * (effect.scale || 1) :
-                    unit.maxHp * (effect.scale || 1);
-                  let amount = Math.max(1, Math.floor((base + (effect.addFlat || 0)) * (1 + tdUp / 100)));
+                    scaleFrom === 'atk' ? unit.attack * (effect.scale || 1) * scaleFactor :
+                    scaleFrom === 'targetMaxHp' ? t.maxHp * (effect.scale || 1) * scaleFactor :
+                    unit.maxHp * (effect.scale || 1) * scaleFactor;
+                  let amount = Math.max(1, Math.floor((base + (effect.addFlat || 0) * scaleFactor) * (1 + tdUp / 100)));
                   if (!t.isPlayer && trueResist > 0) amount = Math.max(1, Math.floor(amount * (1 - Math.min(80, trueResist) / 100)));
                   if (coreState.active) {
                     const reduc = Math.min(80, (t.dmgReduc || 0) + getStatusValue(t, 'dmgReducUp'));
@@ -3929,7 +4539,7 @@
 
             if (effect.type === 'heal') {
               const healDebuff = Math.min(80, affixValue('healDown') + affixValue('antiHeal'));
-              const healBase = unit.attack * (effect.scale || 1) * (1 + rarityBoost) * lvlBoost;
+              const healBase = unit.attack * (effect.scale || 1) * (1 + rarityBoost) * lvlBoost * scaleFactor;
               let healed = 0;
               pickTargets(targetType === 'allAllies' ? 'allAllies' : (targetType === 'allyLowest' ? 'allyLowest' : 'ally')).forEach(t => {
                 if (!t || t.currentHp <= 0) return;
@@ -3955,7 +4565,7 @@
               const turns = typeof effect.turns === 'number' ? effect.turns : 2;
               pickTargets(targetType).forEach(t => {
                 if (!t || t.currentHp <= 0) return;
-                addStatus(t, stat, value, turns);
+                addStatus(t, stat, Math.floor(value * scaleFactor), turns);
               });
               markKey();
               return;
@@ -3965,7 +4575,7 @@
               const dot = effect.dot;
               const turns = typeof effect.turns === 'number' ? effect.turns : 2;
               const extra = dot === 'burn' ? affixValue('burnAmp') : affixValue('dotUp');
-              const value = Math.floor(unit.attack * (effect.scale || 0.1) * lvlBoost * (1 + extra / 100));
+              const value = Math.floor(unit.attack * (effect.scale || 0.1) * lvlBoost * scaleFactor * (1 + extra / 100));
               pickTargets(targetType).forEach(t => {
                 if (!t || t.currentHp <= 0) return;
                 addStatus(t, dot, value, turns);
@@ -3996,7 +4606,7 @@
 
             if (effect.type === 'shield') {
               const turns = typeof effect.turns === 'number' ? effect.turns : 2;
-              const amount = Math.floor(unit.attack * (effect.scale || 0.8) * lvlBoost);
+              const amount = Math.floor(unit.attack * (effect.scale || 0.8) * lvlBoost * scaleFactor);
               pickTargets(targetType).forEach(t => {
                 if (!t || t.currentHp <= 0) return;
                 t.shield += amount;
@@ -4305,8 +4915,10 @@
 
         const allUnits = [...team, ...enemies].filter(u => u.currentHp > 0);
         allUnits.sort((a, b) => {
-          const aSpd = a.speed * (1 + getStatusValue(a, 'spdUp') / 100) * (1 - getStatusValue(a, 'spdDown') / 100);
-          const bSpd = b.speed * (1 + getStatusValue(b, 'spdUp') / 100) * (1 - getStatusValue(b, 'spdDown') / 100);
+          const aBase = Math.max(1, (a.speed || 0) + getStatusValue(a, 'spdFlatUp') - getStatusValue(a, 'spdFlatDown'));
+          const bBase = Math.max(1, (b.speed || 0) + getStatusValue(b, 'spdFlatUp') - getStatusValue(b, 'spdFlatDown'));
+          const aSpd = aBase * (1 + getStatusValue(a, 'spdUp') / 100) * (1 - getStatusValue(a, 'spdDown') / 100);
+          const bSpd = bBase * (1 + getStatusValue(b, 'spdUp') / 100) * (1 - getStatusValue(b, 'spdDown') / 100);
           return bSpd - aSpd;
         });
         renderBattleHud(team, enemies, allUnits, round, stage);
@@ -4327,6 +4939,25 @@
             appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 被控制，无法行动</div>`);
             markKey();
             stun.turns--;
+            cleanStatuses(unit);
+            renderBattleHud(team, enemies, allUnits, round, stage);
+            await new Promise(r => setTimeout(r, battleDelayMs()));
+            continue;
+          }
+
+          const charm = getStatus(unit, 'charm');
+          if (charm) {
+            const alliesNow = unit.isPlayer ? team : enemies;
+            const candidates = alliesNow.filter(a => a.currentHp > 0 && a.id !== unit.id);
+            if (candidates.length > 0) {
+              const target = candidates[Math.floor(Math.random() * candidates.length)];
+              applyHit(unit, target, 0.9, '魅惑');
+              markKey();
+            } else {
+              appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 被魅惑，但没有可攻击目标</div>`);
+              markKey();
+            }
+            charm.turns--;
             cleanStatuses(unit);
             renderBattleHud(team, enemies, allUnits, round, stage);
             await new Promise(r => setTimeout(r, battleDelayMs()));
@@ -4479,6 +5110,19 @@
       } else {
         itemsContainer.innerHTML = '<div class="text-gray-400">失败无奖励</div>';
       }
+
+      lastBattleRecord = {
+        isWin: result.isWin,
+        stageName: stage.name,
+        rounds: result.rounds,
+        maxDamage: result.maxDamage,
+        healing: result.healing,
+        rewardsExp: result.rewards.exp,
+        rewardsGold: result.rewards.gold,
+        logsHtml: document.getElementById('battleLogs').innerHTML,
+        itemsHtml: itemsContainer.innerHTML
+      };
+      updateLastBattleReportButton();
       
       // 显示战斗结果弹窗
       document.getElementById('battleResultModal').classList.remove('hidden');
