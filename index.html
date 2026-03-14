@@ -104,6 +104,27 @@
   
   <style type="text/tailwindcss">
     @layer utilities {
+      /* 调试日志样式 */
+      #mobile-logger {
+        position: fixed;
+        bottom: 100px;
+        left: 10px;
+        right: 10px;
+        height: 150px;
+        background: rgba(0, 0, 0, 0.8);
+        color: #00ff00;
+        font-family: monospace;
+        font-size: 10px;
+        overflow-y: auto;
+        z-index: 9999;
+        padding: 5px;
+        border: 1px solid #333;
+        pointer-events: none;
+        display: none;
+      }
+      .log-error { color: #ff4444; }
+      .log-warn { color: #ffbb33; }
+      
       /* 专业游戏 UI 字体与基础样式 */
       .text-shadow-hero { text-shadow: 0 0 15px rgba(255, 255, 255, 0.4), 0 4px 8px rgba(0, 0, 0, 0.8); }
       .text-glow-sur { text-shadow: 0 0 10px #FF00FF, 0 0 20px #FF00FF; }
@@ -594,6 +615,7 @@
   </div>
 
   <!-- 调试控制台: 真理之门 -->
+  <div id="mobile-logger"></div>
   <div id="debugMenu" class="fixed bottom-20 md:bottom-24 right-4 md:right-6 z-[100]">
     <button id="debugToggle" class="w-10 h-10 md:w-12 md:h-12 bg-red-600 rounded-full flex items-center justify-center shadow-2xl border-2 border-white animate-pulse hover:scale-110 transition-transform">
       <span class="text-xl md:text-2xl">👁️</span>
@@ -665,6 +687,46 @@
 
   <!-- 游戏数据 -->
   <script>
+    // 移动端调试日志拦截
+    (function() {
+      const logger = document.getElementById('mobile-logger');
+      const originalLog = console.log;
+      const originalError = console.error;
+      const originalWarn = console.warn;
+
+      function logToUI(msg, type) {
+        if (!logger) return;
+        const div = document.createElement('div');
+        div.className = type === 'error' ? 'log-error' : (type === 'warn' ? 'log-warn' : '');
+        div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        logger.appendChild(div);
+        logger.scrollTop = logger.scrollHeight;
+        // 如果有错误，自动显示日志面板
+        if (type === 'error') logger.style.display = 'block';
+      }
+
+      console.log = (...args) => {
+        originalLog.apply(console, args);
+        logToUI(args.map(String).join(' '), 'log');
+      };
+      console.error = (...args) => {
+        originalError.apply(console, args);
+        logToUI(args.map(String).join(' '), 'error');
+      };
+      console.warn = (...args) => {
+        originalWarn.apply(console, args);
+        logToUI(args.map(String).join(' '), 'warn');
+      };
+
+      window.onerror = (msg, url, line, col, error) => {
+        console.error(`${msg} at ${line}:${col}`);
+        return false;
+      };
+      window.onunhandledrejection = (event) => {
+        console.error(`Promise Rejection: ${event.reason}`);
+      };
+    })();
+
     // 游戏数据
     let gameData = {
       player: {
@@ -749,7 +811,7 @@
 
     // 同步角色基础数据
     function syncCharacterData() {
-      if (!gameData.characters) return;
+      if (!gameData.characters || !charactersData) return;
       gameData.characters.forEach(char => {
         const masterData = charactersData.find(m => m.id === char.id);
         if (masterData) {
@@ -757,17 +819,24 @@
           char.rarity = masterData.rarity;
           char.class = masterData.class;
           char.baseAttributes = { ...masterData.baseAttributes };
-          char.skills = masterData.skills.map((s, idx) => {
-            const existingSkill = char.skills[idx];
-            return {
-              ...s,
-              level: existingSkill ? existingSkill.level : 1
-            };
-          });
+          
+          // 确保技能数据完整
+          if (masterData.skills && Array.isArray(masterData.skills)) {
+            char.skills = masterData.skills.map((s, idx) => {
+              const existingSkill = char.skills ? char.skills[idx] : null;
+              return {
+                ...s,
+                level: existingSkill ? (existingSkill.level || 1) : 1
+              };
+            });
+          } else {
+            char.skills = char.skills || [];
+          }
+          
           char.imageUrl = masterData.imageUrl;
           
           // 初始化装备和铭文槽位
-          if (!char.equipments) {
+          if (!char.equipments || Array.isArray(char.equipments)) {
             char.equipments = {
               weapon: null,
               armor: null,
@@ -786,30 +855,36 @@
 
     // 加载游戏数据
     async function loadGameData() {
+      console.log("开始加载远程游戏数据...");
       try {
         // 加载角色数据
         const charactersResponse = await fetch('assets/data/characters.json');
+        if (!charactersResponse.ok) throw new Error(`无法加载角色数据: ${charactersResponse.status}`);
         const charactersJson = await charactersResponse.json();
         charactersData = charactersJson.characters;
+        console.log(`成功加载 ${charactersData.length} 个角色数据`);
         
         // 加载装备数据
         const equipmentResponse = await fetch('assets/data/items.json');
+        if (!equipmentResponse.ok) throw new Error(`无法加载装备数据: ${equipmentResponse.status}`);
         const equipmentJson = await equipmentResponse.json();
         equipmentData = equipmentJson.items;
         
         // 加载铭文数据
         const inscriptionsResponse = await fetch('assets/data/inscriptions.json');
+        if (!inscriptionsResponse.ok) throw new Error(`无法加载铭文数据: ${inscriptionsResponse.status}`);
         const inscriptionsJson = await inscriptionsResponse.json();
         inscriptionsData = inscriptionsJson.inscriptions;
         
         // 加载关卡数据
         const stagesResponse = await fetch('assets/data/stages.json');
+        if (!stagesResponse.ok) throw new Error(`无法加载关卡数据: ${stagesResponse.status}`);
         const stagesJson = await stagesResponse.json();
         stagesData = stagesJson.stages;
         
-        console.log("游戏数据加载成功");
+        console.log("所有游戏数据加载成功");
       } catch (error) {
-        console.error("加载游戏数据失败:", error);
+        console.error("加载游戏数据失败:", error.message);
         throw error;
       }
     }
@@ -1154,6 +1229,16 @@
       // 调试菜单事件
       const debugToggleBtn = document.getElementById('debugToggle');
       if (debugToggleBtn) debugToggleBtn.addEventListener('click', () => {
+        // 长按或快速双击切换日志面板
+        const logger = document.getElementById('mobile-logger');
+        if (logger) {
+          const now = Date.now();
+          if (this.lastClick && now - this.lastClick < 500) {
+            logger.style.display = logger.style.display === 'none' ? 'block' : 'none';
+          }
+          this.lastClick = now;
+        }
+
         const panel = document.getElementById('debugPanel');
         panel.classList.toggle('hidden');
         if (!panel.classList.contains('hidden')) updateDebugUI();
