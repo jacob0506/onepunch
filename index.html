@@ -462,6 +462,15 @@
                   </div>
                 </div>
                 <div class="glass-effect rounded-xl p-4 border border-gray-800">
+                  <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">上阵设置（最多6人）</h4>
+                  <div id="cultivateFormationSlots" class="grid grid-cols-6 gap-1 mb-3"></div>
+                  <div id="cultivateFormationHint" class="text-[10px] text-gray-500 mb-3">选择一个角色后，可加入/移除上阵</div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button id="toggleFormationBtn" class="w-full py-2 bg-gray-800 hover:bg-gray-700 rounded font-bold text-xs">加入上阵</button>
+                    <button id="resetCharacterBtn" class="w-full py-2 bg-red-900 hover:bg-red-800 rounded font-bold text-xs text-red-100">角色还原</button>
+                  </div>
+                </div>
+                <div class="glass-effect rounded-xl p-4 border border-gray-800">
                   <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">装备槽位</h4>
                   <div class="grid grid-cols-5 md:grid-cols-3 gap-2 mb-4">
                     <div data-slot="weapon" class="cultivate-slot bg-gray-900 rounded border border-gray-800 aspect-square flex items-center justify-center cursor-pointer hover:border-primary"><i class="fa fa-gavel text-gray-700"></i></div>
@@ -760,7 +769,7 @@
       fragments: {}, // 角色碎片存储: { "char_001": 10 }
       equipment: [],
       inscriptions: [],
-      formation: [null, null, null, null, null],
+      formation: [null, null, null, null, null, null],
       currentStage: "stage_001",
       ownedItems: []
     };
@@ -868,8 +877,13 @@
           if (!char.inscriptions) {
             char.inscriptions = [null, null];
           }
+          if (typeof char.goldSpentOnLevelUps !== 'number') char.goldSpentOnLevelUps = 0;
+          (char.skills || []).forEach(s => {
+            if (typeof s.goldSpentOnUpgrades !== 'number') s.goldSpentOnUpgrades = 0;
+          });
         }
       });
+      ensureFormation();
       saveGameProgress();
     }
 
@@ -1309,6 +1323,7 @@
           gameData = { ...gameData, ...parsedData };
           // 确保 fragments 对象存在 (存量数据迁移)
           if (!gameData.fragments) gameData.fragments = {};
+          ensureFormation();
           migrateCharactersToFragments();
           fixMissingInstanceIds(); // 迭代1: 修复 instanceId 问题
           console.log("游戏进度加载成功");
@@ -1321,6 +1336,19 @@
         // 如果没有保存的数据，初始化新游戏
         initializeNewGame();
       }
+    }
+
+    function ensureFormation() {
+      const size = 6;
+      if (!Array.isArray(gameData.formation)) gameData.formation = [];
+      gameData.formation = gameData.formation.map(v => {
+        if (!v) return null;
+        if (typeof v === 'string') return v;
+        if (typeof v === 'object' && v.id) return v.id;
+        return null;
+      });
+      while (gameData.formation.length < size) gameData.formation.push(null);
+      if (gameData.formation.length > size) gameData.formation = gameData.formation.slice(0, size);
     }
 
     // 迭代1: 为没有 instanceId 的物品生成唯一 ID
@@ -1406,6 +1434,13 @@
         exp: 0
       }));
 
+      gameData.formation = [
+        gameData.characters[0] ? gameData.characters[0].id : null,
+        gameData.characters[1] ? gameData.characters[1].id : null,
+        null, null, null, null
+      ];
+      ensureFormation();
+
       fixMissingInstanceIds();
       
       // 保存游戏进度
@@ -1448,6 +1483,7 @@
       if (selectedCharacter) {
         selectCharacterToCultivate(selectedCharacter);
       }
+      renderCultivateFormationUI();
     }
 
     // 绑定事件
@@ -1504,6 +1540,12 @@
       
       const quickSkillUpBtn = document.getElementById('quickSkillUp');
       if (quickSkillUpBtn) quickSkillUpBtn.addEventListener('click', upgradeSelectedSkill);
+
+      const toggleFormationBtn = document.getElementById('toggleFormationBtn');
+      if (toggleFormationBtn) toggleFormationBtn.addEventListener('click', toggleSelectedCharacterFormation);
+
+      const resetCharacterBtn = document.getElementById('resetCharacterBtn');
+      if (resetCharacterBtn) resetCharacterBtn.addEventListener('click', resetSelectedCharacter);
 
       // 进阶功能按钮
       const showAttributesBtn = document.getElementById('showAttributesBtn');
@@ -1913,6 +1955,114 @@
           el.classList.add('border-gray-800', 'opacity-70');
         }
       });
+
+      renderCultivateFormationUI();
+    }
+
+    function isCharacterInFormation(charId) {
+      ensureFormation();
+      return gameData.formation.includes(charId);
+    }
+
+    function renderCultivateFormationUI() {
+      ensureFormation();
+      const slotsEl = document.getElementById('cultivateFormationSlots');
+      const hintEl = document.getElementById('cultivateFormationHint');
+      const toggleBtn = document.getElementById('toggleFormationBtn');
+      if (!slotsEl || !hintEl || !toggleBtn) return;
+
+      const ids = gameData.formation;
+      slotsEl.innerHTML = '';
+      for (let i = 0; i < 6; i++) {
+        const id = ids[i];
+        const char = id ? gameData.characters.find(c => c.id === id) : null;
+        const slot = document.createElement('button');
+        slot.className = 'h-9 w-9 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden';
+        if (char) {
+          slot.innerHTML = `<img src="${char.imageUrl}" class="w-full h-full object-cover">`;
+          slot.onclick = () => {
+            gameData.formation[i] = null;
+            saveGameProgress();
+            renderCultivateFormationUI();
+          };
+        } else {
+          slot.innerHTML = `<i class="fa fa-plus text-gray-600 text-xs"></i>`;
+        }
+        slotsEl.appendChild(slot);
+      }
+
+      const activeCount = ids.filter(Boolean).length;
+      hintEl.textContent = `已上阵 ${activeCount}/6（点击已上阵头像可移除）`;
+
+      if (!selectedCharacter) {
+        toggleBtn.textContent = '加入上阵';
+        toggleBtn.disabled = true;
+        toggleBtn.classList.add('opacity-60', 'cursor-not-allowed');
+        return;
+      }
+      toggleBtn.disabled = false;
+      toggleBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+      toggleBtn.textContent = isCharacterInFormation(selectedCharacter.id) ? '移除上阵' : '加入上阵';
+    }
+
+    function toggleSelectedCharacterFormation() {
+      if (!selectedCharacter) return;
+      ensureFormation();
+      const id = selectedCharacter.id;
+      const idx = gameData.formation.findIndex(x => x === id);
+      if (idx >= 0) {
+        gameData.formation[idx] = null;
+      } else {
+        const empty = gameData.formation.findIndex(x => !x);
+        if (empty === -1) {
+          alert('上阵已满（最多6人）');
+          return;
+        }
+        gameData.formation[empty] = id;
+      }
+      saveGameProgress();
+      renderCultivateFormationUI();
+    }
+
+    function resetSelectedCharacter() {
+      if (!selectedCharacter) return;
+
+      const char = selectedCharacter;
+      const levelRefund = char.goldSpentOnLevelUps || 0;
+      const skillsRefund = (char.skills || []).reduce((sum, s) => sum + (s.goldSpentOnUpgrades || 0), 0);
+      const refund = levelRefund + skillsRefund;
+
+      const ok = confirm(`确定还原【${char.name}】？\n- 等级/经验重置为 1级\n- 技能等级重置为 1级\n- 卸下装备与铭文（物品不会丢失）\n- 保留星级不变\n- 返还金币：${refund.toLocaleString()}`);
+      if (!ok) return;
+
+      gameData.player.gold += refund;
+
+      char.level = 1;
+      char.exp = 0;
+      char.goldSpentOnLevelUps = 0;
+
+      const master = charactersData ? charactersData.find(c => c.id === char.id) : null;
+      if (master && Array.isArray(master.skills)) {
+        char.skills = master.skills.map(s => ({
+          ...JSON.parse(JSON.stringify(s)),
+          level: 1,
+          goldSpentOnUpgrades: 0,
+          effects: Array.isArray(s.effects) ? s.effects : inferSkillEffects(s)
+        }));
+      } else {
+        (char.skills || []).forEach(s => {
+          s.level = 1;
+          s.goldSpentOnUpgrades = 0;
+        });
+      }
+
+      char.equipments = { weapon: null, armor: null, helmet: null, shoes: null, accessory: null };
+      char.inscriptions = [null, null];
+
+      saveGameProgress();
+      updateUI();
+      selectCharacterToCultivate(char);
+      alert(`还原完成，已返还金币 ${refund.toLocaleString()}`);
     }
 
     // 迭代4: 显示技能详情
@@ -2303,8 +2453,10 @@
     // 迭代4: 升级选中的技能
     function upgradeSelectedSkill() {
       if (!selectedCharacter) return;
-      const skill = selectedCharacter.skills[0]; // 默认升级第一个技能
-      const cost = (skill.level || 1) * 1000;
+      const skill = selectedCharacter.skills && selectedCharacter.skills[0];
+      if (!skill) return;
+      const currentLevel = skill.level || 1;
+      const cost = calculateSkillUpgradeCost(currentLevel);
       
       if (gameData.player.gold < cost) {
         alert(`金币不足！升级技能需要 ${cost} 金币`);
@@ -2312,7 +2464,8 @@
       }
       
       gameData.player.gold -= cost;
-      skill.level = (skill.level || 1) + 1;
+      skill.goldSpentOnUpgrades = (skill.goldSpentOnUpgrades || 0) + cost;
+      skill.level = currentLevel + 1;
       
       // 更新描述中的数值 (简单正则替换示例)
       // 注意：这只是一个演示逻辑，真实情况应从配置读取
@@ -2326,6 +2479,10 @@
       selectCharacterToCultivate(selectedCharacter);
       saveGameProgress();
       alert(`技能 [${skill.name}] 已升级至 Lv.${skill.level}`);
+    }
+
+    function calculateSkillUpgradeCost(level) {
+      return level * 1000;
     }
 
     // 角色升级 (迭代4 兼容重构)
@@ -2355,6 +2512,7 @@
         }
         
         gameData.player.gold -= cost;
+        selectedCharacter.goldSpentOnLevelUps = (selectedCharacter.goldSpentOnLevelUps || 0) + cost;
         selectedCharacter.level++;
         selectedCharacter.exp = 0;
         
@@ -2870,6 +3028,14 @@
       const logs = [];
       const maxRounds = 30;
 
+      const getBattleTeamCharacters = () => {
+        ensureFormation();
+        const ids = gameData.formation.filter(Boolean);
+        const picked = ids.map(id => gameData.characters.find(c => c.id === id)).filter(Boolean);
+        if (picked.length > 0) return picked.slice(0, 6);
+        return gameData.characters.slice(0, 6);
+      };
+
       const buildPlayerUnit = (char) => {
         const stats = calculateTotalStats(char);
         return {
@@ -2930,7 +3096,7 @@
         };
       };
 
-      const team = gameData.characters.slice(0, 5).map(buildPlayerUnit);
+      const team = getBattleTeamCharacters().map(buildPlayerUnit);
       const enemies = (stage.enemies || []).map(buildEnemyUnit);
 
       let round = 1;
