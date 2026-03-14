@@ -1,0 +1,47 @@
+{
+  "inscriptions": [
+    {
+      "id": "ins_001",
+      "name": "嗜血铭文",
+      "type": "lifesteal",
+      "rarity": "SR",
+      "attributes": {
+        "lifesteal": 5
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "吸血率额外提升5%"
+      },
+      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/fab318e245d0416f9382c1b885491bd8~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928671&x-signature=n9IWpQW2IsBIVsX5AcaECRTuUwk%3D"
+    },
+    {
+      "id": "ins_002",
+      "name": "幻影铭文",
+      "type": "dodge",
+      "rarity": "SSR",
+      "attributes": {
+        "dodgeRate": 8
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "闪避成功时回复3%最大生命值"
+      },
+      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/601114eb48ee4cd9abbe4d8dcaac0462~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928671&x-signature=wbDdgTiMWt9Jhm6JMOrgaU%2BIQ3w%3D"
+    },
+    {
+      "id": "ins_003",
+      "name": "狂暴铭文",
+      "type": "crit",
+      "rarity": "UR",
+      "attributes": {
+        "critRate": 10,
+        "attack": 50
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "暴击伤害提升50%"
+      },
+      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/fab318e245d0416f9382c1b885491bd8~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928671&x-signature=n9IWpQW2IsBIVsX5AcaECRTuUwk%3D"
+    }
+  ]
+}

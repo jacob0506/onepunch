@@ -1,0 +1,75 @@
+{
+  "items": [
+    {
+      "id": "eq_001",
+      "name": "新手木剑",
+      "type": "weapon",
+      "rarity": "R",
+      "attributes": {
+        "attack": 30,
+        "atkPercent": 2
+      },
+      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/45877ab24a85430293a83efafc7f0564~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928671&x-signature=hq1lXj3YUeenP62AX4s97zGvoHA%3D"
+    },
+    {
+      "id": "eq_002",
+      "name": "破旧布甲",
+      "type": "armor",
+      "rarity": "R",
+      "attributes": {
+        "defense": 15,
+        "hpPercent": 2
+      },
+      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/45877ab24a85430293a83efafc7f0564~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928671&x-signature=hq1lXj3YUeenP62AX4s97zGvoHA%3D"
+    },
+    {
+      "id": "eq_003",
+      "name": "屠龙宝刀",
+      "type": "weapon",
+      "rarity": "SSR",
+      "attributes": {
+        "attack": 200,
+        "atkPercent": 15,
+        "critRate": 10
+      },
+      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/4312afe72d2d41c2be2ed5f36061af5e~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928672&x-signature=nXCZm0703pzNfDQg%2BJE6m%2FXZIsg%3D"
+    },
+    {
+      "id": "eq_004",
+      "name": "不灭之盾",
+      "type": "armor",
+      "rarity": "UR",
+      "attributes": {
+        "defense": 150,
+        "health": 1000,
+        "blockRate": 15,
+        "dmgReduc": 10
+      },
+      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/66c3f30707414b3aa40945e25d64a2ed~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928672&x-signature=8vNROfFqfUvL06PaH6HoX9WGqII%3D"
+    },
+    {
+      "id": "eq_005",
+      "name": "疾风之靴",
+      "type": "shoes",
+      "rarity": "SR",
+      "attributes": {
+        "speed": 50,
+        "dodgeRate": 5
+      },
+      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/66c3f30707414b3aa40945e25d64a2ed~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928672&x-signature=8vNROfFqfUvL06PaH6HoX9WGqII%3D"
+    },
+    {
+      "id": "eq_006",
+      "name": "大魔导师之戒",
+      "type": "accessory",
+      "rarity": "SUR",
+      "attributes": {
+        "attack": 100,
+        "atkPercent": 20,
+        "effectHit": 15,
+        "speed": 20
+      },
+      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/4312afe72d2d41c2be2ed5f36061af5e~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928672&x-signature=nXCZm0703pzNfDQg%2BJE6m%2FXZIsg%3D"
+    }
+  ]
+}

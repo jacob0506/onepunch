@@ -1,0 +1,16 @@
+{
+  "name": "幻卡传说",
+  "short_name": "幻卡传说",
+  "description": "幻卡传说 - 微信小程序类抽卡养成游戏",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#4A90E2",
+  "icons": [
+    {
+      "src": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/c2cdef8fb5c6473abd54c0b7e6694321~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928816&x-signature=A3L8SNZfjOW8WK9kqpopRtEiPVY%3D",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

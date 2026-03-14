@@ -1,0 +1,3264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>幻卡传说 - 微信小程序类抽卡养成游戏</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4A90E2">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="幻卡传说">
+  
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome (CDNJS for better stability) -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4A90E2',
+            secondary: '#50E3C2',
+            accent: '#F5A623',
+            rarity: {
+              r: '#7FB5FF',
+              sr: '#B18AFF',
+              ssr: '#FFD700',
+              ur: '#FF6B6B',
+              sur: '#FF00FF'
+            },
+            class: {
+              warrior: '#FF5722',
+              mage: '#9C27B0',
+              assassin: '#795548',
+              archer: '#4CAF50',
+              healer: '#2196F3'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'spin-slow': 'spin 3s linear infinite',
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 3s ease-in-out infinite',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+            'flip': 'flip 1s ease-in-out',
+            'slide-up': 'slideUp 0.5s ease-out',
+            'slide-down': 'slideDown 0.5s ease-out',
+            'slide-in': 'slideIn 0.5s ease-out',
+            'fade-in': 'fadeIn 0.5s ease-out',
+            'scale-in': 'scaleIn 0.3s ease-out',
+            'bounce-in': 'bounceIn 0.6s ease-out',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' },
+            },
+            glow: {
+              '0%': { boxShadow: '0 0 5px rgba(74, 144, 226, 0.5)' },
+              '100%': { boxShadow: '0 0 20px rgba(74, 144, 226, 0.8), 0 0 30px rgba(74, 144, 226, 0.6)' },
+            },
+            flip: {
+              '0%': { transform: 'rotateY(0deg)' },
+              '50%': { transform: 'rotateY(90deg)' },
+              '100%': { transform: 'rotateY(0deg)' },
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+            slideDown: {
+              '0%': { transform: 'translateY(-20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+            slideIn: {
+              '0%': { transform: 'translateX(-20px)', opacity: '0' },
+              '100%': { transform: 'translateX(0)', opacity: '1' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            scaleIn: {
+              '0%': { transform: 'scale(0.9)', opacity: '0' },
+              '100%': { transform: 'scale(1)', opacity: '1' },
+            },
+            bounceIn: {
+              '0%': { transform: 'scale(0.3)', opacity: '0' },
+              '50%': { transform: 'scale(1.05)' },
+              '70%': { transform: 'scale(0.9)' },
+              '100%': { transform: 'scale(1)', opacity: '1' },
+            },
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      /* 专业游戏 UI 字体与基础样式 */
+      .text-shadow-hero { text-shadow: 0 0 15px rgba(255, 255, 255, 0.4), 0 4px 8px rgba(0, 0, 0, 0.8); }
+      .text-glow-sur { text-shadow: 0 0 10px #FF00FF, 0 0 20px #FF00FF; }
+      .text-glow-ur { text-shadow: 0 0 10px #FF6B6B, 0 0 20px #FF6B6B; }
+      .text-glow-ssr { text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700; }
+      
+      /* 按钮高级质感 */
+      .btn-game-primary {
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+        border: 2px solid #5DA9FF;
+        box-shadow: 0 4px 0 #2A5F96, 0 8px 15px rgba(0,0,0,0.4);
+        transition: all 0.1s active;
+      }
+      .btn-game-primary:active {
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 #2A5F96, 0 4px 8px rgba(0,0,0,0.4);
+      }
+      
+      .btn-game-gold {
+        background: linear-gradient(135deg, #F5A623 0%, #D48806 100%);
+        border: 2px solid #FFD17B;
+        box-shadow: 0 4px 0 #A66B04, 0 8px 15px rgba(0,0,0,0.4);
+      }
+      .btn-game-gold:active {
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 #A66B04, 0 4px 8px rgba(0,0,0,0.4);
+      }
+
+      /* 角色边框炫光特效 (静置) */
+      .portrait-frame-sur {
+        box-shadow: inset 0 0 50px rgba(255, 0, 255, 0.3), 0 0 30px rgba(255, 0, 255, 0.5);
+        border: 4px solid #FF00FF;
+        background: radial-gradient(circle at center, rgba(255, 0, 255, 0.1) 0%, transparent 70%);
+      }
+      .portrait-frame-ur {
+        box-shadow: inset 0 0 40px rgba(255, 107, 107, 0.3), 0 0 20px rgba(255, 107, 107, 0.4);
+        border: 4px solid #FF6B6B;
+        background: radial-gradient(circle at center, rgba(255, 107, 107, 0.1) 0%, transparent 70%);
+      }
+      .portrait-frame-ssr {
+        box-shadow: inset 0 0 30px rgba(255, 215, 0, 0.2), 0 0 15px rgba(255, 215, 0, 0.3);
+        border: 4px solid #FFD700;
+        background: radial-gradient(circle at center, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+      }
+      
+      /* 移除动画，保持静置美观 */
+      .portrait-static {
+        filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.5));
+        transition: transform 0.3s ease-out;
+      }
+      
+      .glass-panel {
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+
+      .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+  <!-- 游戏背景 -->
+  <div class="fixed inset-0 z-0">
+    <img src="https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/b7f199443a7c43a8b6f61b9f3fe68e5a~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928812&x-signature=ISfWQgT%2FVu9HIqIHFRPMjMNSLBU%3D" 
+         alt="游戏背景" 
+         class="w-full h-full object-cover opacity-30">
+  </div>
+
+  <!-- 游戏容器 -->
+  <div class="relative z-10 container mx-auto px-4 py-6 max-w-6xl">
+    <!-- 顶部状态栏 -->
+    <header class="glass-effect rounded-xl p-3 md:p-4 mb-4 md:mb-6 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0">
+      <div class="flex items-center w-full md:w-auto justify-center md:justify-start">
+        <img src="https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/c2cdef8fb5c6473abd54c0b7e6694321~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928816&x-signature=A3L8SNZfjOW8WK9kqpopRtEiPVY%3D" 
+             alt="游戏Logo" 
+             class="h-8 w-8 md:h-12 md:w-12 mr-2 md:mr-3">
+        <h1 class="text-xl md:text-2xl font-bold text-glow">幻卡传说</h1>
+      </div>
+      <div class="flex items-center justify-around w-full md:w-auto space-x-2 md:space-x-6">
+        <div class="flex items-center">
+          <i class="fa fa-user-circle text-lg md:text-2xl mr-1 md:mr-2 text-primary"></i>
+          <span id="playerLevel" class="font-bold text-sm md:text-base">Lv.1</span>
+        </div>
+        <div class="flex items-center">
+          <i class="fa fa-diamond text-lg md:text-2xl mr-1 md:mr-2 text-yellow-400"></i>
+          <span id="playerGems" class="font-bold text-sm md:text-base">1000</span>
+        </div>
+        <div class="flex items-center">
+          <i class="fa fa-coins text-lg md:text-2xl mr-1 md:mr-2 text-yellow-500"></i>
+          <span id="playerGold" class="font-bold text-sm md:text-base">5000</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主内容区域 -->
+    <main class="glass-effect rounded-xl p-6 mb-6 min-h-[60vh]">
+      <!-- 页面内容 -->
+      <div class="page-content">
+        <!-- 首页 -->
+        <section id="home" class="page">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- 左侧信息 -->
+            <div class="md:col-span-2">
+              <div class="glass-effect rounded-xl p-4 mb-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                  <i class="fa fa-trophy text-yellow-400 mr-2"></i>
+                  游戏进度
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3">
+                    <h3 class="text-sm text-gray-400">当前关卡</h3>
+                    <p id="currentStage" class="text-lg font-bold">新手村外围</p>
+                  </div>
+                  <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3">
+                    <h3 class="text-sm text-gray-400">战斗力</h3>
+                    <p id="totalPower" class="text-lg font-bold">1,250</p>
+                  </div>
+                  <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3">
+                    <h3 class="text-sm text-gray-400">拥有角色</h3>
+                    <p id="characterCount" class="text-lg font-bold">5/20</p>
+                  </div>
+                  <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3">
+                    <h3 class="text-sm text-gray-400">离线收益</h3>
+                    <p id="offlineRewards" class="text-lg font-bold text-green-400">
+                      <i class="fa fa-coins mr-1"></i>2,500
+                    </p>
+                  </div>
+                </div>
+                <button id="claimOfflineRewards" class="btn-primary mt-4 w-full">
+                  <i class="fa fa-gift mr-2"></i>领取离线收益
+                </button>
+              </div>
+
+              <div class="glass-effect rounded-xl p-4">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                  <i class="fa fa-fire text-red-400 mr-2"></i>
+                  推荐关卡
+                </h2>
+                <div class="space-y-4">
+                  <div class="bg-gray-800 bg-opacity-50 rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                      <h3 class="font-bold">新手村外围</h3>
+                      <p class="text-sm text-gray-400">推荐战斗力: 1,000</p>
+                    </div>
+                    <button class="btn-primary" onclick="switchPage('stages')">
+                      前往挑战
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 右侧信息 -->
+            <div>
+              <div class="glass-effect rounded-xl p-4 mb-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                  <i class="fa fa-calendar text-blue-400 mr-2"></i>
+                  每日任务
+                </h2>
+                <div class="space-y-3">
+                  <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3 flex justify-between items-center">
+                    <div>
+                      <h3 class="font-medium">完成1次抽卡</h3>
+                      <p class="text-xs text-gray-400">奖励: <i class="fa fa-diamond text-yellow-400"></i>100</p>
+                    </div>
+                    <button class="btn-primary text-sm py-1 px-3" onclick="switchPage('gacha')">
+                      去完成
+                    </button>
+                  </div>
+                  <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3 flex justify-between items-center">
+                    <div>
+                      <h3 class="font-medium">升级1个角色</h3>
+                      <p class="text-xs text-gray-400">奖励: <i class="fa fa-coins text-yellow-500"></i>500</p>
+                    </div>
+                    <button class="btn-primary text-sm py-1 px-3" onclick="switchPage('characters')">
+                      去完成
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 抽卡页面 -->
+        <section id="gacha" class="page hidden">
+          <div class="text-center mb-8">
+            <h2 class="text-3xl font-black mb-2 text-glow-ssr">时空召唤</h2>
+            <p class="text-gray-400 italic">穿越星辰大海，召唤命中注定的伙伴</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <!-- 单抽 -->
+            <div class="glass-panel rounded-2xl p-8 text-center relative overflow-hidden group">
+              <div class="absolute inset-0 bg-blue-500 opacity-0 group-hover:opacity-5 transition-opacity"></div>
+              <div class="w-40 h-40 mx-auto mb-6 relative z-10">
+                <img src="https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/ee58cdfe395645868c04fc94d403821e~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928810&x-signature=fW%2FqN71KeVnLhZWYiCs8VLFUdHU%3D" 
+                     alt="单抽" 
+                     class="w-full h-full object-contain">
+                <div class="absolute -top-2 -right-2 bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-black shadow-lg border-2 border-white">1</div>
+              </div>
+              <h3 class="text-2xl font-black mb-6 tracking-tight">单次召唤</h3>
+              <button id="singleGacha" class="btn-game-primary w-full py-4 rounded-xl font-black text-lg flex items-center justify-center space-x-3 group-hover:scale-105 transition-transform">
+                <i class="fa fa-diamond text-sm"></i>
+                <span>200 召唤</span>
+              </button>
+            </div>
+
+            <!-- 十连抽 -->
+            <div class="glass-panel rounded-2xl p-8 text-center relative overflow-hidden group">
+              <div class="absolute inset-0 bg-yellow-500 opacity-0 group-hover:opacity-5 transition-opacity"></div>
+              <div class="w-40 h-40 mx-auto mb-6 relative z-10">
+                <img src="https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/ee58cdfe395645868c04fc94d403821e~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928810&x-signature=fW%2FqN71KeVnLhZWYiCs8VLFUdHU%3D" 
+                     alt="十连抽" 
+                     class="w-full h-full object-contain">
+                <div class="absolute -top-2 -right-2 bg-yellow-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-black shadow-lg border-2 border-white text-lg">10</div>
+              </div>
+              <h3 class="text-2xl font-black mb-2 tracking-tight">十连召唤</h3>
+              <p class="text-xs text-yellow-500 mb-6 font-bold">必得 SR 或以上英雄！</p>
+              <button id="tenGacha" class="btn-game-gold w-full py-4 rounded-xl font-black text-lg flex items-center justify-center space-x-3 group-hover:scale-105 transition-transform">
+                <i class="fa fa-diamond text-sm"></i>
+                <span>1800 召唤</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 抽卡结果区域 -->
+          <div id="gachaResult" class="hidden mt-8">
+            <div class="glass-effect rounded-xl p-6">
+              <h3 class="text-xl font-bold mb-4 text-center">召唤结果</h3>
+              <div id="gachaCards" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4"></div>
+              <div class="text-center mt-6">
+                <button id="continueGacha" class="btn-primary" onclick="document.getElementById('gachaResult').classList.add('hidden')">继续</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 角色养成中心 -->
+        <section id="characters" class="page hidden h-[calc(100vh-160px)] md:h-[calc(100vh-220px)] relative overflow-hidden">
+          <div class="flex flex-col h-full w-full">
+            <div class="flex justify-between items-center mb-2 md:mb-4 px-2 md:px-4">
+              <h2 class="text-lg md:text-xl font-bold flex items-center">
+                <i class="fa fa-users text-primary mr-2"></i>角色养成
+              </h2>
+              <select id="characterFilter" class="bg-gray-800 border border-gray-700 text-xs rounded px-2 py-1 outline-none">
+                <option value="all">全部稀有度</option>
+                <option value="R">R</option>
+                <option value="SR">SR</option>
+                <option value="SSR">SSR</option>
+                <option value="UR">UR</option>
+                <option value="SUR">SUR</option>
+              </select>
+            </div>
+
+            <div class="flex-1 flex flex-col md:grid md:grid-cols-12 gap-4 overflow-y-auto md:overflow-hidden px-2 md:px-4 mb-4 custom-scrollbar">
+              <!-- 中间：立绘 (移动端优先显示) -->
+              <div class="order-1 md:order-2 col-span-12 md:col-span-6 relative flex flex-col items-center justify-center min-h-[450px] md:min-h-0 cultivate-bg-anim">
+                <!-- 背景装饰特效 -->
+                <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 animate-spin-slow"></div>
+                </div>
+
+                <div id="cultivateBigImage" class="w-full h-full flex items-center justify-center pointer-events-none z-10"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-80"></div>
+                
+                <!-- 核心展示：稀有度与星级 (大尺寸) -->
+                <div class="absolute bottom-10 left-0 right-0 flex flex-col items-center z-20 animate-slide-up">
+                  <div id="cultivateRarityLarge" class="text-6xl font-black italic tracking-tighter mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">SUR</div>
+                  <div id="cultivateStarsLarge" class="drop-shadow-lg">
+                    <!-- 动态星级 -->
+                  </div>
+                </div>
+
+                <!-- 移动端专用的顶部名称 -->
+                <div class="absolute top-4 left-4 md:hidden z-10">
+                  <h3 id="cultivateNameMobile" class="text-4xl font-black text-white text-shadow-lg tracking-tight">---</h3>
+                </div>
+              </div>
+
+              <!-- 左侧：属性面板 -->
+              <div class="order-2 md:order-1 col-span-12 md:col-span-3 space-y-4">
+                <div class="glass-effect rounded-xl p-4 border border-gray-800 md:block hidden">
+                  <h3 id="cultivateName" class="text-xl font-black mb-1">---</h3>
+                  <div id="cultivateRarity" class="text-xl font-black mb-4 tracking-widest">---</div>
+                  <div id="cultivatePower" class="mb-4">
+                    <div class="text-[10px] text-gray-500 uppercase">当前战力</div>
+                    <div class="text-2xl font-black text-accent">0</div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-black bg-opacity-40 p-2 rounded">
+                      <div class="text-gray-500">系别</div>
+                      <div id="cultivateFaction" class="font-bold">---</div>
+                    </div>
+                    <div class="bg-black bg-opacity-40 p-2 rounded">
+                      <div class="text-gray-500">定位</div>
+                      <div id="cultivateClass" class="font-bold">---</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 移动端战力简报 -->
+                <div class="md:hidden flex justify-between items-center glass-effect rounded-xl p-4 border border-gray-800">
+                  <div>
+                    <div class="text-[10px] text-gray-500 uppercase">当前战力</div>
+                    <div id="cultivatePowerMobile" class="text-2xl font-black text-accent">0</div>
+                  </div>
+                  <div class="text-right">
+                    <div id="cultivateClassMobile" class="text-xs font-bold text-primary">---</div>
+                    <div id="cultivateFactionMobile" class="text-[10px] text-gray-500">---</div>
+                  </div>
+                </div>
+
+                <div class="glass-effect rounded-xl p-4 border border-gray-800">
+                  <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">核心属性</h4>
+                  <div id="cultivateStats" class="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-2 text-xs"></div>
+                </div>
+                <div class="glass-effect rounded-xl p-4 border border-gray-800">
+                  <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">技能</h4>
+                  <div id="cultivateSkills" class="flex space-x-2"></div>
+                </div>
+              </div>
+
+              <!-- 右侧：养成操作 -->
+              <div class="order-3 md:order-3 col-span-12 md:col-span-3 space-y-4">
+                <div class="glass-effect rounded-xl p-4 border border-gray-800">
+                  <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">快速养成</h4>
+                  <div class="grid grid-cols-3 md:grid-cols-1 gap-2">
+                    <button id="quickLevelUp" class="w-full py-2 bg-primary hover:bg-opacity-80 rounded font-bold text-sm">等级</button>
+                    <button id="quickStarUp" class="w-full py-2 bg-yellow-600 hover:bg-yellow-500 rounded font-bold text-sm">升星</button>
+                    <button id="quickSkillUp" class="w-full py-2 bg-blue-600 hover:bg-blue-500 rounded font-bold text-sm">技能</button>
+                  </div>
+                </div>
+                <div class="glass-effect rounded-xl p-4 border border-gray-800">
+                  <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">装备槽位</h4>
+                  <div class="grid grid-cols-5 md:grid-cols-3 gap-2 mb-4">
+                    <div data-slot="weapon" class="cultivate-slot bg-gray-900 rounded border border-gray-800 aspect-square flex items-center justify-center cursor-pointer hover:border-primary"><i class="fa fa-gavel text-gray-700"></i></div>
+                    <div data-slot="armor" class="cultivate-slot bg-gray-900 rounded border border-gray-800 aspect-square flex items-center justify-center cursor-pointer hover:border-primary"><i class="fa fa-shield text-gray-700"></i></div>
+                    <div data-slot="helmet" class="cultivate-slot bg-gray-900 rounded border border-gray-800 aspect-square flex items-center justify-center cursor-pointer hover:border-primary"><i class="fa fa-user-secret text-gray-700"></i></div>
+                    <div data-slot="shoes" class="cultivate-slot bg-gray-900 rounded border border-gray-800 aspect-square flex items-center justify-center cursor-pointer hover:border-primary"><i class="fa fa-paw text-gray-700"></i></div>
+                    <div data-slot="accessory" class="cultivate-slot bg-gray-900 rounded border border-gray-800 aspect-square flex items-center justify-center cursor-pointer hover:border-primary"><i class="fa fa-sun-o text-gray-700"></i></div>
+                  </div>
+                  <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">铭文槽位</h4>
+                  <div class="flex space-x-2 mb-6">
+                    <div data-slot="ins-0" class="cultivate-slot bg-gray-900 rounded-full border border-purple-900 w-10 h-10 flex items-center justify-center cursor-pointer hover:border-purple-500"><i class="fa fa-gem text-purple-950"></i></div>
+                    <div data-slot="ins-1" class="cultivate-slot bg-gray-900 rounded-full border border-purple-900 w-10 h-10 flex items-center justify-center cursor-pointer hover:border-purple-500"><i class="fa fa-gem text-purple-950"></i></div>
+                  </div>
+                  
+                  <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">进阶功能</h4>
+                  <div class="grid grid-cols-3 md:grid-cols-2 gap-2">
+                    <button id="showAttributesBtn" class="py-2 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded flex items-center justify-center">
+                      <i class="fa fa-list-ul mr-1 text-primary"></i>属性
+                    </button>
+                    <button id="costumeBtn" class="py-2 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded flex items-center justify-center">
+                      <i class="fa fa-vcard-o mr-1 text-accent"></i>时装
+                    </button>
+                    <button id="awakenBtn" class="col-span-1 md:col-span-2 py-2 bg-gradient-to-r from-red-900 to-purple-900 hover:opacity-80 text-xs font-black rounded hidden">
+                      <i class="fa fa-fire mr-1 text-yellow-500"></i>觉醒
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 底部：选角 -->
+            <div class="h-20 md:h-24 px-2 md:px-4 pb-2">
+              <div id="characterSelectionBar" class="flex space-x-3 overflow-x-auto overflow-y-hidden h-full py-1 custom-scrollbar snap-x"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 冒险挑战页面 -->
+        <section id="stages" class="page hidden">
+          <div class="mb-6 px-4">
+            <h2 class="text-2xl font-bold mb-2">冒险挑战</h2>
+            <p class="text-gray-400">击败强大的敌人，获取成长资源</p>
+          </div>
+          <div id="stagesList" class="space-y-4 px-4 pb-8"></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- 弹窗组件 -->
+    <div id="modalsContainer">
+      <!-- 物品选择 -->
+      <div id="itemPickerModal" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-80" onclick="this.parentElement.classList.add('hidden')"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-md">
+          <div class="glass-effect rounded-xl p-6 border border-gray-700 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+              <h3 id="itemPickerTitle" class="text-xl font-bold text-primary">选择物品</h3>
+              <button id="closeItemPicker" class="text-gray-400 hover:text-white text-2xl">×</button>
+            </div>
+            <div id="itemPickerList" class="grid grid-cols-1 gap-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar"></div>
+            <div class="mt-6 flex space-x-3">
+              <button id="unequipItemBtn" class="flex-1 py-2 bg-red-900 bg-opacity-50 hover:bg-red-800 text-red-200 rounded font-bold">卸下</button>
+              <button onclick="document.getElementById('itemPickerModal').classList.add('hidden')" class="flex-1 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded font-bold">取消</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 技能详情 -->
+      <div id="skillDetailModal" class="fixed inset-0 z-[70] hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-60" onclick="this.parentElement.classList.add('hidden')"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80">
+          <div class="glass-effect rounded-xl p-5 border border-primary shadow-2xl">
+            <h3 id="skillPopupName" class="text-lg font-bold text-primary mb-1">技能名称</h3>
+            <div id="skillPopupLevel" class="text-xs text-gray-500 mb-3">等级: 1</div>
+            <p id="skillPopupDesc" class="text-sm text-gray-300 leading-relaxed mb-4">技能描述...</p>
+            <div class="text-[10px] text-gray-500">冷却: <span id="skillPopupCD">3</span>回合 | 点击空白处关闭</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 详细属性弹窗 -->
+      <div id="attributeDetailModal" class="fixed inset-0 z-[70] hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-60" onclick="this.parentElement.classList.add('hidden')"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80">
+          <div class="glass-effect rounded-xl p-5 border border-accent shadow-2xl">
+            <h3 class="text-lg font-bold text-accent mb-4 border-b border-accent pb-2">详细属性面板</h3>
+            <div id="detailedStatsList" class="space-y-2 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+              <!-- 动态填充 -->
+            </div>
+            <div class="text-[10px] text-gray-500 mt-4 text-center italic">点击空白处关闭</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 战斗结果 -->
+      <div id="battleResultModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-90"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-2xl">
+          <div class="glass-effect rounded-xl p-6 border border-gray-700">
+            <div class="text-center mb-6">
+              <h3 id="battleResultTitle" class="text-3xl font-black text-green-400">胜利</h3>
+              <p id="battleResultStage" class="text-gray-400 italic">关卡名称</p>
+            </div>
+            <div class="grid grid-cols-2 gap-6 mb-6">
+              <div class="bg-black bg-opacity-40 p-4 rounded-lg">
+                <h4 class="font-bold mb-2 text-primary">获得奖励</h4>
+                <div class="text-sm space-y-1">
+                  <div class="flex justify-between"><span>经验:</span><span id="battleResultExp" class="text-blue-400">+0</span></div>
+                  <div class="flex justify-between"><span>金币:</span><span id="battleResultGold" class="text-yellow-500">+0</span></div>
+                  <div id="battleResultItems" class="mt-2 space-y-1"></div>
+                </div>
+              </div>
+              <div class="bg-black bg-opacity-40 p-4 rounded-lg text-sm">
+                <h4 class="font-bold mb-2 text-secondary">战斗统计</h4>
+                <div class="flex justify-between"><span>回合:</span><span id="battleResultRounds">0</span></div>
+                <div class="flex justify-between"><span>伤害:</span><span id="battleResultMaxDamage">0</span></div>
+                <div class="flex justify-between"><span>治疗:</span><span id="battleResultHealing">0</span></div>
+              </div>
+            </div>
+            <div id="battleLogs" class="bg-black bg-opacity-60 rounded p-3 h-40 overflow-y-auto text-[10px] font-mono mb-6 custom-scrollbar"></div>
+            <div class="text-center">
+              <button id="continueBattle" class="btn-primary px-12">离开</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <footer class="glass-effect rounded-xl p-2 md:p-4">
+      <div class="flex justify-around">
+        <button class="footer-btn flex flex-col items-center" data-target="home">
+          <i class="fa fa-home text-xl md:text-2xl mb-1"></i>
+          <span class="text-[10px] md:text-xs">首页</span>
+        </button>
+        <button class="footer-btn flex flex-col items-center" data-target="gacha">
+          <i class="fa fa-gift text-xl md:text-2xl mb-1"></i>
+          <span class="text-[10px] md:text-xs">抽卡</span>
+        </button>
+        <button class="footer-btn flex flex-col items-center text-primary" data-target="characters">
+          <i class="fa fa-users text-xl md:text-2xl mb-1"></i>
+          <span class="text-[10px] md:text-xs">养成</span>
+        </button>
+        <button class="footer-btn flex flex-col items-center" data-target="stages">
+          <i class="fa fa-bolt text-xl md:text-2xl mb-1"></i>
+          <span class="text-[10px] md:text-xs">战斗</span>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 调试控制台: 真理之门 -->
+  <div id="debugMenu" class="fixed bottom-20 md:bottom-24 right-4 md:right-6 z-[100]">
+    <button id="debugToggle" class="w-10 h-10 md:w-12 md:h-12 bg-red-600 rounded-full flex items-center justify-center shadow-2xl border-2 border-white animate-pulse hover:scale-110 transition-transform">
+      <span class="text-xl md:text-2xl">👁️</span>
+    </button>
+    <div id="debugPanel" class="hidden absolute bottom-16 right-0 w-80 glass-effect rounded-xl p-4 border-2 border-red-500 shadow-2xl max-h-[70vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4 border-b border-red-500 pb-2">
+        <h3 class="text-red-500 font-black tracking-widest">管理员的禁忌之书</h3>
+        <button id="closeDebug" class="text-gray-400 hover:text-white">×</button>
+      </div>
+      
+      <div class="space-y-4">
+        <!-- 资源统计 -->
+        <div class="bg-black bg-opacity-50 p-3 rounded-lg border border-gray-700">
+          <h4 class="text-xs text-gray-400 mb-2 uppercase font-bold">资源实时监控</h4>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div class="flex justify-between"><span>钻石:</span><span id="debugGems" class="text-yellow-400">0</span></div>
+            <div class="flex justify-between"><span>金币:</span><span id="debugGold" class="text-yellow-500">0</span></div>
+            <div class="flex justify-between"><span>等级:</span><span id="debugLevel" class="text-blue-400">0</span></div>
+            <div class="flex justify-between"><span>经验:</span><span id="debugExp" class="text-green-400">0</span></div>
+          </div>
+        </div>
+
+        <!-- 碎片统计 -->
+        <div class="bg-black bg-opacity-50 p-3 rounded-lg border border-gray-700">
+          <h4 class="text-xs text-gray-400 mb-2 uppercase font-bold">角色碎片全览</h4>
+          <div id="debugFragments" class="grid grid-cols-1 gap-1 text-[10px] max-h-32 overflow-y-auto mb-3">
+            <!-- 动态生成 -->
+          </div>
+          
+          <!-- 新增：定向获取碎片 -->
+          <div class="flex flex-col gap-2 border-t border-gray-800 pt-2 mt-2">
+            <select id="debugCharSelect" class="bg-gray-800 text-[10px] border border-gray-600 rounded px-1 py-1 outline-none text-white w-full">
+              <option value="">选择指定英雄...</option>
+            </select>
+            <div class="flex gap-2">
+              <input type="number" id="debugFragAmount" value="50" class="bg-gray-800 text-[10px] border border-gray-600 rounded px-1 py-1 w-16 text-white" placeholder="数量">
+              <button onclick="cheatSpecificFragments()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-bold py-1 transition-colors">
+                获取碎片
+              </button>
+              <button onclick="cheatSpecificCharacter()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[10px] font-bold py-1 transition-colors">
+                直接获取英雄
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 暴力修改 -->
+        <div class="space-y-2">
+          <button onclick="cheatResources('gems', 1000000)" class="w-full py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded font-bold text-xs transition-colors">
+            💎 我要变强 (100万钻石)
+          </button>
+          <button onclick="cheatResources('gold', 1000000)" class="w-full py-2 bg-yellow-700 hover:bg-yellow-600 text-white rounded font-bold text-xs transition-colors">
+            💰 我要暴富 (100万金币)
+          </button>
+          <button onclick="cheatFragments(999)" class="w-full py-2 bg-purple-700 hover:bg-purple-600 text-white rounded font-bold text-xs transition-colors">
+            🌟 全员满命 (碎片+999)
+          </button>
+          <button onclick="cheatLevel(10)" class="w-full py-2 bg-blue-700 hover:bg-blue-600 text-white rounded font-bold text-xs transition-colors">
+            ⏳ 时光机 (等级+10)
+          </button>
+          <button onclick="clearSave()" class="w-full py-2 bg-red-900 hover:bg-red-800 text-white rounded font-bold text-xs transition-colors">
+            💀 毁灭吧 (清除存档)
+          </button>
+        </div>
+      </div>
+      <p class="text-[10px] text-gray-600 mt-4 text-center italic">"力量是有代价的..."</p>
+    </div>
+  </div>
+
+  <!-- 游戏数据 -->
+  <script>
+    // 游戏数据
+    let gameData = {
+      player: {
+        level: 1,
+        exp: 0,
+        gold: 5000,
+        gems: 1000,
+        lastLogin: new Date().getTime()
+      },
+      characters: [],
+      fragments: {}, // 角色碎片存储: { "char_001": 10 }
+      equipment: [],
+      inscriptions: [],
+      formation: [null, null, null, null, null],
+      currentStage: "stage_001",
+      ownedItems: []
+    };
+
+    // 游戏配置
+    const GAME_CONFIG = {
+      rarityProbabilities: {
+        "R": 0.80,
+        "SR": 0.15,
+        "SSR": 0.035,
+        "UR": 0.013,
+        "SUR": 0.002
+      },
+      gachaCost: {
+        single: 200,
+        ten: 1800
+      },
+      levelUpCost: {
+        base: 100,
+        multiplier: 1.5
+      },
+      offlineRewardRate: {
+        gold: 10,
+        exp: 2
+      },
+      fragmentYield: {
+        "R": 5,
+        "SR": 10,
+        "SSR": 20,
+        "UR": 50,
+        "SUR": 100
+      },
+      maxLevel: 150,
+      maxStars: 8
+    };
+
+    // 角色数据
+    let charactersData = [];
+    // 装备数据
+    let equipmentData = [];
+    // 铭文数据
+    let inscriptionsData = [];
+    // 关卡数据
+    let stagesData = [];
+
+    // 当前选中的角色/装备/铭文
+    let selectedCharacter = null;
+    let selectedEquipment = null;
+    let selectedInscription = null;
+    let selectedSlot = null; // 当前正在选择的槽位 (如 'weapon', 'ins-0')
+    let isSelectingInscription = false;
+
+    // 初始化游戏
+    async function initGame() {
+      try {
+        await loadGameData();
+      } catch (error) {
+        loadGameDataFallback();
+      }
+      loadGameProgress();
+      // 更新已有角色的基础数据以匹配新版本
+      syncCharacterData();
+      updateUI();
+      bindEvents();
+      checkOfflineRewards();
+      populateDebugCharSelect();
+    }
+
+    // 同步角色基础数据
+    function syncCharacterData() {
+      if (!gameData.characters) return;
+      gameData.characters.forEach(char => {
+        const masterData = charactersData.find(m => m.id === char.id);
+        if (masterData) {
+          char.name = masterData.name;
+          char.rarity = masterData.rarity;
+          char.class = masterData.class;
+          char.baseAttributes = { ...masterData.baseAttributes };
+          char.skills = masterData.skills.map((s, idx) => {
+            const existingSkill = char.skills[idx];
+            return {
+              ...s,
+              level: existingSkill ? existingSkill.level : 1
+            };
+          });
+          char.imageUrl = masterData.imageUrl;
+          
+          // 初始化装备和铭文槽位
+          if (!char.equipments) {
+            char.equipments = {
+              weapon: null,
+              armor: null,
+              helmet: null,
+              shoes: null,
+              accessory: null
+            };
+          }
+          if (!char.inscriptions) {
+            char.inscriptions = [null, null];
+          }
+        }
+      });
+      saveGameProgress();
+    }
+
+    // 加载游戏数据
+    async function loadGameData() {
+      try {
+        // 加载角色数据
+        const charactersResponse = await fetch('assets/data/characters.json');
+        const charactersJson = await charactersResponse.json();
+        charactersData = charactersJson.characters;
+        
+        // 加载装备数据
+        const equipmentResponse = await fetch('assets/data/items.json');
+        const equipmentJson = await equipmentResponse.json();
+        equipmentData = equipmentJson.items;
+        
+        // 加载铭文数据
+        const inscriptionsResponse = await fetch('assets/data/inscriptions.json');
+        const inscriptionsJson = await inscriptionsResponse.json();
+        inscriptionsData = inscriptionsJson.inscriptions;
+        
+        // 加载关卡数据
+        const stagesResponse = await fetch('assets/data/stages.json');
+        const stagesJson = await stagesResponse.json();
+        stagesData = stagesJson.stages;
+        
+        console.log("游戏数据加载成功");
+      } catch (error) {
+        console.error("加载游戏数据失败:", error);
+        throw error;
+      }
+    }
+
+    // 加载失败时的本地兜底数据
+    function loadGameDataFallback() {
+      charactersData = [
+        {
+          id: "char_001",
+          name: "剑心",
+          rarity: "R",
+          class: "warrior",
+          baseAttributes: { attack: 100, defense: 50, health: 1000, speed: 80 },
+          skills: [{ id: "skill_001", name: "剑刃风暴", description: "对敌方全体造成120%攻击力的伤害", cooldown: 3 }],
+          position: "front",
+          faction: "knight",
+          imageUrl: "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/3cf6c9fe60794fdea2505ec680b05dd5~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928650&x-signature=NFEoebpMo0LJ8Cw7kVA8ZvVr6WY%3D"
+        },
+        {
+          id: "char_002",
+          name: "紫晶法师",
+          rarity: "SR",
+          class: "mage",
+          baseAttributes: { attack: 180, defense: 60, health: 1200, speed: 85 },
+          skills: [{ id: "skill_002", name: "紫晶爆破", description: "对敌方单体造成250%攻击力的伤害，并附加灼烧效果", cooldown: 4 }],
+          position: "back",
+          faction: "mage",
+          imageUrl: "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/9acc13787ec04192949e5ab4f8703958~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928651&x-signature=iT%2FT6MKV533QTjySkVhGOjjAIfQ%3D"
+        },
+        {
+          id: "char_003",
+          name: "黄金暗影",
+          rarity: "SSR",
+          class: "assassin",
+          baseAttributes: { attack: 280, defense: 80, health: 1500, speed: 130 },
+          skills: [{ id: "skill_003", name: "暗影突袭", description: "对敌方后排单体造成350%攻击力的伤害，并有50%几率暴击", cooldown: 3 }],
+          position: "front",
+          faction: "rogue",
+          imageUrl: "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/f0121e3c22754f19943a22bced89364a~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928651&x-signature=%2Fk7nY1iT73Zlz6gfbyv%2FTY0Vx34%3D"
+        },
+        {
+          id: "char_004",
+          name: "彩虹射手",
+          rarity: "UR",
+          class: "archer",
+          baseAttributes: { attack: 450, defense: 100, health: 2000, speed: 110 },
+          skills: [{ id: "skill_004", name: "彩虹箭雨", description: "对敌方全体造成250%攻击力的伤害，并降低目标20%防御", cooldown: 5 }],
+          position: "back",
+          faction: "ranger",
+          imageUrl: "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/1be032e5ef1643f0a870ee69a058ebdb~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928653&x-signature=B%2Bee7J1MmWBBfz0Gg00f0ilJBmM%3D"
+        },
+        {
+          id: "char_005",
+          name: "圣光祭司",
+          rarity: "SUR",
+          class: "healer",
+          baseAttributes: { attack: 300, defense: 150, health: 4000, speed: 100 },
+          skills: [{ id: "skill_005", name: "神圣治愈", description: "恢复己方全体300%攻击力的生命值，并提供20%减伤效果", cooldown: 4 }],
+          position: "back",
+          faction: "priest",
+          imageUrl: "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/55e48ed3c31c45e493cea9e84b95df66~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928650&x-signature=pS7Q7ey%2FLgInWQ0XECUDmZHsCSk%3D"
+        }
+      ];
+      equipmentData = [
+        {
+          id: "item_001",
+          name: "蓝光剑",
+          type: "weapon",
+          rarity: "R",
+          attributes: { attack: 30, critRate: 2 },
+          imageUrl: "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/45877ab24a85430293a83efafc7f0564~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928671&x-signature=hq1lXj3YUeenP62AX4s97zGvoHA%3D"
+        },
+        {
+          id: "item_004",
+          name: "疾风靴",
+          type: "shoes",
+          rarity: "R",
+          attributes: { speed: 30 },
+          imageUrl: "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/45877ab24a85430293a83efafc7f0564~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928671&x-signature=hq1lXj3YUeenP62AX4s97zGvoHA%3D"
+        }
+      ];
+      inscriptionsData = [
+        {
+          id: "ins_001",
+          name: "力量铭文",
+          type: "attack",
+          rarity: "R",
+          attributes: { attack: 10 },
+          setEffect: { pieces: 3, effect: "攻击+5%" },
+          imageUrl: "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/fab318e245d0416f9382c1b885491bd8~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928671&x-signature=n9IWpQW2IsBIVsX5AcaECRTuUwk%3D"
+        },
+        {
+          id: "ins_002",
+          name: "守护铭文",
+          type: "defense",
+          rarity: "R",
+          attributes: { defense: 10 },
+          setEffect: { pieces: 3, effect: "防御+5%" },
+          imageUrl: "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/601114eb48ee4cd9abbe4d8dcaac0462~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928671&x-signature=wbDdgTiMWt9Jhm6JMOrgaU%2BIQ3w%3D"
+        }
+      ];
+      stagesData = [
+        {
+          id: "stage_001",
+          name: "新手村外围",
+          difficulty: "normal",
+          recommendedPower: 1000,
+          enemies: [
+            { id: "enemy_001", name: "史莱姆", health: 500, attack: 50, defense: 20 },
+            { id: "enemy_002", name: "哥布林", health: 600, attack: 60, defense: 15 }
+          ],
+          rewards: {
+            exp: 100,
+            gold: 500,
+            items: [{ id: "item_001", quantity: 1, dropRate: 0.8 }]
+          }
+        },
+        {
+          id: "stage_002",
+          name: "黑暗森林",
+          difficulty: "normal",
+          recommendedPower: 2000,
+          enemies: [
+            { id: "enemy_003", name: "森林狼", health: 800, attack: 80, defense: 25 },
+            { id: "enemy_004", name: "黑暗精灵", health: 700, attack: 90, defense: 20 }
+          ],
+          rewards: {
+            exp: 200,
+            gold: 1000,
+            items: [{ id: "ins_001", quantity: 1, dropRate: 0.5 }]
+          }
+        }
+      ];
+    }
+
+    // 加载游戏进度
+    function loadGameProgress() {
+      const savedData = localStorage.getItem('cardGameData');
+      if (savedData) {
+        try {
+          const parsedData = JSON.parse(savedData);
+          gameData = { ...gameData, ...parsedData };
+          // 确保 fragments 对象存在 (存量数据迁移)
+          if (!gameData.fragments) gameData.fragments = {};
+          migrateCharactersToFragments();
+          fixMissingInstanceIds(); // 迭代1: 修复 instanceId 问题
+          console.log("游戏进度加载成功");
+        } catch (error) {
+          console.error("解析游戏进度失败:", error);
+          // 如果解析失败，使用默认数据
+          initializeNewGame();
+        }
+      } else {
+        // 如果没有保存的数据，初始化新游戏
+        initializeNewGame();
+      }
+    }
+
+    // 迭代1: 为没有 instanceId 的物品生成唯一 ID
+    function fixMissingInstanceIds() {
+      if (gameData.equipment) {
+        gameData.equipment.forEach(item => {
+          if (!item.instanceId) item.instanceId = 'eq_' + Date.now() + Math.random().toString(36).substr(2, 9);
+        });
+      }
+      if (gameData.inscriptions) {
+        gameData.inscriptions.forEach(item => {
+          if (!item.instanceId) item.instanceId = 'ins_' + Date.now() + Math.random().toString(36).substr(2, 9);
+        });
+      }
+    }
+
+    // 初始化新游戏
+    function initializeNewGame() {
+      // 给玩家一些初始角色
+      const starterCharacters = [
+        charactersData.find(char => char.id === 'char_001'), // R角色
+        charactersData.find(char => char.id === 'char_002')  // SR角色
+      ];
+      
+      gameData.characters = starterCharacters.map(char => ({
+        ...char,
+        level: 1,
+        exp: 0,
+        stars: 1,
+        skills: char.skills.map(skill => ({
+          ...skill,
+          level: 1
+        })),
+        equipment: [null, null, null, null, null],
+        inscriptions: [null, null, null, null, null, null]
+      }));
+      
+      // 给玩家一些初始装备
+      const starterEquipment = [
+        equipmentData.find(item => item.id === 'item_001'), // R武器
+        equipmentData.find(item => item.id === 'item_004')  // R鞋子
+      ];
+      
+      gameData.equipment = starterEquipment.map(item => ({
+        ...item,
+        level: 1,
+        refine: 0
+      }));
+      
+      // 给玩家一些初始铭文
+      const starterInscriptions = [
+        inscriptionsData.find(ins => ins.id === 'ins_001'), // R攻击铭文
+        inscriptionsData.find(ins => ins.id === 'ins_002')  // R防御铭文
+      ];
+      
+      gameData.inscriptions = starterInscriptions.map(ins => ({
+        ...ins,
+        level: 1,
+        exp: 0
+      }));
+      
+      // 保存游戏进度
+      saveGameProgress();
+      
+      console.log("新游戏初始化成功");
+    }
+
+    // 保存游戏进度
+    function saveGameProgress() {
+      gameData.lastLogin = new Date().getTime();
+      localStorage.setItem('cardGameData', JSON.stringify(gameData));
+      console.log("游戏进度保存成功");
+    }
+
+    // 更新UI
+    function updateUI() {
+      // 更新玩家信息
+      const playerLevel = document.getElementById('playerLevel');
+      if (playerLevel) playerLevel.textContent = `Lv.${gameData.player.level}`;
+      
+      const playerGems = document.getElementById('playerGems');
+      if (playerGems) playerGems.textContent = gameData.player.gems.toLocaleString();
+      
+      const playerGold = document.getElementById('playerGold');
+      if (playerGold) playerGold.textContent = gameData.player.gold.toLocaleString();
+      
+      // 更新首页信息
+      const currentStageData = stagesData.find(stage => stage.id === gameData.currentStage);
+      const currentStageEl = document.getElementById('currentStage');
+      if (currentStageEl) currentStageEl.textContent = currentStageData ? currentStageData.name : '未开始';
+      
+      const totalPowerEl = document.getElementById('totalPower');
+      if (totalPowerEl) totalPowerEl.textContent = calculateTotalPower().toLocaleString();
+      
+      const characterCountEl = document.getElementById('characterCount');
+      if (characterCountEl) characterCountEl.textContent = `${gameData.characters.length}/20`;
+      
+      // 更新当前选中的角色 (如果是养成页面)
+      if (selectedCharacter) {
+        selectCharacterToCultivate(selectedCharacter);
+      }
+    }
+
+    // 绑定事件
+    function bindEvents() {
+      // 导航按钮
+      document.querySelectorAll('.nav-btn, .footer-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-target');
+          switchPage(target);
+        });
+      });
+      
+      // 抽卡按钮
+      const singleGachaBtn = document.getElementById('singleGacha');
+      if (singleGachaBtn) singleGachaBtn.addEventListener('click', () => performGacha(1));
+      
+      const tenGachaBtn = document.getElementById('tenGacha');
+      if (tenGachaBtn) tenGachaBtn.addEventListener('click', () => performGacha(10));
+      
+      const continueGachaBtn = document.getElementById('continueGacha');
+      if (continueGachaBtn) continueGachaBtn.addEventListener('click', () => {
+        document.getElementById('gachaResult').classList.add('hidden');
+        document.getElementById('gachaCards').innerHTML = '';
+      });
+      
+      // 迭代4: 养成中心槽位点击 (使用 class 绑定)
+      document.querySelectorAll('.cultivate-slot').forEach(slotEl => {
+        slotEl.addEventListener('click', () => {
+          const slot = slotEl.getAttribute('data-slot');
+          if (slot.startsWith('ins-')) {
+            const idx = parseInt(slot.split('-')[1]);
+            openItemPicker(idx, true);
+          } else {
+            openItemPicker(slot, false);
+          }
+        });
+      });
+
+      // 物品选择弹窗
+      const closeItemPickerBtn = document.getElementById('closeItemPicker');
+      if (closeItemPickerBtn) closeItemPickerBtn.addEventListener('click', () => {
+        document.getElementById('itemPickerModal').classList.add('hidden');
+      });
+      
+      const unequipItemBtn = document.getElementById('unequipItemBtn');
+      if (unequipItemBtn) unequipItemBtn.addEventListener('click', unequipItem);
+
+      // 迭代4: 养成按钮事件
+      const quickLevelUpBtn = document.getElementById('quickLevelUp');
+      if (quickLevelUpBtn) quickLevelUpBtn.addEventListener('click', () => levelUpCharacter(true)); 
+      
+      const quickStarUpBtn = document.getElementById('quickStarUp');
+      if (quickStarUpBtn) quickStarUpBtn.addEventListener('click', () => ascendCharacter(true));
+      
+      const quickSkillUpBtn = document.getElementById('quickSkillUp');
+      if (quickSkillUpBtn) quickSkillUpBtn.addEventListener('click', upgradeSelectedSkill);
+
+      // 进阶功能按钮
+      const showAttributesBtn = document.getElementById('showAttributesBtn');
+      if (showAttributesBtn) showAttributesBtn.addEventListener('click', showDetailedAttributes);
+      
+      const costumeBtn = document.getElementById('costumeBtn');
+      if (costumeBtn) costumeBtn.addEventListener('click', () => alert('时装系统暂未开放，敬请期待！'));
+      
+      const awakenBtn = document.getElementById('awakenBtn');
+      if (awakenBtn) awakenBtn.addEventListener('click', () => alert('角色觉醒系统暂未开放，SSR及以上稀有度角色可进行觉醒！'));
+
+      // 筛选
+      const charFilter = document.getElementById('characterFilter');
+      if (charFilter) charFilter.addEventListener('change', updateCharacterSelectionBar);
+
+      // 战斗结果
+      const continueBattleBtn = document.getElementById('continueBattle');
+      if (continueBattleBtn) continueBattleBtn.addEventListener('click', () => {
+        document.getElementById('battleResultModal').classList.add('hidden');
+      });
+      
+      // 领取离线收益
+      const claimRewardsBtn = document.getElementById('claimOfflineRewards');
+      if (claimRewardsBtn) claimRewardsBtn.addEventListener('click', claimOfflineRewards);
+      
+      // 挑战关卡 (动态绑定改为事件代理或重新绑定)
+      updateStagesList(); // 确保关卡列表更新并绑定事件
+      
+      // 调试菜单事件
+      const debugToggleBtn = document.getElementById('debugToggle');
+      if (debugToggleBtn) debugToggleBtn.addEventListener('click', () => {
+        const panel = document.getElementById('debugPanel');
+        panel.classList.toggle('hidden');
+        if (!panel.classList.contains('hidden')) updateDebugUI();
+      });
+      
+      const closeDebugBtn = document.getElementById('closeDebug');
+      if (closeDebugBtn) closeDebugBtn.addEventListener('click', () => {
+        document.getElementById('debugPanel').classList.add('hidden');
+      });
+    }
+
+    // 更新调试界面
+    function updateDebugUI() {
+      document.getElementById('debugGems').textContent = gameData.player.gems.toLocaleString();
+      document.getElementById('debugGold').textContent = gameData.player.gold.toLocaleString();
+      document.getElementById('debugLevel').textContent = gameData.player.level;
+      document.getElementById('debugExp').textContent = gameData.player.exp.toLocaleString();
+      
+      const debugFragList = document.getElementById('debugFragments');
+      debugFragList.innerHTML = '';
+      
+      // 显示所有角色的碎片 (包含 0 个的也显示，方便调试)
+      charactersData.forEach(char => {
+        const count = gameData.fragments[char.id] || 0;
+        const item = document.createElement('div');
+        item.className = 'flex justify-between border-b border-gray-800 py-1';
+        item.innerHTML = `<span>${char.name}:</span><span class="${count > 0 ? 'text-primary' : 'text-gray-600'}">${count}</span>`;
+        debugFragList.appendChild(item);
+      });
+    }
+
+    // 暴力资源修改
+    window.cheatResources = function(type, amount) {
+      gameData.player[type] += amount;
+      updateUI();
+      updateDebugUI();
+      saveGameProgress();
+    };
+
+    window.cheatFragments = function(amount) {
+      charactersData.forEach(char => {
+        gameData.fragments[char.id] = (gameData.fragments[char.id] || 0) + amount;
+      });
+      updateUI();
+      updateDebugUI();
+      saveGameProgress();
+    };
+
+    window.cheatLevel = function(amount) {
+      gameData.player.level += amount;
+      updateUI();
+      updateDebugUI();
+      saveGameProgress();
+    };
+
+    window.cheatSpecificFragments = function() {
+      const select = document.getElementById('debugCharSelect');
+      const input = document.getElementById('debugFragAmount');
+      const charId = select.value;
+      const amount = parseInt(input.value) || 0;
+      
+      if (!charId) {
+        alert('请先选择一个英雄！');
+        return;
+      }
+      
+      if (amount <= 0) {
+        alert('请输入有效的碎片数量！');
+        return;
+      }
+      
+      const char = charactersData.find(c => c.id === charId);
+      if (!char) return;
+      
+      gameData.fragments[charId] = (gameData.fragments[charId] || 0) + amount;
+      
+      // 提示
+      const tip = document.createElement('div');
+      tip.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white px-4 py-2 rounded shadow-2xl z-[200] animate-bounce';
+      tip.textContent = `成功获取 ${char.name} 碎片 x${amount}`;
+      document.body.appendChild(tip);
+      setTimeout(() => tip.remove(), 2000);
+      
+      updateUI();
+      updateDebugUI();
+      saveGameProgress();
+    };
+
+    window.cheatSpecificCharacter = function() {
+      const select = document.getElementById('debugCharSelect');
+      const charId = select.value;
+      
+      if (!charId) {
+        alert('请先选择一个英雄！');
+        return;
+      }
+      
+      const charData = charactersData.find(c => c.id === charId);
+      if (!charData) return;
+
+      const isOwned = gameData.characters.some(owned => owned.id === charId);
+      
+      if (isOwned) {
+        // 已拥有，转化为碎片
+        const yield = GAME_CONFIG.fragmentYield[charData.rarity] || 50;
+        gameData.fragments[charId] = (gameData.fragments[charId] || 0) + yield;
+        alert(`已拥有该英雄，自动转化为 ${charData.name} 碎片 x${yield}`);
+      } else {
+        // 首次获取
+        const charInstance = {
+          ...JSON.parse(JSON.stringify(charData)),
+          level: 1,
+          exp: 0,
+          stars: 1,
+          equipment: { weapon: null, armor: null, helmet: null, shoes: null, accessory: null },
+          inscriptions: [null, null]
+        };
+        if (charInstance.skills) charInstance.skills.forEach(s => s.level = 1);
+        
+        gameData.characters.push(charInstance);
+        alert(`成功直接获取英雄：${charData.name}！`);
+      }
+      
+      updateUI();
+      updateDebugUI();
+      saveGameProgress();
+    };
+
+    function populateDebugCharSelect() {
+      const select = document.getElementById('debugCharSelect');
+      if (!select) return;
+      
+      // 按稀有度排序
+      const rarityOrder = { 'SUR': 5, 'UR': 4, 'SSR': 3, 'SR': 2, 'R': 1 };
+      const sortedChars = [...charactersData].sort((a, b) => {
+        if (rarityOrder[b.rarity] !== rarityOrder[a.rarity]) {
+          return rarityOrder[b.rarity] - rarityOrder[a.rarity];
+        }
+        return a.name.localeCompare(b.name);
+      });
+      
+      sortedChars.forEach(char => {
+        const option = document.createElement('option');
+        option.value = char.id;
+        option.textContent = `[${char.rarity}] ${char.name}`;
+        select.appendChild(option);
+      });
+    }
+
+    window.clearSave = function() {
+      if (confirm('真的要毁灭一切吗？数据将无法恢复！')) {
+        localStorage.removeItem('cardGameData');
+        location.reload();
+      }
+    };
+
+    // 切换页面 (迭代3)
+    function switchPage(target) {
+      // 显示目标页面，隐藏其他页面
+      document.querySelectorAll('.page').forEach(page => {
+        if (page.id === target) {
+          page.classList.remove('hidden');
+          // 确保养成中心在显示时有正确的 flex 布局
+          if (target === 'characters') {
+            page.classList.add('flex');
+          }
+        } else {
+          page.classList.add('hidden');
+          page.classList.remove('flex');
+        }
+      });
+
+      // 更新底部导航按钮状态
+      document.querySelectorAll('.footer-btn').forEach(btn => {
+        if (btn.getAttribute('data-target') === target) {
+          btn.classList.add('text-primary');
+        } else {
+          btn.classList.remove('text-primary');
+        }
+      });
+      
+      // 页面特定逻辑
+      if (target === 'characters') {
+        updateCharacterSelectionBar();
+        // 默认选中第一个角色或当前选中的角色
+        if (gameData.characters.length > 0) {
+          const charToSelect = selectedCharacter || gameData.characters[0];
+          selectCharacterToCultivate(charToSelect);
+        }
+      } else if (target === 'stages') {
+        updateStagesList();
+      }
+      
+      // 滚动到顶部
+      window.scrollTo(0, 0);
+    }
+
+    // 迭代3: 更新角色选择栏
+    function updateCharacterSelectionBar() {
+      const bar = document.getElementById('characterSelectionBar');
+      if (!bar) return;
+      bar.innerHTML = '';
+      
+      const filter = document.getElementById('characterFilter').value;
+      const filtered = filter === 'all' ? gameData.characters : gameData.characters.filter(c => c.rarity === filter);
+
+      filtered.forEach(char => {
+        const item = document.createElement('div');
+        const isActive = selectedCharacter && selectedCharacter.instanceId === char.instanceId;
+        item.className = `flex-shrink-0 w-16 h-16 rounded-lg border-2 cursor-pointer transition-all snap-start overflow-hidden relative ${isActive ? 'border-primary scale-110 z-10' : 'border-gray-800 opacity-70 hover:opacity-100'}`;
+        
+        item.innerHTML = `
+          <img src="${char.imageUrl}" class="w-full h-full object-cover">
+          <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-[8px] text-center font-bold text-rarity-${char.rarity.toLowerCase()}">
+            ${char.rarity}
+          </div>
+        `;
+        
+        item.onclick = () => selectCharacterToCultivate(char);
+        bar.appendChild(item);
+      });
+    }
+
+    // 迭代3: 选择角色进入养成模式
+    function selectCharacterToCultivate(char) {
+      selectedCharacter = char;
+      const stats = calculateTotalStats(char);
+      const powerValue = calculateCharacterPower(char);
+      
+      // 更新背景特效 (根据稀有度切换边框)
+      const portraitContainer = document.getElementById('cultivateBigImage').parentElement;
+      if (portraitContainer) {
+        portraitContainer.className = portraitContainer.className.replace(/portrait-frame-\w+/g, '');
+        portraitContainer.classList.add(`portrait-frame-${char.rarity.toLowerCase()}`);
+      }
+
+      // 更新左侧信息 (桌面端)
+      const nameEl = document.getElementById('cultivateName');
+      if (nameEl) nameEl.textContent = char.name;
+      
+      const rarityEl = document.getElementById('cultivateRarity');
+      if (rarityEl) {
+        rarityEl.textContent = char.rarity;
+        rarityEl.className = `text-xl font-black mb-4 tracking-widest text-rarity-${char.rarity.toLowerCase()}`;
+      }
+      
+      const powerEl = document.querySelector('#cultivatePower div:last-child');
+      if (powerEl) powerEl.textContent = powerValue.toLocaleString();
+      
+      const factionEl = document.getElementById('cultivateFaction');
+      if (factionEl) factionEl.textContent = char.faction || '未知';
+      
+      const classEl = document.getElementById('cultivateClass');
+      if (classEl) classEl.textContent = getClassName(char.class);
+
+      // 更新移动端专用信息
+      const nameMobile = document.getElementById('cultivateNameMobile');
+      if (nameMobile) nameMobile.textContent = char.name;
+      
+      const rarityLarge = document.getElementById('cultivateRarityLarge');
+      if (rarityLarge) {
+        rarityLarge.textContent = char.rarity;
+        rarityLarge.className = `text-6xl font-black italic tracking-tighter mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)] ${char.rarity === 'SUR' ? 'sur-text' : (char.rarity === 'UR' ? 'ur-text' : (char.rarity === 'SSR' ? 'gold-text' : 'text-white'))}`;
+      }
+
+      const starsLarge = document.getElementById('cultivateStarsLarge');
+      if (starsLarge) {
+        starsLarge.innerHTML = getStarsHtml(char.stars);
+      }
+      
+      const powerMobile = document.getElementById('cultivatePowerMobile');
+      if (powerMobile) powerMobile.textContent = powerValue.toLocaleString();
+      
+      const classMobile = document.getElementById('cultivateClassMobile');
+      if (classMobile) classMobile.textContent = getClassName(char.class);
+      
+      const factionMobile = document.getElementById('cultivateFactionMobile');
+      if (factionMobile) factionMobile.textContent = char.faction || '未知';
+      
+      // 觉醒按钮显隐 (SSR及以上可见)
+      const rarityRank = { 'R': 1, 'SR': 2, 'SSR': 3, 'UR': 4, 'SUR': 5 };
+      const awakenBtn = document.getElementById('awakenBtn');
+      if (awakenBtn) {
+        if (rarityRank[char.rarity] >= 3) awakenBtn.classList.remove('hidden');
+        else awakenBtn.classList.add('hidden');
+      }
+
+      // 更新技能图标 (迭代4)
+      const skillsContainer = document.getElementById('cultivateSkills');
+      if (skillsContainer) {
+        skillsContainer.innerHTML = '';
+        char.skills.forEach((skill, idx) => {
+          const skillIcon = document.createElement('div');
+          skillIcon.className = 'w-10 h-10 bg-gray-800 rounded border border-gray-700 flex items-center justify-center cursor-pointer hover:border-primary transition-all relative group';
+          skillIcon.innerHTML = `
+            <i class="fa ${idx === 0 ? 'fa-bolt' : 'fa-shield'} text-gray-400 group-hover:text-primary"></i>
+            <div class="absolute -top-1 -right-1 bg-primary text-[8px] px-1 rounded">Lv.${skill.level || 1}</div>
+          `;
+          skillIcon.onclick = () => showSkillPopup(skill);
+          skillsContainer.appendChild(skillIcon);
+        });
+      }
+
+      // 更新属性
+      const statsContainer = document.getElementById('cultivateStats');
+      if (statsContainer) {
+        statsContainer.innerHTML = `
+          <div class="flex justify-between border-b border-gray-800 pb-1"><span>攻击力</span><span class="font-bold text-red-400">${stats.attack}</span></div>
+          <div class="flex justify-between border-b border-gray-800 pb-1"><span>防御力</span><span class="font-bold text-blue-400">${stats.defense}</span></div>
+          <div class="flex justify-between border-b border-gray-800 pb-1"><span>生命值</span><span class="font-bold text-green-400">${stats.health}</span></div>
+          <div class="flex justify-between border-b border-gray-800 pb-1"><span>速度</span><span class="font-bold text-yellow-400">${stats.speed}</span></div>
+        `;
+      }
+
+      // 更新立绘
+      const bigImageEl = document.getElementById('cultivateBigImage');
+      if (bigImageEl) {
+        bigImageEl.innerHTML = `
+          <img src="${char.imageUrl}" class="max-h-full max-w-full object-contain portrait-static pointer-events-none">
+        `;
+      }
+
+      // 更新装备/铭文槽位
+      document.querySelectorAll('.cultivate-slot').forEach(slotEl => {
+        const slotType = slotEl.getAttribute('data-slot');
+        if (slotType.startsWith('ins-')) {
+          const idx = parseInt(slotType.split('-')[1]);
+          const ins = char.inscriptions[idx];
+          if (ins) {
+            slotEl.innerHTML = `<img src="${ins.imageUrl}" class="w-full h-full object-contain rounded-full border border-purple-500 p-1">`;
+          } else {
+            slotEl.innerHTML = `<i class="fa fa-gem text-purple-950"></i>`;
+          }
+          slotEl.onclick = () => openItemPicker(idx, true);
+        } else {
+          const item = char.equipments[slotType];
+          if (item) {
+            slotEl.innerHTML = `<img src="${item.imageUrl}" class="w-full h-full object-contain rounded border border-${item.rarity.toLowerCase()} p-1">`;
+          } else {
+            const icons = { weapon: 'gavel', armor: 'shield', helmet: 'user-secret', shoes: 'paw', accessory: 'sun-o' };
+            slotEl.innerHTML = `<i class="fa fa-${icons[slotType]} text-gray-700"></i>`;
+          }
+          slotEl.onclick = () => openItemPicker(slotType, false);
+        }
+      });
+
+      // 刷新选择栏状态 (高亮当前选中的)
+      document.querySelectorAll('#characterSelectionBar > div').forEach(el => {
+        const isThis = el.querySelector('img').src === char.imageUrl;
+        if (isThis) {
+          el.classList.add('border-primary', 'scale-110', 'z-10');
+          el.classList.remove('border-gray-800', 'opacity-70');
+        } else {
+          el.classList.remove('border-primary', 'scale-110', 'z-10');
+          el.classList.add('border-gray-800', 'opacity-70');
+        }
+      });
+    }
+
+    // 迭代4: 显示技能详情
+    function showSkillPopup(skill) {
+      document.getElementById('skillPopupName').textContent = skill.name;
+      document.getElementById('skillPopupLevel').textContent = `等级: ${skill.level || 1}`;
+      document.getElementById('skillPopupDesc').textContent = skill.description;
+      document.getElementById('skillPopupCD').textContent = skill.cooldown;
+      document.getElementById('skillDetailModal').classList.remove('hidden');
+    }
+
+    // 迭代4: 显示详细属性弹窗
+    function showDetailedAttributes() {
+      if (!selectedCharacter) return;
+      const stats = calculateTotalStats(selectedCharacter);
+      const listContainer = document.getElementById('detailedStatsList');
+      if (!listContainer) return;
+      
+      listContainer.innerHTML = '';
+      
+      const statGroups = [
+        { title: '基础属性', keys: ['attack', 'defense', 'health', 'speed'] },
+        { title: '特殊属性', keys: ['critRate', 'critDmg', 'dodgeRate', 'blockRate', 'dmgReduc', 'lifesteal', 'effectHit'] }
+      ];
+
+      statGroups.forEach(group => {
+        const groupTitle = document.createElement('div');
+        groupTitle.className = 'text-[10px] text-gray-500 uppercase mt-3 mb-1 font-bold';
+        groupTitle.textContent = group.title;
+        listContainer.appendChild(groupTitle);
+        
+        group.keys.forEach(key => {
+          const row = document.createElement('div');
+          row.className = 'flex justify-between items-center py-1 border-b border-gray-800 text-xs';
+          
+          const isPercent = key.includes('Rate') || key.includes('Dmg') || key.includes('Reduc') || key.includes('Hit') || key.includes('lifesteal');
+          const val = stats[key] || 0;
+          const displayVal = isPercent ? `${val}%` : val.toLocaleString();
+          
+          row.innerHTML = `
+            <span class="text-gray-400">${getStatName(key)}</span>
+            <span class="font-bold text-white">${displayVal}</span>
+          `;
+          listContainer.appendChild(row);
+        });
+      });
+
+      document.getElementById('attributeDetailModal').classList.remove('hidden');
+    }
+
+    // 执行抽卡
+    function performGacha(count) {
+      // 检查钻石是否足够
+      const cost = count === 1 ? GAME_CONFIG.gachaCost.single : GAME_CONFIG.gachaCost.ten;
+      if (gameData.player.gems < cost) {
+        alert('钻石不足！');
+        return;
+      }
+      
+      // 扣除钻石
+      gameData.player.gems -= cost;
+      document.getElementById('playerGems').textContent = gameData.player.gems.toLocaleString();
+      
+      // 生成抽卡结果
+      const results = [];
+      let srOrAboveCount = 0;
+      
+      for (let i = 0; i < count; i++) {
+        // 保底机制
+        let rarity;
+        const random = Math.random();
+        
+        if (count >= 10 && i === count - 1 && srOrAboveCount === 0) {
+          // 十连保底SR
+          rarity = Math.random() < 0.8 ? 'SR' : (Math.random() < 0.95 ? 'SSR' : (Math.random() < 0.99 ? 'UR' : 'SUR'));
+        } else {
+          // 正常概率
+          if (random < GAME_CONFIG.rarityProbabilities.R) {
+            rarity = 'R';
+          } else if (random < GAME_CONFIG.rarityProbabilities.R + GAME_CONFIG.rarityProbabilities.SR) {
+            rarity = 'SR';
+            srOrAboveCount++;
+          } else if (random < GAME_CONFIG.rarityProbabilities.R + GAME_CONFIG.rarityProbabilities.SR + GAME_CONFIG.rarityProbabilities.SSR) {
+            rarity = 'SSR';
+            srOrAboveCount++;
+          } else if (random < GAME_CONFIG.rarityProbabilities.R + GAME_CONFIG.rarityProbabilities.SR + GAME_CONFIG.rarityProbabilities.SSR + GAME_CONFIG.rarityProbabilities.UR) {
+            rarity = 'UR';
+            srOrAboveCount++;
+          } else {
+            rarity = 'SUR';
+            srOrAboveCount++;
+          }
+        }
+        
+        // 从对应稀有度的角色中随机选择
+        const availableCharacters = charactersData.filter(char => char.rarity === rarity);
+        
+        // 容错处理：如果当前稀有度没有角色，尝试降级选择
+        let finalRarity = rarity;
+        let finalAvailable = availableCharacters;
+        
+        if (finalAvailable.length === 0) {
+          const rarities = ['SUR', 'UR', 'SSR', 'SR', 'R'];
+          const currentIndex = rarities.indexOf(rarity);
+          for (let r = currentIndex + 1; r < rarities.length; r++) {
+            const fallback = charactersData.filter(char => char.rarity === rarities[r]);
+            if (fallback.length > 0) {
+              finalAvailable = fallback;
+              finalRarity = rarities[r];
+              break;
+            }
+          }
+        }
+
+        // 如果还是没有（理论上不可能，除非数据全空），则跳过本次抽卡
+        if (finalAvailable.length === 0) continue;
+
+        const selectedChar = finalAvailable[Math.floor(Math.random() * finalAvailable.length)];
+        
+        // 深度拷贝并初始化角色实例数据
+        const charInstance = {
+          ...JSON.parse(JSON.stringify(selectedChar)), // 彻底深拷贝，避免引用污染
+          level: 1,
+          exp: 0,
+          stars: 1,
+          equipment: { weapon: null, armor: null, helmet: null, shoes: null, accessory: null },
+          inscriptions: [null, null]
+        };
+
+        // 初始化技能等级
+        if (charInstance.skills && Array.isArray(charInstance.skills)) {
+          charInstance.skills.forEach(skill => {
+            skill.level = 1;
+          });
+        } else {
+          charInstance.skills = []; // 兜底防止 skills 缺失
+        }
+        
+        results.push(charInstance);
+      }
+      
+      // 角色碎片转化倍率 (根据稀有度获得碎片)
+      const addedCharacters = [];
+      const gachaFragments = {}; // 本次抽卡获得的碎片
+
+      results.forEach(char => {
+        // 检查玩家是否已拥有该角色
+        const isOwned = gameData.characters.some(owned => owned.id === char.id);
+        if (isOwned) {
+          // 自动转化为碎片
+          const yield = GAME_CONFIG.fragmentYield[char.rarity] || 5;
+          gameData.fragments[char.id] = (gameData.fragments[char.id] || 0) + yield;
+          gachaFragments[char.id] = (gachaFragments[char.id] || 0) + yield;
+        } else {
+          // 首次获得
+          addedCharacters.push(char);
+          gameData.characters.push(char);
+        }
+      });
+      
+      // 显示抽卡结果
+      showGachaResults(results, gachaFragments);
+      
+      // 保存游戏进度
+      saveGameProgress();
+      
+      // 更新UI
+      updateUI();
+    }
+
+    // 存量数据迁移：将多出的同名角色转化为碎片
+    function migrateCharactersToFragments() {
+      const uniqueCharacters = [];
+      const seenIds = new Set();
+      
+      gameData.characters.forEach(char => {
+        if (seenIds.has(char.id)) {
+          // 重复角色，转化为碎片
+          const yield = GAME_CONFIG.fragmentYield[char.rarity] || 5;
+          gameData.fragments[char.id] = (gameData.fragments[char.id] || 0) + yield;
+        } else {
+          uniqueCharacters.push(char);
+          seenIds.add(char.id);
+        }
+      });
+      
+      gameData.characters = uniqueCharacters;
+      saveGameProgress();
+    }
+
+    // 显示抽卡结果
+    function showGachaResults(results, gachaFragments = {}) {
+      const gachaCardsContainer = document.getElementById('gachaCards');
+      gachaCardsContainer.innerHTML = '';
+      
+      results.forEach((char, index) => {
+        setTimeout(() => {
+          const cardElement = document.createElement('div');
+          const isFragment = gachaFragments[char.id] > 0;
+          cardElement.className = `animate-bounce-in rarity-border-${char.rarity.toLowerCase()} rarity-bg-${char.rarity.toLowerCase()} rounded-lg overflow-hidden card-shadow relative`;
+          
+          cardElement.innerHTML = `
+            <div class="relative ${isFragment ? 'opacity-70 grayscale' : ''}">
+              <img src="${char.imageUrl}" alt="${char.name}" class="w-full aspect-square object-cover">
+              <div class="absolute top-2 left-2 bg-black bg-opacity-70 rounded-full px-2 py-1 text-xs">
+                <span class="text-rarity-${char.rarity.toLowerCase()} font-bold">${char.rarity}</span>
+              </div>
+              ${isFragment ? `
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <div class="bg-black bg-opacity-80 rounded-lg p-2 text-center border-2 border-primary">
+                    <p class="text-xs text-primary font-bold">已拥有</p>
+                    <p class="text-lg font-bold text-white">+${gachaFragments[char.id]}</p>
+                    <p class="text-[10px] text-gray-400">碎片转化</p>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+            <div class="p-2">
+              <h4 class="font-bold text-center">${char.name}${isFragment ? '碎片' : ''}</h4>
+              <p class="text-xs text-center text-gray-400">${getClassName(char.class)}</p>
+            </div>
+          `;
+          
+          gachaCardsContainer.appendChild(cardElement);
+          
+          // 如果是最后一张卡，显示继续按钮
+          if (index === results.length - 1) {
+            document.getElementById('gachaResult').classList.remove('hidden');
+          }
+        }, index * 300);
+      });
+    }
+
+    // 更新角色列表
+    function updateCharactersList() {
+      const charactersList = document.getElementById('charactersList');
+      charactersList.innerHTML = '';
+      
+      // 获取筛选和排序条件
+      const filterRarity = document.getElementById('characterFilter').value;
+      const sortBy = document.getElementById('characterSort').value;
+      
+      // 筛选角色
+      let filteredCharacters = [...gameData.characters];
+      if (filterRarity !== 'all') {
+        filteredCharacters = filteredCharacters.filter(char => char.rarity === filterRarity);
+      }
+      
+      // 排序角色
+      filteredCharacters.sort((a, b) => {
+        if (sortBy === 'power') {
+          return calculateCharacterPower(b) - calculateCharacterPower(a);
+        } else if (sortBy === 'level') {
+          return b.level - a.level;
+        } else if (sortBy === 'rarity') {
+          const rarityOrder = { 'R': 1, 'SR': 2, 'SSR': 3, 'UR': 4, 'SUR': 5 };
+          return rarityOrder[b.rarity] - rarityOrder[a.rarity];
+        }
+        return 0;
+      });
+      
+      // 生成角色卡片
+      filteredCharacters.forEach(char => {
+        const cardElement = document.createElement('div');
+        cardElement.className = `glass-effect rounded-lg overflow-hidden card-hover cursor-pointer rarity-border-${char.rarity.toLowerCase()}`;
+        
+        cardElement.innerHTML = `
+          <div class="relative">
+            <img src="${char.imageUrl}" alt="${char.name}" class="w-full aspect-square object-cover">
+            <div class="absolute top-2 left-2 bg-black bg-opacity-70 rounded-full px-2 py-1 text-xs">
+              <span class="text-rarity-${char.rarity.toLowerCase()} font-bold">${char.rarity}</span>
+            </div>
+            <div class="absolute top-2 right-2 bg-black bg-opacity-70 rounded-full px-2 py-1 text-xs">
+              Lv.${char.level}
+            </div>
+            <div class="absolute bottom-2 right-2 flex">
+              ${getStarsHtml(char.stars)}
+            </div>
+          </div>
+          <div class="p-3">
+            <div class="flex justify-between items-center mb-2">
+              <h4 class="font-bold">${char.name}</h4>
+              <span class="px-2 py-0.5 bg-class-${char.class} rounded text-xs">${getClassName(char.class)}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span>攻击: ${calculateCharacterAttack(char)}</span>
+              <span>生命: ${calculateCharacterHealth(char)}</span>
+            </div>
+            <div class="mt-1 text-right">
+              <span class="text-primary font-bold">战斗力: ${calculateCharacterPower(char)}</span>
+            </div>
+          </div>
+        `;
+        
+        // 点击查看详情
+        cardElement.addEventListener('click', () => showCharacterDetail(char));
+        
+        charactersList.appendChild(cardElement);
+      });
+    }
+
+    // 显示角色详情
+    function showCharacterDetail(char) {
+      selectedCharacter = char;
+      const stats = calculateTotalStats(char);
+      
+      // 更新详情UI
+      document.getElementById('detailCharacterName').textContent = char.name;
+      document.getElementById('detailCharacterImage').innerHTML = `<img src="${char.imageUrl}" alt="${char.name}" class="w-full h-full object-cover rounded-lg">`;
+      document.getElementById('detailCharacterRarity').textContent = char.rarity;
+      document.getElementById('detailCharacterRarity').className = `text-rarity-${char.rarity.toLowerCase()} font-bold`;
+      document.getElementById('detailCharacterClass').textContent = getClassName(char.class);
+      document.getElementById('detailCharacterClass').className = `ml-2 px-2 py-1 bg-class-${char.class} rounded text-xs`;
+      
+      // 星级
+      document.querySelector('#detailCharacterImage + div + div + div .text-yellow-400').innerHTML = getStarsHtml(char.stars);
+      
+      // 等级和经验条
+      const maxLevel = 10 + (char.stars * 5);
+      document.getElementById('detailCharacterLevel').textContent = `${char.level}/${maxLevel}`;
+      document.getElementById('detailCharacterExpBar').style.width = `${(char.exp / calculateExpToNextLevel(char.level)) * 100}%`;
+      
+      // 核心属性
+      document.getElementById('detailCharacterAttack').textContent = stats.attack;
+      document.getElementById('detailCharacterDefense').textContent = stats.defense;
+      document.getElementById('detailCharacterHealth').textContent = stats.health;
+      document.getElementById('detailCharacterSpeed').textContent = stats.speed;
+      
+      // 更新二级属性 (迭代2)
+      const secondaryStats = [
+        { id: 'critRate', name: '暴击率' },
+        { id: 'dodgeRate', name: '闪避率' },
+        { id: 'blockRate', name: '格挡率' },
+        { id: 'dmgReduc', name: '免伤率' },
+        { id: 'lifesteal', name: '吸血率' },
+        { id: 'effectHit', name: '命中率' }
+      ];
+      secondaryStats.forEach(stat => {
+        document.getElementById(`stat-${stat.id}`).textContent = `${stats[stat.id]}%`;
+      });
+      
+      // 渲染装备槽位 (迭代2)
+      const slots = ['weapon', 'armor', 'helmet', 'shoes', 'accessory'];
+      slots.forEach(slot => {
+        const item = char.equipments[slot];
+        const slotEl = document.getElementById(`slot-${slot}`);
+        if (item) {
+          slotEl.innerHTML = `<img src="${item.imageUrl}" class="w-full h-full object-contain rounded border border-${item.rarity.toLowerCase()} p-1">`;
+          slotEl.classList.remove('bg-gray-800');
+          slotEl.classList.add('bg-black');
+        } else {
+          const icons = { weapon: 'gavel', armor: 'shield', helmet: 'user-secret', shoes: 'paw', accessory: 'sun-o' };
+          slotEl.innerHTML = `<i class="fa fa-${icons[slot]} text-gray-600"></i>`;
+          slotEl.classList.remove('bg-black');
+          slotEl.classList.add('bg-gray-800');
+        }
+      });
+
+      // 渲染铭文槽位
+      for (let i = 0; i < 2; i++) {
+        const ins = char.inscriptions[i];
+        const slotEl = document.getElementById(`slot-ins-${i}`);
+        if (ins) {
+          slotEl.innerHTML = `<img src="${ins.imageUrl}" class="w-full h-full object-contain rounded-full border border-purple-500 p-1">`;
+        } else {
+          slotEl.innerHTML = `<i class="fa fa-gem text-purple-900"></i>`;
+        }
+      }
+
+      // 碎片数量
+      document.getElementById('detailCharacterFragments').textContent = gameData.fragments[char.id] || 0;
+      
+      // 技能
+      const skill = char.skills[0];
+      const skillLevel = skill.level || 1;
+      document.getElementById('detailCharacterSkill').innerHTML = `
+        <div class="flex justify-between items-center">
+          <h5 class="font-bold">${skill.name} <span class="text-primary text-xs ml-1">Lv.${skillLevel}</span></h5>
+          <span class="text-xs bg-gray-700 px-2 py-1 rounded">冷却: ${skill.cooldown}回合</span>
+        </div>
+        <p class="text-sm text-gray-400 mt-1">${skill.description}</p>
+      `;
+      
+      // 显示弹窗
+      document.getElementById('characterDetailModal').classList.remove('hidden');
+    }
+
+    // 迭代4: 升级选中的技能
+    function upgradeSelectedSkill() {
+      if (!selectedCharacter) return;
+      const skill = selectedCharacter.skills[0]; // 默认升级第一个技能
+      const cost = (skill.level || 1) * 1000;
+      
+      if (gameData.player.gold < cost) {
+        alert(`金币不足！升级技能需要 ${cost} 金币`);
+        return;
+      }
+      
+      gameData.player.gold -= cost;
+      skill.level = (skill.level || 1) + 1;
+      
+      // 更新描述中的数值 (简单正则替换示例)
+      // 注意：这只是一个演示逻辑，真实情况应从配置读取
+      const match = skill.description.match(/(\d+)%/);
+      if (match) {
+        const newVal = parseInt(match[1]) + 10;
+        skill.description = skill.description.replace(match[0], `${newVal}%`);
+      }
+
+      updateUI();
+      selectCharacterToCultivate(selectedCharacter);
+      saveGameProgress();
+      alert(`技能 [${skill.name}] 已升级至 Lv.${skill.level}`);
+    }
+
+    // 角色升级 (迭代4 兼容重构)
+    function levelUpCharacter(toMax = false) {
+      if (!selectedCharacter) return;
+      
+      const MAX_GLOBAL_LEVEL = GAME_CONFIG.maxLevel || 150;
+      // 每一星级解锁更高等级上限：30, 45, 60, 75, 90, 105, 120, 150
+      let maxLevel = 15 + (selectedCharacter.stars * 15);
+      if (selectedCharacter.stars >= 8) maxLevel = MAX_GLOBAL_LEVEL;
+      
+      if (selectedCharacter.level >= maxLevel) {
+        if (selectedCharacter.level >= MAX_GLOBAL_LEVEL) {
+          alert('已达到满级 150 级！');
+        } else {
+          alert(`当前星级最高等级为 ${maxLevel} 级，请先升星！`);
+        }
+        return;
+      }
+      
+      let leveledCount = 0;
+      while (selectedCharacter.level < maxLevel) {
+        const cost = calculateLevelUpCost(selectedCharacter.level);
+        if (gameData.player.gold < cost) {
+          if (leveledCount === 0) alert(`金币不足！升级需要 ${cost.toLocaleString()} 金币`);
+          break;
+        }
+        
+        gameData.player.gold -= cost;
+        selectedCharacter.level++;
+        selectedCharacter.exp = 0;
+        
+        leveledCount++;
+        if (!toMax) break;
+      }
+      
+      if (leveledCount > 0) {
+        updateUI();
+        selectCharacterToCultivate(selectedCharacter);
+        saveGameProgress();
+      }
+    }
+
+    // 角色升星 (迭代4 兼容重构)
+    function ascendCharacter(toMax = false) {
+      if (!selectedCharacter) return;
+      
+      const MAX_STARS = GAME_CONFIG.maxStars || 8;
+      if (selectedCharacter.stars >= MAX_STARS) {
+        alert('已达到最高星级！');
+        return;
+      }
+      
+      let ascendedCount = 0;
+      while (selectedCharacter.stars < MAX_STARS) {
+        // 升星消耗公式：当前星级 * 20 (星级越高消耗越高)
+        const requiredFragments = selectedCharacter.stars * 20;
+        const ownedFragments = gameData.fragments[selectedCharacter.id] || 0;
+        
+        if (ownedFragments < requiredFragments) {
+          if (ascendedCount === 0) {
+            alert(`碎片不足！需要 ${requiredFragments} 碎片，当前拥有 ${ownedFragments}`);
+          }
+          break;
+        }
+        
+        gameData.fragments[selectedCharacter.id] -= requiredFragments;
+        selectedCharacter.stars++;
+        
+        ascendedCount++;
+        if (!toMax) break;
+      }
+      
+      if (ascendedCount > 0) {
+        updateUI();
+        selectCharacterToCultivate(selectedCharacter);
+        saveGameProgress();
+      }
+    }
+
+    // 更新装备列表
+    function updateEquipmentList() {
+      const equipmentList = document.getElementById('equipmentList');
+      equipmentList.innerHTML = '';
+      
+      // 获取筛选和排序条件
+      const filterType = document.getElementById('equipmentFilter').value;
+      const sortBy = document.getElementById('equipmentSort').value;
+      
+      // 筛选装备
+      let filteredEquipment = [...gameData.equipment];
+      if (filterType !== 'all') {
+        filteredEquipment = filteredEquipment.filter(item => item.type === filterType);
+      }
+      
+      // 排序装备
+      filteredEquipment.sort((a, b) => {
+        if (sortBy === 'power') {
+          return calculateEquipmentPower(b) - calculateEquipmentPower(a);
+        } else if (sortBy === 'level') {
+          return b.level - a.level;
+        } else if (sortBy === 'rarity') {
+          const rarityOrder = { 'R': 1, 'SR': 2, 'SSR': 3, 'UR': 4, 'SUR': 5 };
+          return rarityOrder[b.rarity] - rarityOrder[a.rarity];
+        }
+        return 0;
+      });
+      
+      // 生成装备卡片
+      filteredEquipment.forEach(item => {
+        const cardElement = document.createElement('div');
+        cardElement.className = `glass-effect rounded-lg overflow-hidden card-hover cursor-pointer rarity-border-${item.rarity.toLowerCase()}`;
+        
+        cardElement.innerHTML = `
+          <div class="p-3 flex flex-col items-center">
+            <div class="w-24 h-24 mb-3">
+              <img src="${item.imageUrl}" alt="${item.name}" class="w-full h-full object-contain">
+            </div>
+            <div class="flex items-center mb-2">
+              <span class="text-rarity-${item.rarity.toLowerCase()} font-bold">${item.rarity}</span>
+              <span class="ml-2 px-2 py-0.5 bg-gray-700 rounded text-xs">${getEquipmentTypeName(item.type)}</span>
+            </div>
+            <h4 class="font-bold text-center mb-1">${item.name}</h4>
+            <div class="text-xs text-center text-gray-400 mb-2">Lv.${item.level}</div>
+            <div class="w-full bg-gray-700 rounded-full h-1 mb-2">
+              <div class="bg-primary h-1 rounded-full" style="width: ${(item.level % 10) * 10}%"></div>
+            </div>
+            <div class="text-right w-full">
+              <span class="text-primary text-xs font-bold">战斗力: ${calculateEquipmentPower(item)}</span>
+            </div>
+          </div>
+        `;
+        
+        // 点击查看详情
+        cardElement.addEventListener('click', () => showEquipmentDetail(item));
+        
+        equipmentList.appendChild(cardElement);
+      });
+    }
+
+    // 显示装备详情
+    function showEquipmentDetail(item) {
+      selectedEquipment = item;
+      
+      // 更新详情UI
+      document.getElementById('detailEquipmentName').textContent = item.name;
+      document.getElementById('detailEquipmentImage').innerHTML = `<img src="${item.imageUrl}" alt="${item.name}" class="w-full h-full object-contain">`;
+      document.getElementById('detailEquipmentRarity').textContent = item.rarity;
+      document.getElementById('detailEquipmentRarity').className = `text-rarity-${item.rarity.toLowerCase()} font-bold`;
+      document.getElementById('detailEquipmentType').textContent = getSlotName(item.type);
+      
+      // 强化等级
+      const maxLevel = getMaxEquipmentLevel(item.rarity);
+      document.getElementById('detailEquipmentLevel').textContent = `Lv.${item.level}/${maxLevel}`;
+      
+      // 属性渲染 (迭代4)
+      const attributesHtml = [];
+      const levelBonus = 1 + (item.level - 1) * 0.1;
+      
+      for (const [key, value] of Object.entries(item.attributes)) {
+        const isPercent = key.includes('Rate') || key.includes('Reduc') || key.includes('Hit') || key.includes('Percent');
+        const finalVal = Math.floor(value * levelBonus);
+        
+        attributesHtml.push(`
+          <div class="flex justify-between items-center py-1 border-b border-gray-800">
+            <span class="text-gray-400 text-sm">${getStatName(key)}</span>
+            <span class="font-bold text-sm ${isPercent ? 'text-primary' : 'text-white'}">${finalVal}${isPercent ? '%' : ''}</span>
+          </div>
+        `);
+      }
+      
+      // 精炼标记
+      if (item.refine > 0) {
+        attributesHtml.push(`
+          <div class="mt-2 text-center">
+            <span class="px-2 py-0.5 bg-yellow-900 text-yellow-400 text-[10px] rounded-full border border-yellow-600">
+              已精炼 +${item.refine}
+            </span>
+          </div>
+        `);
+      }
+      
+      // 找到属性容器并更新
+      const attrContainer = document.querySelector('#equipmentDetailModal .space-y-4').nextElementSibling;
+      if (attrContainer) attrContainer.innerHTML = attributesHtml.join('');
+      
+      // 更新强化按钮文字与消耗
+      const enhanceBtn = document.getElementById('enhanceEquipment');
+      const enhanceCost = calculateEnhanceCost(item.level, item.rarity);
+      enhanceBtn.innerHTML = `<i class="fa fa-arrow-up mr-2"></i>强化 (💰${enhanceCost})`;
+      
+      const refineBtn = document.getElementById('refineEquipment');
+      const refineCost = (item.refine + 1) * 100;
+      refineBtn.innerHTML = `<i class="fa fa-diamond mr-2"></i>精炼 (💎${refineCost})`;
+      
+      // 显示弹窗
+      document.getElementById('equipmentDetailModal').classList.remove('hidden');
+    }
+
+    // 更新铭文列表
+    function updateInscriptionsList() {
+      const inscriptionsList = document.getElementById('inscriptionsList');
+      inscriptionsList.innerHTML = '';
+      
+      // 获取筛选和排序条件
+      const filterType = document.getElementById('inscriptionFilter').value;
+      const sortBy = document.getElementById('inscriptionSort').value;
+      
+      // 筛选铭文
+      let filteredInscriptions = [...gameData.inscriptions];
+      if (filterType !== 'all') {
+        filteredInscriptions = filteredInscriptions.filter(ins => ins.type === filterType);
+      }
+      
+      // 排序铭文
+      filteredInscriptions.sort((a, b) => {
+        if (sortBy === 'level') {
+          return b.level - a.level;
+        } else if (sortBy === 'rarity') {
+          const rarityOrder = { 'R': 1, 'SR': 2, 'SSR': 3, 'UR': 4, 'SUR': 5 };
+          return rarityOrder[b.rarity] - rarityOrder[a.rarity];
+        }
+        return 0;
+      });
+      
+      // 生成铭文卡片
+      filteredInscriptions.forEach(ins => {
+        const cardElement = document.createElement('div');
+        cardElement.className = `glass-effect rounded-lg overflow-hidden card-hover cursor-pointer rarity-border-${ins.rarity.toLowerCase()}`;
+        
+        cardElement.innerHTML = `
+          <div class="p-3 flex flex-col items-center">
+            <div class="w-16 h-16 mb-2">
+              <img src="${ins.imageUrl}" alt="${ins.name}" class="w-full h-full object-contain">
+            </div>
+            <div class="flex items-center mb-1">
+              <span class="text-rarity-${ins.rarity.toLowerCase()} font-bold">${ins.rarity}</span>
+              <span class="ml-2 px-2 py-0.5 bg-gray-700 rounded text-xs">${getInscriptionTypeName(ins.type)}</span>
+            </div>
+            <h4 class="font-bold text-center text-sm mb-1">${ins.name}</h4>
+            <div class="text-xs text-center text-gray-400 mb-2">Lv.${ins.level}</div>
+            <div class="w-full bg-gray-700 rounded-full h-1 mb-2">
+              <div class="bg-primary h-1 rounded-full" style="width: ${(ins.exp / calculateInscriptionExpToNextLevel(ins.level)) * 100}%"></div>
+            </div>
+            <div class="text-center text-xs">
+              <span class="text-primary font-bold">${getAttributeName(Object.keys(ins.attributes)[0])}: ${ins.attributes[Object.keys(ins.attributes)[0]]}</span>
+            </div>
+          </div>
+        `;
+        
+        // 点击查看详情
+        cardElement.addEventListener('click', () => showInscriptionDetail(ins));
+        
+        inscriptionsList.appendChild(cardElement);
+      });
+    }
+
+    // 显示铭文详情
+    function showInscriptionDetail(ins) {
+      selectedInscription = ins;
+      
+      // 更新详情UI
+      document.getElementById('detailInscriptionName').textContent = ins.name;
+      document.getElementById('detailInscriptionImage').innerHTML = `<img src="${ins.imageUrl}" alt="${ins.name}" class="w-full h-full object-contain">`;
+      document.getElementById('detailInscriptionRarity').textContent = ins.rarity;
+      document.getElementById('detailInscriptionRarity').className = `text-rarity-${ins.rarity.toLowerCase()} font-bold`;
+      document.getElementById('detailInscriptionType').textContent = getInscriptionTypeName(ins.type);
+      
+      // 等级
+      document.getElementById('detailInscriptionLevel').textContent = `${ins.level}/10`;
+      document.getElementById('detailInscriptionExpBar').style.width = `${(ins.exp / calculateInscriptionExpToNextLevel(ins.level)) * 100}%`;
+      
+      // 属性
+      const attributesHtml = [];
+      for (const [key, value] of Object.entries(ins.attributes)) {
+        const leveledValue = Math.floor(value * (1 + (ins.level - 1) * 0.2));
+        attributesHtml.push(`
+          <div class="flex justify-between">
+            <span class="text-gray-400">${getAttributeName(key)}</span>
+            <span class="font-bold">${leveledValue}${getAttributeUnit(key)}</span>
+          </div>
+        `);
+      }
+      
+      document.querySelector('#detailInscriptionExpBar').parentNode.nextElementSibling.innerHTML = attributesHtml.join('');
+      
+      // 套装效果
+      document.getElementById('detailInscriptionSetEffect').textContent = `${ins.setEffect.pieces}个${ins.name.split('铭文')[0]}铭文: ${ins.setEffect.effect}`;
+      
+      // 显示弹窗
+      document.getElementById('inscriptionDetailModal').classList.remove('hidden');
+    }
+
+    // 铭文升级
+    function upgradeInscription() {
+      if (!selectedInscription) return;
+      
+      if (selectedInscription.level >= 10) {
+        alert('已达到最高等级！');
+        return;
+      }
+      
+      // 检查是否有足够的其他铭文作为材料
+      const availableMaterials = gameData.inscriptions.filter(ins => 
+        ins !== selectedInscription && ins.level <= selectedInscription.level
+      );
+      
+      if (availableMaterials.length < 1) {
+        alert('需要1个其他铭文作为升级材料！');
+        return;
+      }
+      
+      // 消耗材料
+      const materialIndex = gameData.inscriptions.findIndex(ins => 
+        ins !== selectedInscription && ins.level <= selectedInscription.level
+      );
+      if (materialIndex !== -1) {
+        const material = gameData.inscriptions[materialIndex];
+        gameData.inscriptions.splice(materialIndex, 1);
+        
+        // 增加经验
+        const expGain = 50 * material.level;
+        selectedInscription.exp += expGain;
+        
+        // 检查是否升级
+        while (selectedInscription.exp >= calculateInscriptionExpToNextLevel(selectedInscription.level) && selectedInscription.level < 10) {
+          selectedInscription.exp -= calculateInscriptionExpToNextLevel(selectedInscription.level);
+          selectedInscription.level++;
+        }
+      }
+      
+      // 更新详情UI
+      document.getElementById('detailInscriptionLevel').textContent = `${selectedInscription.level}/10`;
+      document.getElementById('detailInscriptionExpBar').style.width = `${(selectedInscription.exp / calculateInscriptionExpToNextLevel(selectedInscription.level)) * 100}%`;
+      
+      // 更新属性显示
+      const attributesHtml = [];
+      for (const [key, value] of Object.entries(selectedInscription.attributes)) {
+        const leveledValue = Math.floor(value * (1 + (selectedInscription.level - 1) * 0.2));
+        attributesHtml.push(`
+          <div class="flex justify-between">
+            <span class="text-gray-400">${getAttributeName(key)}</span>
+            <span class="font-bold">${leveledValue}${getAttributeUnit(key)}</span>
+          </div>
+        `);
+      }
+      
+      document.querySelector('#detailInscriptionExpBar').parentNode.nextElementSibling.innerHTML = attributesHtml.join('');
+      
+      // 更新铭文列表
+      updateInscriptionsList();
+      
+      // 保存游戏进度
+      saveGameProgress();
+    }
+
+    // 铭文镶嵌
+    function embedInscription() {
+      if (!selectedInscription) return;
+      
+      // 这里应该打开一个角色选择界面，让玩家选择要镶嵌铭文的角色
+      alert('此功能尚未实现，敬请期待！');
+    }
+
+    // 更新关卡列表
+    function updateStagesList() {
+      const stagesList = document.getElementById('stagesList');
+      stagesList.innerHTML = '';
+      
+      stagesData.forEach(stage => {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'glass-effect rounded-xl p-6 card-hover';
+        
+        const totalPower = calculateTotalPower();
+        const isAvailable = totalPower >= stage.recommendedPower;
+        
+        cardElement.innerHTML = `
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="text-xl font-bold">${stage.name}</h3>
+              <div class="flex items-center mt-1">
+                <span class="px-2 py-1 rounded text-xs ${getDifficultyClass(stage.difficulty)}">${getDifficultyName(stage.difficulty)}</span>
+                <span class="ml-2 text-sm text-gray-400">推荐战斗力: ${stage.recommendedPower.toLocaleString()}</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm text-gray-400">我的战斗力</div>
+              <div class="text-xl font-bold ${isAvailable ? 'text-green-400' : 'text-red-400'}">${totalPower.toLocaleString()}</div>
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <h4 class="font-bold mb-2">敌人</h4>
+            <div class="flex flex-wrap gap-2">
+              ${stage.enemies.map(enemy => `
+                <div class="px-3 py-1 bg-gray-800 rounded-full text-sm">
+                  ${enemy.name}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <h4 class="font-bold mb-2">奖励</h4>
+            <div class="flex flex-wrap gap-2">
+              <div class="px-3 py-1 bg-gray-800 rounded-full text-sm flex items-center">
+                <i class="fa fa-star text-yellow-400 mr-1"></i>
+                经验: ${stage.rewards.exp}
+              </div>
+              <div class="px-3 py-1 bg-gray-800 rounded-full text-sm flex items-center">
+                <i class="fa fa-coins text-yellow-500 mr-1"></i>
+                金币: ${stage.rewards.gold}
+              </div>
+              ${stage.rewards.items.map(item => {
+                const itemData = equipmentData.find(i => i.id === item.id) || inscriptionsData.find(i => i.id === item.id);
+                return `
+                  <div class="px-3 py-1 bg-gray-800 rounded-full text-sm">
+                    ${itemData ? itemData.name : item.id} (${Math.floor(item.dropRate * 100)}%)
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+          
+          <div class="text-center">
+            <button class="btn-primary ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}" ${!isAvailable ? 'disabled' : ''} data-stage="${stage.id}">
+              挑战
+            </button>
+          </div>
+        `;
+        
+        // 绑定挑战按钮事件
+        const challengeBtn = cardElement.querySelector('[data-stage]');
+        challengeBtn.addEventListener('click', () => {
+          if (isAvailable) {
+            startBattle(stage.id);
+          }
+        });
+        
+        stagesList.appendChild(cardElement);
+      });
+    }
+
+    // 开始战斗
+    function startBattle(stageId) {
+      const stage = stagesData.find(s => s.id === stageId);
+      if (!stage) return;
+      
+      // 检查战斗力
+      const totalPower = calculateTotalPower();
+      if (totalPower < stage.recommendedPower) {
+        alert('战斗力不足，建议提升角色等级或装备！');
+        return;
+      }
+      
+      // 模拟战斗
+      setTimeout(() => {
+        const battleResult = simulateBattle(stage);
+        showBattleResult(stage, battleResult);
+      }, 1500);
+    }
+
+    // 模拟战斗 (迭代3)
+    function simulateBattle(stage) {
+      const logs = [];
+      const team = gameData.characters.slice(0, 5).map(char => {
+        const stats = calculateTotalStats(char);
+        return {
+          ...char,
+          ...stats, // 注入所有二级属性
+          currentHp: stats.health,
+          maxHp: stats.health,
+          isPlayer: true,
+          skillCooldown: 0
+        };
+      });
+      
+      const enemies = stage.enemies.map(enemy => ({
+        ...enemy,
+        currentHp: enemy.health,
+        maxHp: enemy.health,
+        // 敌人默认二级属性较低
+        critRate: 5,
+        dodgeRate: 2,
+        blockRate: 2,
+        dmgReduc: 0,
+        lifesteal: 0,
+        isPlayer: false
+      }));
+      
+      let round = 1;
+      let totalDamage = 0;
+      let totalHealing = 0;
+      let maxSingleDamage = 0;
+      
+      logs.push(`<div class="text-primary font-bold">--- 战斗开始: ${stage.name} ---</div>`);
+      
+      while (round <= 20) {
+        logs.push(`<div class="text-gray-400 mt-2 italic">第 ${round} 回合</div>`);
+        
+        // 合并所有单位并按速度排序
+        const allUnits = [...team, ...enemies].sort((a, b) => b.speed - a.speed);
+        
+        for (const unit of allUnits) {
+          if (unit.currentHp <= 0) continue;
+          
+          const targets = unit.isPlayer ? enemies : team;
+          const aliveTargets = targets.filter(t => t.currentHp > 0);
+          
+          if (aliveTargets.length === 0) break;
+          
+          const target = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+          
+          // 1. 检查闪避 (Dodge)
+          if (Math.random() * 100 < target.dodgeRate) {
+            logs.push(`<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 的攻击被 <span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span> <span class="text-yellow-500 font-bold">闪避</span> 了！</div>`);
+            continue;
+          }
+
+          // 2. 决定基础伤害
+          let damage = 0;
+          let isSkill = false;
+          
+          if (unit.isPlayer && unit.skillCooldown === 0) {
+            const skill = unit.skills[0];
+            isSkill = true;
+            unit.skillCooldown = skill.cooldown;
+            const multiplier = parseInt(skill.description.match(/(\d+)%/)[1]) / 100;
+            damage = Math.floor(unit.attack * multiplier);
+            
+            if (skill.name === "神圣治愈") {
+              const heal = damage;
+              team.forEach(t => {
+                if (t.currentHp > 0) {
+                  const actualHeal = Math.min(t.maxHp - t.currentHp, heal);
+                  t.currentHp += actualHeal;
+                  totalHealing += actualHeal;
+                }
+              });
+              logs.push(`<div><span class="text-green-400 font-bold">${unit.name}</span> 释放了 <span class="text-yellow-400">[${skill.name}]</span>，恢复全队 <span class="text-green-400">${heal}</span> 生命</div>`);
+              continue;
+            }
+            logs.push(`<div><span class="text-blue-400 font-bold">${unit.name}</span> 释放技能 <span class="text-yellow-400">[${skill.name}]</span></div>`);
+          } else {
+            damage = Math.floor(unit.attack * (0.9 + Math.random() * 0.2));
+            if (unit.isPlayer && unit.skillCooldown > 0) unit.skillCooldown--;
+          }
+          
+          // 3. 检查暴击 (Crit)
+          let isCrit = false;
+          if (Math.random() * 100 < unit.critRate) {
+            isCrit = true;
+            damage *= 2; // 暴击双倍伤害
+          }
+
+          // 4. 计算防御减免
+          let finalDamage = Math.max(1, Math.floor(damage * (100 / (100 + target.defense))));
+          
+          // 5. 检查格挡 (Block)
+          if (Math.random() * 100 < target.blockRate) {
+            finalDamage = Math.floor(finalDamage * 0.5);
+            logs.push(`<div><span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span> 成功 <span class="text-blue-300 font-bold">格挡</span>，伤害减半</div>`);
+          }
+
+          // 6. 检查免伤 (Damage Reduction)
+          if (target.dmgReduc > 0) {
+            finalDamage = Math.floor(finalDamage * (1 - target.dmgReduc / 100));
+          }
+
+          // 7. 结算伤害
+          target.currentHp -= finalDamage;
+          
+          let damageLog = `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 攻击 <span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span>，造成 `;
+          if (isCrit) damageLog += `<span class="text-orange-500 font-black text-lg">暴击 ${finalDamage}</span>`;
+          else damageLog += `<span class="text-red-500 font-bold">${finalDamage}</span>`;
+          damageLog += ` 伤害</div>`;
+          logs.push(damageLog);
+
+          // 8. 检查吸血 (Lifesteal)
+          if (unit.lifesteal > 0 && finalDamage > 0) {
+            const heal = Math.floor(finalDamage * unit.lifesteal / 100);
+            unit.currentHp = Math.min(unit.maxHp, unit.currentHp + heal);
+            totalHealing += heal;
+            logs.push(`<div><span class="text-green-400">${unit.name}</span> 触发吸血，回复了 <span class="text-green-400">${heal}</span> 生命</div>`);
+          }
+
+          if (unit.isPlayer) {
+            totalDamage += finalDamage;
+            maxSingleDamage = Math.max(maxSingleDamage, finalDamage);
+          }
+          
+          if (target.currentHp <= 0) {
+            logs.push(`<div><span class="text-gray-500">[${target.name}] 已倒下</span></div>`);
+          }
+          
+          if (enemies.every(e => e.currentHp <= 0) || team.every(t => t.currentHp <= 0)) break;
+        }
+        
+        if (enemies.every(e => e.currentHp <= 0) || team.every(t => t.currentHp <= 0)) break;
+        round++;
+      }
+      
+      const isWin = enemies.every(e => e.currentHp <= 0);
+      logs.push(`<div class="mt-2 font-bold ${isWin ? 'text-green-400' : 'text-red-400'}">--- 战斗结束: ${isWin ? '胜利' : '失败'} ---</div>`);
+      
+      // 计算奖励 (略，保持原有逻辑)
+      const rewards = { exp: stage.rewards.exp, gold: stage.rewards.gold, items: [] };
+      if (isWin) {
+        stage.rewards.items.forEach(item => {
+          if (Math.random() < item.dropRate) {
+            const itemData = equipmentData.find(i => i.id === item.id) || inscriptionsData.find(i => i.id === item.id);
+            if (itemData) {
+              rewards.items.push({ ...itemData, level: 1, exp: 0, refine: 0, instanceId: Date.now() + Math.random() });
+            }
+          }
+        });
+      }
+      
+      return { isWin, rounds: Math.min(round, 20), maxDamage: maxSingleDamage, healing: totalHealing, logs, rewards };
+    }
+
+    // 显示战斗结果
+    function showBattleResult(stage, result) {
+      // 更新战斗结果UI
+      document.getElementById('battleResultTitle').textContent = result.isWin ? '战斗胜利!' : '战斗失败!';
+      document.getElementById('battleResultTitle').className = result.isWin ? 'text-2xl font-bold text-green-400' : 'text-2xl font-bold text-red-400';
+      document.getElementById('battleResultStage').textContent = stage.name;
+      document.getElementById('battleResultRounds').textContent = result.rounds;
+      document.getElementById('battleResultMaxDamage').textContent = result.maxDamage;
+      document.getElementById('battleResultHealing').textContent = result.healing;
+      
+      // 渲染日志
+      const logsContainer = document.getElementById('battleLogs');
+      logsContainer.innerHTML = result.logs.join('');
+      // 自动滚动到底部
+      setTimeout(() => {
+        logsContainer.scrollTop = logsContainer.scrollHeight;
+      }, 100);
+      
+      // 显示奖励
+      document.getElementById('battleResultExp').textContent = result.rewards.exp;
+      document.getElementById('battleResultGold').textContent = result.rewards.gold;
+      
+      // 显示获得的物品
+      const itemsContainer = document.getElementById('battleResultItems');
+      itemsContainer.innerHTML = '';
+      
+      if (result.isWin) {
+        // 获得经验和金币
+        gameData.player.exp += result.rewards.exp;
+        gameData.player.gold += result.rewards.gold;
+        
+        // 检查玩家升级
+        checkPlayerLevelUp();
+        
+        // 角色获得经验
+        gameData.characters.forEach(char => {
+          char.exp += result.rewards.exp / Math.max(1, gameData.characters.length);
+          checkCharacterLevelUp(char);
+        });
+        
+        // 添加获得的物品
+        if (result.rewards.items.length > 0) {
+          result.rewards.items.forEach(item => {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'flex items-center mt-2';
+            
+            if (equipmentData.some(e => e.id === item.id)) {
+              // 是装备
+              gameData.equipment.push(item);
+              itemElement.innerHTML = `
+                <img src="${item.imageUrl}" alt="${item.name}" class="w-6 h-6 mr-2">
+                <span>${item.name}</span>
+                <span class="ml-2 text-rarity-${item.rarity.toLowerCase()} text-xs">${item.rarity}</span>
+              `;
+            } else if (inscriptionsData.some(i => i.id === item.id)) {
+              // 是铭文
+              gameData.inscriptions.push(item);
+              itemElement.innerHTML = `
+                <img src="${item.imageUrl}" alt="${item.name}" class="w-6 h-6 mr-2">
+                <span>${item.name}</span>
+                <span class="ml-2 text-rarity-${item.rarity.toLowerCase()} text-xs">${item.rarity}</span>
+              `;
+            }
+            
+            itemsContainer.appendChild(itemElement);
+          });
+        } else {
+          itemsContainer.innerHTML = '<div class="text-gray-400">未获得物品</div>';
+        }
+        
+        // 更新当前关卡
+        const currentStageIndex = stagesData.findIndex(s => s.id === gameData.currentStage);
+        const nextStageIndex = stagesData.findIndex(s => s.id === stage.id);
+        
+        if (nextStageIndex > currentStageIndex) {
+          gameData.currentStage = stage.id;
+        }
+      } else {
+        itemsContainer.innerHTML = '<div class="text-gray-400">失败无奖励</div>';
+      }
+      
+      // 显示战斗结果弹窗
+      document.getElementById('battleResultModal').classList.remove('hidden');
+      
+      // 更新UI
+      updateUI();
+      
+      // 保存游戏进度
+      saveGameProgress();
+    }
+
+    // 检查玩家升级
+    function checkPlayerLevelUp() {
+      const expToNextLevel = calculatePlayerExpToNextLevel(gameData.player.level);
+      
+      while (gameData.player.exp >= expToNextLevel) {
+        gameData.player.exp -= expToNextLevel;
+        gameData.player.level++;
+        
+        // 升级奖励
+        gameData.player.gems += 100;
+      }
+    }
+
+    // 检查角色升级
+    function checkCharacterLevelUp(char) {
+      const maxLevel = 10 + (char.stars * 5);
+      const expToNextLevel = calculateExpToNextLevel(char.level);
+      
+      while (char.exp >= expToNextLevel && char.level < maxLevel) {
+        char.exp -= expToNextLevel;
+        char.level++;
+        
+        // 升级技能
+        char.skills.forEach(skill => {
+          if (Math.random() < 0.3) {
+            skill.level++;
+          }
+        });
+      }
+    }
+
+    // 更新阵容
+    function updateFormation() {
+      for (let i = 0; i < 5; i++) {
+        const slotElement = document.getElementById(`formationSlot${i + 1}`);
+        if (!slotElement) continue;
+        
+        const character = gameData.formation[i];
+        
+        if (character) {
+          slotElement.innerHTML = `
+            <img src="${character.imageUrl}" alt="${character.name}" class="w-10 h-10 rounded-full object-cover mr-3">
+            <div>
+              <h3 class="font-medium">${character.name}</h3>
+              <p class="text-xs text-gray-400">Lv.${character.level} ${character.rarity}</p>
+            </div>
+          `;
+        } else {
+          slotElement.innerHTML = `
+            <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3">
+              <i class="fa fa-plus text-gray-500"></i>
+            </div>
+            <div>
+              <h3 class="font-medium">空位</h3>
+              <p class="text-xs text-gray-400">点击添加角色</p>
+            </div>
+          `;
+        }
+        
+        // 点击添加/更换角色 (使用 onclick 覆盖，防止多次绑定)
+        slotElement.onclick = () => {
+          // 这里应该打开一个角色选择界面
+          alert('此功能尚未实现，敬请期待！');
+        };
+      }
+    }
+
+    // 编辑阵容
+    function editFormation() {
+      alert('此功能尚未实现，敬请期待！');
+    }
+
+    // 检查离线收益
+    function checkOfflineRewards() {
+      const lastLogin = gameData.player.lastLogin || 0;
+      const now = new Date().getTime();
+      const offlineHours = Math.floor((now - lastLogin) / (1000 * 60 * 60));
+      
+      if (offlineHours > 0) {
+        const offlineGold = offlineHours * GAME_CONFIG.offlineRewardRate.gold;
+        document.getElementById('offlineRewards').innerHTML = `<i class="fa fa-coins mr-1"></i>${offlineGold.toLocaleString()}`;
+      } else {
+        document.getElementById('offlineRewards').innerHTML = `<i class="fa fa-coins mr-1"></i>0`;
+        document.getElementById('claimOfflineRewards').classList.add('opacity-50');
+        document.getElementById('claimOfflineRewards').disabled = true;
+      }
+    }
+
+    // 领取离线收益
+    function claimOfflineRewards() {
+      const lastLogin = gameData.player.lastLogin || 0;
+      const now = new Date().getTime();
+      const offlineHours = Math.floor((now - lastLogin) / (1000 * 60 * 60));
+      
+      if (offlineHours > 0) {
+        const offlineGold = offlineHours * GAME_CONFIG.offlineRewardRate.gold;
+        const offlineExp = offlineHours * GAME_CONFIG.offlineRewardRate.exp;
+        
+        // 添加收益
+        gameData.player.gold += offlineGold;
+        gameData.player.exp += offlineExp;
+        
+        // 检查玩家升级
+        checkPlayerLevelUp();
+        
+        // 更新UI
+        document.getElementById('playerGold').textContent = gameData.player.gold.toLocaleString();
+        document.getElementById('offlineRewards').innerHTML = `<i class="fa fa-coins mr-1"></i>0`;
+        document.getElementById('claimOfflineRewards').classList.add('opacity-50');
+        document.getElementById('claimOfflineRewards').disabled = true;
+        
+        // 保存游戏进度
+        saveGameProgress();
+        
+        alert(`获得离线收益：\n金币: ${offlineGold}\n经验: ${offlineExp}`);
+      }
+    }
+
+    // 计算总战斗力
+    function calculateTotalPower() {
+      return gameData.characters.reduce((total, char) => {
+        return total + calculateCharacterPower(char);
+      }, 0);
+    }
+
+    // 计算角色战斗力
+    function calculateCharacterPower(char) {
+      return calculateCharacterAttack(char) + 
+             calculateCharacterDefense(char) + 
+             calculateCharacterHealth(char) / 10 + 
+             calculateCharacterSpeed(char);
+    }
+
+    // 计算角色攻击力
+    // --- 装备管理逻辑 (迭代2) ---
+    function openItemPicker(slot, isIns) {
+      if (!selectedCharacter) return;
+      selectedSlot = slot;
+      isSelectingInscription = isIns;
+      
+      const pickerModal = document.getElementById('itemPickerModal');
+      const listContainer = document.getElementById('itemPickerList');
+      const title = document.getElementById('itemPickerTitle');
+      
+      title.textContent = isIns ? `选择铭文 (槽位 ${slot + 1})` : `选择装备 (${getSlotName(slot)})`;
+      listContainer.innerHTML = '';
+      
+      const items = isIns ? gameData.inscriptions : gameData.equipment;
+      // 过滤对应部位
+      const filteredItems = isIns ? items : items.filter(item => item.type === slot);
+      
+      // 过滤已被其他角色穿戴的 (排除当前角色当前槽位正在穿戴的那个，以便点击已穿戴槽位时能看到它本身，方便对比或卸下)
+      const availableItems = filteredItems.filter(item => {
+        // 检查是否有任何角色穿戴了这个物品
+        const isEquippedByAnyone = gameData.characters.some(char => {
+          if (isIns) {
+            return char.inscriptions.some(i => i && i.instanceId === item.instanceId);
+          } else {
+            return Object.values(char.equipments).some(e => e && e.instanceId === item.instanceId);
+          }
+        });
+        
+        // 检查是否是被当前选中的角色正在穿戴
+        let isEquippedByCurrentCharacter = false;
+        if (isIns) {
+          isEquippedByCurrentCharacter = selectedCharacter.inscriptions[slot] && selectedCharacter.inscriptions[slot].instanceId === item.instanceId;
+        } else {
+          isEquippedByCurrentCharacter = selectedCharacter.equipments[slot] && selectedCharacter.equipments[slot].instanceId === item.instanceId;
+        }
+
+        // 如果没人穿，或者就是当前角色当前槽位在穿，则可选
+        return !isEquippedByAnyone || isEquippedByCurrentCharacter;
+      });
+
+      if (availableItems.length === 0) {
+        listContainer.innerHTML = '<div class="text-center text-gray-500 py-4">暂无可用物品</div>';
+      } else {
+        availableItems.forEach(item => {
+          const itemEl = document.createElement('div');
+          itemEl.className = `flex items-center justify-between p-3 bg-gray-800 rounded-lg border border-gray-700 hover:border-primary cursor-pointer transition-colors`;
+          
+          let attrText = '';
+          for (const [key, val] of Object.entries(item.attributes)) {
+            attrText += `<span class="mr-2">${getStatName(key)}+${val}${key.includes('Rate') || key.includes('Reduc') || key.includes('Hit') || key.includes('Percent') ? '%' : ''}</span>`;
+          }
+
+          itemEl.innerHTML = `
+            <div class="flex items-center">
+              <img src="${item.imageUrl}" class="w-10 h-10 object-contain mr-3 p-1 border border-${item.rarity.toLowerCase()} rounded">
+              <div>
+                <h4 class="font-bold text-sm text-rarity-${item.rarity.toLowerCase()}">${item.name} <span class="text-xs text-gray-500 ml-1">Lv.${item.level || 1}</span></h4>
+                <div class="text-[10px] text-gray-400 mt-1 flex flex-wrap">${attrText}</div>
+              </div>
+            </div>
+            <button class="px-3 py-1 bg-primary text-white text-xs rounded font-bold">装备</button>
+          `;
+          
+          itemEl.onclick = () => equipItem(item);
+          listContainer.appendChild(itemEl);
+        });
+      }
+      
+      pickerModal.classList.remove('hidden');
+    }
+
+    function equipItem(item) {
+      if (!selectedCharacter || selectedSlot === null) return;
+      
+      if (isSelectingInscription) {
+        selectedCharacter.inscriptions[selectedSlot] = item;
+      } else {
+        selectedCharacter.equipments[selectedSlot] = item;
+      }
+      
+      document.getElementById('itemPickerModal').classList.add('hidden');
+      selectCharacterToCultivate(selectedCharacter); // 刷新养成界面显示
+      updateUI(); // 刷新战力等
+      saveGameProgress();
+    }
+
+    function unequipItem() {
+      if (!selectedCharacter || selectedSlot === null) return;
+      
+      if (isSelectingInscription) {
+        selectedCharacter.inscriptions[selectedSlot] = null;
+      } else {
+        selectedCharacter.equipments[selectedSlot] = null;
+      }
+      
+      document.getElementById('itemPickerModal').classList.add('hidden');
+      selectCharacterToCultivate(selectedCharacter);
+      updateUI();
+      saveGameProgress();
+    }
+
+    function getSlotName(slot) {
+      const names = { weapon: '武器', armor: '防具', helmet: '头盔', shoes: '鞋子', accessory: '饰品' };
+      return names[slot] || slot;
+    }
+
+    function getStatName(key) {
+      const names = {
+        attack: '攻击力', defense: '防御力', health: '生命值', speed: '速度',
+        atkPercent: '攻击加成', defPercent: '防御加成', hpPercent: '生命加成',
+        critRate: '暴击率', critDmg: '暴击伤害', blockRate: '格挡率', dodgeRate: '闪避率',
+        dmgReduc: '免伤率', lifesteal: '吸血率', effectHit: '效果命中',
+        penetration: '无视防御', tenacity: '韧性'
+      };
+      return names[key] || key;
+    }
+    function calculateTotalStats(char) {
+      // 1. 基础属性 (含等级和星级成长)
+      const levelFactor = 1 + (char.level - 1) * 0.1;
+      const starFactor = 1 + (char.stars - 1) * 0.2;
+      
+      let stats = {
+        attack: char.baseAttributes.attack * levelFactor * starFactor,
+        defense: char.baseAttributes.defense * levelFactor * starFactor,
+        health: char.baseAttributes.health * levelFactor * starFactor,
+        speed: (char.baseAttributes.speed || 100) * (1 + (char.level - 1) * 0.05) * (1 + (char.stars - 1) * 0.1),
+        // 二级属性 (百分比)
+        atkPercent: 0,
+        defPercent: 0,
+        hpPercent: 0,
+        critRate: 0,
+        critDmg: 150, // 默认爆伤 150%
+        blockRate: 0,
+        dodgeRate: 0,
+        dmgReduc: 0,
+        lifesteal: 0,
+        effectHit: 0,
+        penetration: 0,
+        tenacity: 0
+      };
+
+      // 2. 整合装备属性 (槽位制)
+      const equipments = char.equipments || {};
+      Object.values(equipments).forEach(item => {
+        if (!item) return;
+        const attrs = item.attributes || {};
+        const levelBonus = 1 + (item.level - 1) * 0.1; // 强化等级加成
+        
+        // 累加固定值
+        if (attrs.attack) stats.attack += attrs.attack * levelBonus;
+        if (attrs.defense) stats.defense += attrs.defense * levelBonus;
+        if (attrs.health) stats.health += attrs.health * levelBonus;
+        if (attrs.speed) stats.speed += attrs.speed * levelBonus;
+        
+        // 累加百分比与二级属性
+        if (attrs.atkPercent) stats.atkPercent += attrs.atkPercent;
+        if (attrs.defPercent) stats.defPercent += attrs.defPercent;
+        if (attrs.hpPercent) stats.hpPercent += attrs.hpPercent;
+        if (attrs.critRate) stats.critRate += attrs.critRate;
+        if (attrs.critDmg) stats.critDmg += attrs.critDmg;
+        if (attrs.blockRate) stats.blockRate += attrs.blockRate;
+        if (attrs.dodgeRate) stats.dodgeRate += attrs.dodgeRate;
+        if (attrs.dmgReduc) stats.dmgReduc += attrs.dmgReduc;
+        if (attrs.lifesteal) stats.lifesteal += attrs.lifesteal;
+        if (attrs.effectHit) stats.effectHit += attrs.effectHit;
+        if (attrs.penetration) stats.penetration += attrs.penetration;
+        if (attrs.tenacity) stats.tenacity += attrs.tenacity;
+      });
+
+      // 3. 整合铭文属性
+      const inscriptions = char.inscriptions || [];
+      const setCounts = {}; // 用于套装计算
+      inscriptions.forEach(ins => {
+        if (!ins) return;
+        const attrs = ins.attributes || {};
+        const levelBonus = 1 + (ins.level - 1) * 0.2;
+        
+        if (attrs.attack) stats.attack += attrs.attack * levelBonus;
+        if (attrs.defense) stats.defense += attrs.defense * levelBonus;
+        if (attrs.health) stats.health += attrs.health * levelBonus;
+        if (attrs.speed) stats.speed += attrs.speed * levelBonus;
+        
+        if (attrs.atkPercent) stats.atkPercent += attrs.atkPercent;
+        if (attrs.defPercent) stats.defPercent += attrs.defPercent;
+        if (attrs.hpPercent) stats.hpPercent += attrs.hpPercent;
+        if (attrs.critRate) stats.critRate += attrs.critRate;
+        if (attrs.critDmg) stats.critDmg += attrs.critDmg;
+        if (attrs.blockRate) stats.blockRate += attrs.blockRate;
+        if (attrs.dodgeRate) stats.dodgeRate += attrs.dodgeRate;
+        if (attrs.dmgReduc) stats.dmgReduc += attrs.dmgReduc;
+        if (attrs.lifesteal) stats.lifesteal += attrs.lifesteal;
+        if (attrs.effectHit) stats.effectHit += attrs.effectHit;
+        if (attrs.penetration) stats.penetration += attrs.penetration;
+        if (attrs.tenacity) stats.tenacity += attrs.tenacity;
+        
+        // 记录套装
+        if (ins.setEffect) {
+          const setName = ins.name.split('铭文')[0];
+          setCounts[setName] = (setCounts[setName] || 0) + 1;
+        }
+      });
+
+      // 4. 应用百分比加成与套装效果
+      stats.attack *= (1 + stats.atkPercent / 100);
+      stats.defense *= (1 + stats.defPercent / 100);
+      stats.health *= (1 + stats.hpPercent / 100);
+      
+      // 遍历套装
+      for (const [name, count] of Object.entries(setCounts)) {
+        const insData = inscriptionsData.find(i => i.name.startsWith(name));
+        if (insData && insData.setEffect && count >= insData.setEffect.pieces) {
+          const effect = insData.setEffect.effect;
+          if (effect.includes('攻击+')) stats.attack *= 1.05;
+          if (effect.includes('防御+')) stats.defense *= 1.05;
+          if (effect.includes('生命+')) stats.health *= 1.05;
+          if (effect.includes('全属性+20%')) {
+            stats.attack *= 1.2;
+            stats.defense *= 1.2;
+            stats.health *= 1.2;
+          }
+        }
+      }
+
+      // 取整返回
+      return {
+        ...stats,
+        attack: Math.floor(stats.attack),
+        defense: Math.floor(stats.defense),
+        health: Math.floor(stats.health),
+        speed: Math.floor(stats.speed)
+      };
+    }
+
+    function calculateCharacterAttack(char) {
+      return calculateTotalStats(char).attack;
+    }
+
+    function calculateCharacterDefense(char) {
+      return calculateTotalStats(char).defense;
+    }
+
+    function calculateCharacterHealth(char) {
+      return calculateTotalStats(char).health;
+    }
+
+    function calculateCharacterSpeed(char) {
+      return calculateTotalStats(char).speed;
+    }
+
+    // 计算装备战斗力
+    // 计算装备战斗力 (迭代4)
+    function calculateEquipmentPower(item) {
+      if (!item) return 0;
+      let power = 0;
+      const attrs = item.attributes || {};
+      const levelBonus = 1 + (item.level - 1) * 0.1;
+      
+      // 基础属性权重
+      if (attrs.attack) power += attrs.attack * levelBonus * 2;
+      if (attrs.defense) power += attrs.defense * levelBonus * 5;
+      if (attrs.health) power += attrs.health * levelBonus * 0.5;
+      if (attrs.speed) power += attrs.speed * levelBonus * 10;
+      
+      // 二级属性权重
+      const secondaryWeights = {
+        atkPercent: 50, hpPercent: 50, defPercent: 50,
+        critRate: 100, dodgeRate: 100, blockRate: 100,
+        dmgReduc: 150, lifesteal: 150, effectHit: 80,
+        penetration: 120, tenacity: 120
+      };
+      
+      for (const [key, weight] of Object.entries(secondaryWeights)) {
+        if (attrs[key]) power += attrs[key] * weight;
+      }
+      
+      return Math.floor(power);
+    }
+
+    // 强化装备
+    function enhanceEquipment() {
+      if (!selectedEquipment) return;
+      const cost = calculateEnhanceCost(selectedEquipment.level, selectedEquipment.rarity);
+      
+      if (gameData.player.gold < cost) {
+        alert('金币不足！');
+        return;
+      }
+      
+      gameData.player.gold -= cost;
+      selectedEquipment.level++;
+      
+      updateUI();
+      showEquipmentDetail(selectedEquipment);
+      if (selectedCharacter) showCharacterDetail(selectedCharacter);
+      saveGameProgress();
+    }
+
+    // 精炼装备 (增加二级属性)
+    function refineEquipment() {
+      if (!selectedEquipment) return;
+      const cost = (selectedEquipment.refine + 1) * 100; // 消耗钻石
+      
+      if (gameData.player.gems < cost) {
+        alert('钻石不足！');
+        return;
+      }
+      
+      gameData.player.gems -= cost;
+      selectedEquipment.refine++;
+      
+      // 精炼随机提升一个现有二级属性，或者增加一个
+      const secondaryKeys = ['critRate', 'dodgeRate', 'blockRate', 'dmgReduc', 'lifesteal', 'effectHit'];
+      const key = secondaryKeys[Math.floor(Math.random() * secondaryKeys.length)];
+      selectedEquipment.attributes[key] = (selectedEquipment.attributes[key] || 0) + 1;
+      
+      updateUI();
+      showEquipmentDetail(selectedEquipment);
+      if (selectedCharacter) showCharacterDetail(selectedCharacter);
+      saveGameProgress();
+    }
+
+    // 计算升级所需经验
+    function calculateExpToNextLevel(level) {
+      return 100 * Math.pow(1.5, level - 1);
+    }
+
+    // 计算玩家升级所需经验
+    function calculatePlayerExpToNextLevel(level) {
+      return 1000 * Math.pow(2, level - 1);
+    }
+
+    // 计算铭文升级所需经验
+    function calculateInscriptionExpToNextLevel(level) {
+      return 50 * Math.pow(2, level - 1);
+    }
+
+    // 计算升级所需金币
+    function calculateLevelUpCost(level) {
+      // 适配 150 级：采用 1.5 次幂增长并增加后期系数
+      // 1级 -> 100
+      // 50级 -> 约 5.3万
+      // 100级 -> 约 20万
+      // 150级 -> 约 45万
+      return Math.floor(100 * Math.pow(level, 1.5) * (1 + level / 100));
+    }
+
+    // 计算装备强化所需金币
+    function calculateEnhanceCost(level, rarity) {
+      const rarityMultiplier = {
+        'R': 1,
+        'SR': 1.5,
+        'SSR': 2,
+        'UR': 3,
+        'SUR': 5
+      };
+      
+      return Math.floor(100 * level * (rarityMultiplier[rarity] || 1));
+    }
+
+    // 获取装备最大等级
+    function getMaxEquipmentLevel(rarity) {
+      const maxLevels = {
+        'R': 20,
+        'SR': 30,
+        'SSR': 40,
+        'UR': 50,
+        'SUR': 60
+      };
+      
+      return maxLevels[rarity] || 20;
+    }
+
+    // 获取职业名称
+    function getClassName(classType) {
+      const classNames = {
+        'warrior': '战士',
+        'mage': '法师',
+        'assassin': '刺客',
+        'archer': '射手',
+        'healer': '辅助'
+      };
+      
+      return classNames[classType] || classType;
+    }
+
+    // 获取装备类型名称
+    function getEquipmentTypeName(type) {
+      const typeNames = {
+        'weapon': '武器',
+        'armor': '防具',
+        'accessory': '饰品',
+        'shoes': '鞋子',
+        'helmet': '头盔'
+      };
+      
+      return typeNames[type] || type;
+    }
+
+    // 获取铭文类型名称
+    function getInscriptionTypeName(type) {
+      const typeNames = {
+        'attack': '攻击',
+        'defense': '防御',
+        'health': '生命',
+        'crit': '暴击',
+        'dodge': '闪避',
+        'speed': '速度',
+        'penetration': '穿透',
+        'tenacity': '韧性',
+        'holy': '神圣',
+        'chaos': '混沌'
+      };
+      
+      return typeNames[type] || type;
+    }
+
+    // 获取属性名称
+    function getAttributeName(attr) {
+      const attrNames = {
+        'attack': '攻击力',
+        'defense': '防御力',
+        'health': '生命值',
+        'speed': '速度',
+        'critRate': '暴击率',
+        'dodgeRate': '闪避率',
+        'penetration': '穿透',
+        'tenacity': '韧性',
+        'mana': '魔法值'
+      };
+      
+      return attrNames[attr] || attr;
+    }
+
+    // 获取属性单位
+    function getAttributeUnit(attr) {
+      if (attr.includes('Rate') || attr === 'penetration' || attr === 'tenacity') {
+        return '%';
+      }
+      return '';
+    }
+
+    // 获取难度名称
+    function getDifficultyName(difficulty) {
+      const difficultyNames = {
+        'normal': '普通',
+        'hard': '困难',
+        'nightmare': '噩梦'
+      };
+      
+      return difficultyNames[difficulty] || difficulty;
+    }
+
+    // 获取难度样式类
+    function getDifficultyClass(difficulty) {
+      const difficultyClasses = {
+        'normal': 'bg-green-900 text-green-400',
+        'hard': 'bg-yellow-900 text-yellow-400',
+        'nightmare': 'bg-red-900 text-red-400'
+      };
+      
+      return difficultyClasses[difficulty] || 'bg-gray-700 text-gray-400';
+    }
+
+    // 获取星级HTML
+    function getStarsHtml(stars) {
+      let html = '<div class="flex flex-wrap justify-center gap-1 max-w-[200px]">';
+      const MAX_STARS = GAME_CONFIG.maxStars || 8;
+      for (let i = 0; i < MAX_STARS; i++) {
+        const color = i < stars ? 'text-yellow-400' : 'text-gray-600';
+        // 超过5星使用红星表示高级感
+        const iconColor = (i >= 5 && i < stars) ? 'text-red-500' : color;
+        html += `<i class="fa fa-star ${iconColor} drop-shadow-[0_0_5px_rgba(250,200,0,0.3)] text-base md:text-xl"></i>`;
+      }
+      html += '</div>';
+      return html;
+    }
+
+    // 页面加载完成后初始化游戏
+    window.addEventListener('DOMContentLoaded', () => {
+      initGame();
+      // 注册 Service Worker 实现 PWA 离线功能
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('service-worker.js')
+            .then(reg => console.log('Service Worker: Registered'))
+            .catch(err => console.log('Service Worker: Error', err));
+        });
+      }
+    });
+  </script>
+</body>
+</html>
