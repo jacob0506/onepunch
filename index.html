@@ -1,63 +1,184 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>One Punch Assets Viewer</title>
+    <title>One Punch 游戏开发工作台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .img-card:hover .img-tip { opacity: 1; }
         .img-tip { opacity: 0; transition: opacity 0.2s; }
+        .log-turn { color: #facc15; font-weight: bold; border-top: 1px solid #4b5563; margin-top: 0.8rem; padding-top: 0.5rem; font-size: 0.85rem; }
+        .log-damage { color: #ef4444; }
+        .log-crit { color: #f97316; font-weight: bold; font-style: italic; font-size: 0.8rem; }
+        .log-success { color: #22c55e; font-weight: bold; padding: 4px; border: 1px solid #22c55e; border-radius: 4px; margin: 8px 0; display: block; text-align: center; }
+        .log-fail { color: #b91c1c; font-weight: bold; padding: 4px; border: 1px solid #b91c1c; border-radius: 4px; margin: 8px 0; display: block; text-align: center; }
+        .log-death { color: #6b7280; text-decoration: line-through; }
+        .log-info { color: #3b82f6; font-weight: bold; }
+        .log-warning { color: #eab308; font-style: italic; }
+        #combat-log { scroll-behavior: smooth; }
+        .hp-bar, .energy-bar { transition: width 0.3s ease-in-out; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
     </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen">
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
     <header class="p-6 bg-gray-800 shadow-xl sticky top-0 z-10 flex justify-between items-center">
-        <h1 class="text-2xl font-bold">璧勬簮娴忚鍣?/h1>
-        <div id="stats" class="text-gray-400 text-sm">姝ｅ湪鍔犺浇...</div>
+        <div class="flex items-center gap-4">
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-red-500 to-yellow-500 bg-clip-text text-transparent">One Punch 战斗大师</h1>
+            <nav class="flex gap-2">
+                <button onclick="showTab('assets')" id="tab-btn-assets" class="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-500 transition text-sm">资源预览</button>
+                <button onclick="showTab('battle')" id="tab-btn-battle" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition text-sm">核心战斗</button>
+            </nav>
+        </div>
+        <div id="stats-info" class="text-gray-400 text-xs">加载中...</div>
     </header>
 
-    <main class="p-6">
-        <div id="filters" class="mb-8 flex flex-wrap gap-2">
-            <!-- 鏂囦欢澶硅繃婊ゅ櫒灏嗗湪杩欓噷鐢熸垚 -->
+    <main class="flex-grow overflow-hidden relative">
+        <!-- 资源库 Tab -->
+        <div id="tab-assets" class="p-6 h-full overflow-y-auto">
+            <div id="filters" class="mb-8 flex flex-wrap gap-2"></div>
+            <div id="gallery" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4"></div>
         </div>
 
-        <div id="gallery" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-            <!-- 鍥剧墖灏嗗湪杩欓噷鍔犺浇 -->
+        <!-- 战斗模拟器 Tab -->
+        <div id="tab-battle" class="hidden p-4 h-full flex flex-col gap-4 overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
+                <!-- 左侧：角色与关卡配置 -->
+                <div class="lg:col-span-1 bg-gray-800 p-4 rounded-xl shadow-lg flex flex-col gap-4 overflow-y-auto border border-gray-700">
+                    <section>
+                        <h2 class="text-lg font-bold border-l-4 border-blue-500 pl-2 mb-3">玩家数值调优</h2>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="col-span-2">
+                                <label class="block text-[10px] text-gray-500 uppercase">玩家技能 (逗号隔开)</label>
+                                <input type="text" id="p-skills" value="绝技·认真一拳,普通拳" class="w-full bg-gray-700 rounded p-1.5 text-xs border border-gray-600">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-500 uppercase">基础生命值</label>
+                                <input type="number" id="p-hp" value="1000" class="w-full bg-gray-700 rounded p-1.5 text-xs border border-gray-600">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-500 uppercase">基础攻击力</label>
+                                <input type="number" id="p-atk" value="80" class="w-full bg-gray-700 rounded p-1.5 text-xs border border-gray-600">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-500 uppercase">防御力</label>
+                                <input type="number" id="p-def" value="30" class="w-full bg-gray-700 rounded p-1.5 text-xs border border-gray-600">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-500 uppercase">出手速度</label>
+                                <input type="number" id="p-speed" value="35" class="w-full bg-gray-700 rounded p-1.5 text-xs border border-gray-600">
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="flex-grow flex flex-col">
+                        <h2 class="text-lg font-bold border-l-4 border-red-500 pl-2 mb-3">挑战关卡 (1-50)</h2>
+                        <div id="level-list" class="grid grid-cols-5 gap-1 overflow-y-auto mb-3 max-h-48"></div>
+                        <div id="selected-level-info" class="bg-gray-900/50 p-3 rounded-lg text-xs text-gray-400 border border-gray-700">
+                            选择关卡以查看详细敌情
+                        </div>
+                    </section>
+                    
+                    <button onclick="startBattle()" id="btn-start" class="w-full py-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl font-black text-lg hover:from-red-500 hover:to-orange-500 transition shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                        进入战斗模拟
+                    </button>
+                </div>
+
+                <!-- 右侧：战斗实况 -->
+                <div class="lg:col-span-3 bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col gap-6 border border-gray-700 overflow-hidden">
+                    <!-- 顶部状态栏 -->
+                    <div class="flex justify-between items-center gap-12 bg-gray-900/50 p-4 rounded-xl border border-gray-700">
+                        <!-- Player -->
+                        <div class="flex-1 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-black text-blue-400" id="ui-p-name">PLAYER</span>
+                                <span class="text-xs font-mono text-gray-400" id="ui-p-hp-text">1000 / 1000</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-3 border border-gray-700 overflow-hidden">
+                                <div id="ui-p-hp-bar" class="hp-bar bg-gradient-to-r from-green-600 to-green-400 h-full w-full"></div>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1.5 border border-gray-700 overflow-hidden">
+                                <div id="ui-p-energy-bar" class="energy-bar bg-blue-500 h-full w-0"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col items-center">
+                            <div class="text-3xl font-black italic text-gray-700">BATTLE</div>
+                            <div id="ui-turn-indicator" class="text-xs text-yellow-500 font-bold">TURN 0</div>
+                        </div>
+
+                        <!-- Enemy -->
+                        <div class="flex-1 space-y-2 text-right">
+                            <div class="flex justify-between items-center flex-row-reverse">
+                                <span class="text-sm font-black text-red-400" id="ui-e-name">ENEMY</span>
+                                <span class="text-xs font-mono text-gray-400" id="ui-e-hp-text">? / ?</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-3 border border-gray-700 overflow-hidden">
+                                <div id="ui-e-hp-bar" class="hp-bar bg-gradient-to-l from-red-600 to-red-400 h-full w-full"></div>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1.5 border border-gray-700 overflow-hidden">
+                                <div id="ui-e-energy-bar" class="energy-bar bg-purple-500 h-full w-0"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 战斗日志区 -->
+                    <div id="combat-log" class="flex-grow bg-gray-900 rounded-xl p-6 font-mono text-sm overflow-y-auto border-2 border-gray-800 shadow-inner">
+                        <div class="text-gray-600 text-center mt-20 italic">--- 战斗模拟器就绪 ---</div>
+                        <div class="text-gray-600 text-center text-xs">选择左侧关卡后点击“进入战斗”</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
-    <!-- 鍥剧墖璇︽儏寮圭獥 -->
     <div id="modal" class="fixed inset-0 bg-black/90 hidden z-50 flex items-center justify-center p-4 cursor-zoom-out">
         <img id="modal-img" class="max-w-full max-h-full object-contain shadow-2xl" src="" alt="">
     </div>
 
+    <script src="battle.js"></script>
     <script>
         let allAssets = [];
-        const gallery = document.getElementById('gallery');
-        const filters = document.getElementById('filters');
-        const stats = document.getElementById('stats');
+        let allLevels = [];
+        let selectedLevel = null;
+
+        const statsInfo = document.getElementById('stats-info');
         const modal = document.getElementById('modal');
         const modalImg = document.getElementById('modal-img');
 
         async function init() {
             try {
-                const res = await fetch('assets.json');
-                allAssets = await res.json();
+                const resAssets = await fetch('assets.json');
+                allAssets = await resAssets.json();
                 renderFilters();
                 renderGallery();
-                stats.innerText = `鍏?${allAssets.length} 涓祫婧恅;
+                
+                const resLevels = await fetch('levels.json');
+                allLevels = await resLevels.json();
+                renderLevels();
+
+                statsInfo.innerText = `ASSETS: ${allAssets.length} | LEVELS: ${allLevels.length}`;
             } catch (e) {
-                console.error(e);
-                stats.innerText = '鍔犺浇澶辫触锛岃纭 assets.json 瀛樺湪';
+                statsInfo.innerText = 'DATA LOAD ERROR';
             }
+        }
+
+        function showTab(tab) {
+            document.getElementById('tab-assets').classList.toggle('hidden', tab !== 'assets');
+            document.getElementById('tab-battle').classList.toggle('hidden', tab !== 'battle');
+            document.getElementById('tab-btn-assets').className = tab === 'assets' ? 'px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-500 transition text-sm' : 'px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition text-sm';
+            document.getElementById('tab-btn-battle').className = tab === 'battle' ? 'px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-500 transition text-sm' : 'px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition text-sm';
         }
 
         function renderFilters() {
             const folders = [...new Set(allAssets.map(a => a.folder))].sort();
-            filters.innerHTML = '<button id="btn-all" onclick="filterBy(null)" class="px-3 py-1 bg-blue-600 rounded-full text-sm hover:bg-blue-500 transition">鍏ㄩ儴</button>';
+            const filters = document.getElementById('filters');
+            filters.innerHTML = '<button id="btn-all" onclick="filterBy(null)" class="px-3 py-1 bg-blue-600 rounded-full text-xs hover:bg-blue-500 transition">全部</button>';
             folders.forEach(f => {
                 const btn = document.createElement('button');
-                btn.className = 'px-3 py-1 bg-gray-700 rounded-full text-sm hover:bg-gray-600 transition';
+                btn.className = 'px-3 py-1 bg-gray-700 rounded-full text-xs hover:bg-gray-600 transition';
                 btn.innerText = f;
                 btn.onclick = () => filterBy(f, btn);
                 filters.appendChild(btn);
@@ -65,50 +186,99 @@
         }
 
         function filterBy(folder, btn) {
-            // 鏇存柊鎸夐挳鏍峰紡
             document.querySelectorAll('#filters button').forEach(b => b.classList.replace('bg-blue-600', 'bg-gray-700'));
             if(btn) btn.classList.replace('bg-gray-700', 'bg-blue-600');
             else document.getElementById('btn-all').classList.replace('bg-gray-700', 'bg-blue-600');
-
+            const gallery = document.getElementById('gallery');
             const filtered = folder ? allAssets.filter(a => a.folder === folder) : allAssets;
-            renderGallery(filtered);
-        }
-
-        function renderGallery(assets = allAssets) {
             gallery.innerHTML = '';
-            assets.forEach(asset => {
+            filtered.forEach(asset => {
                 const div = document.createElement('div');
                 div.className = 'img-card relative bg-gray-800 rounded-lg overflow-hidden border border-gray-700 aspect-square flex items-center justify-center cursor-pointer hover:scale-105 transition shadow-lg';
-                div.innerHTML = `
-                    <img class="max-w-full max-h-full object-contain lazy" data-src="${asset.path}" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=">
-                    <div class="img-tip absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-[10px] truncate text-center">
-                        ${asset.name}
-                    </div>
-                `;
-                div.onclick = () => {
-                    modalImg.src = asset.path;
-                    modal.classList.remove('hidden');
-                };
+                div.innerHTML = `<img class="max-w-full max-h-full object-contain lazy" data-src="${asset.path}" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="><div class="img-tip absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-[10px] truncate text-center">${asset.name}</div>`;
+                div.onclick = () => { modalImg.src = asset.path; modal.classList.remove('hidden'); };
                 gallery.appendChild(div);
             });
-            initLazyLoading();
-        }
-
-        function initLazyLoading() {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
-                        img.src = img.dataset.src;
-                        observer.unobserve(img);
-                    }
-                });
-            });
+            const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { const img = entry.target; img.src = img.dataset.src; observer.unobserve(img); } }); });
             document.querySelectorAll('.lazy').forEach(img => observer.observe(img));
         }
 
-        modal.onclick = () => modal.classList.add('hidden');
+        function renderLevels() {
+            const list = document.getElementById('level-list');
+            list.innerHTML = '';
+            allLevels.forEach(lvl => {
+                const btn = document.createElement('button');
+                btn.className = 'py-1.5 bg-gray-700 rounded text-xs hover:bg-gray-600 transition border border-gray-600';
+                if (lvl.id % 10 === 0) btn.className += ' border-red-500 text-red-400 font-bold';
+                btn.innerText = lvl.id;
+                btn.onclick = () => selectLevel(lvl, btn);
+                list.appendChild(btn);
+            });
+        }
 
+        function selectLevel(lvl, btn) {
+            selectedLevel = lvl;
+            document.querySelectorAll('#level-list button').forEach(b => b.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-900'));
+            btn.classList.add('ring-2', 'ring-blue-500', 'bg-blue-900');
+            document.getElementById('selected-level-info').innerHTML = `
+                <div class="font-black text-red-500 uppercase tracking-tighter">${lvl.name}</div>
+                <div class="text-[10px] mt-1 text-gray-500 leading-tight">${lvl.description}</div>
+                <div class="mt-2 grid grid-cols-2 gap-x-4 text-[10px]">
+                    <span class="text-green-600">HP: ${lvl.enemies[0].hp}</span>
+                    <span class="text-red-600">ATK: ${lvl.enemies[0].atk}</span>
+                    <span class="text-blue-600">SPD: ${lvl.enemies[0].speed}</span>
+                    <span class="text-yellow-600">CRIT: ${(lvl.enemies[0].critRate * 100).toFixed(1)}%</span>
+                </div>
+            `;
+        }
+
+        async function startBattle() {
+            if (!selectedLevel) return;
+            const btn = document.getElementById('btn-start');
+            const logEl = document.getElementById('combat-log');
+            btn.disabled = true;
+            logEl.innerHTML = '<div class="text-yellow-500 font-bold text-center animate-pulse">--- LOADING BATTLE ---</div>';
+
+            const player = new Combatant("SAITAMA", {
+                hp: parseInt(document.getElementById('p-hp').value),
+                atk: parseInt(document.getElementById('p-atk').value),
+                def: parseInt(document.getElementById('p-def').value),
+                speed: parseInt(document.getElementById('p-speed').value),
+                skills: document.getElementById('p-skills').value.split(',').map(s => s.trim())
+            });
+
+            const enemies = selectedLevel.enemies.map(e => new Combatant(e.name, e));
+            updateUI(player, enemies[0], 0);
+
+            const engine = new BattleEngine(player, enemies, (entry) => {
+                const line = document.createElement('div');
+                line.className = `log-${entry.type} mb-1 opacity-0 transition-opacity duration-300`;
+                line.innerText = `[${entry.time}] ${entry.msg}`;
+                logEl.appendChild(line);
+                setTimeout(() => line.classList.replace('opacity-0', 'opacity-100'), 10);
+                logEl.scrollTop = logEl.scrollHeight;
+                updateUI(player, enemies[0], engine.turnCount);
+            });
+
+            await engine.start();
+            btn.disabled = false;
+        }
+
+        function updateUI(player, enemy, turn) {
+            document.getElementById('ui-turn-indicator').innerText = `TURN ${turn}`;
+            document.getElementById('ui-p-hp-text').innerText = `${Math.ceil(player.hp)} / ${player.maxHp}`;
+            document.getElementById('ui-p-hp-bar').style.width = `${(player.hp / player.maxHp) * 100}%`;
+            document.getElementById('ui-p-energy-bar').style.width = `${(player.energy / player.maxEnergy) * 100}%`;
+            
+            if (enemy) {
+                document.getElementById('ui-e-name').innerText = enemy.name.toUpperCase();
+                document.getElementById('ui-e-hp-text').innerText = `${Math.ceil(enemy.hp)} / ${enemy.maxHp}`;
+                document.getElementById('ui-e-hp-bar').style.width = `${(enemy.hp / enemy.maxHp) * 100}%`;
+                document.getElementById('ui-e-energy-bar').style.width = `${(enemy.energy / enemy.maxEnergy) * 100}%`;
+            }
+        }
+
+        modal.onclick = () => modal.classList.add('hidden');
         init();
     </script>
 </body>
