@@ -573,9 +573,9 @@
 
       <!-- 战斗结果 -->
       <div id="battleResultModal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-black bg-opacity-90"></div>
+        <div class="absolute inset-0 bg-black bg-opacity-90" onclick="closeBattleModal()"></div>
         <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-2xl">
-          <div class="glass-effect rounded-xl p-6 border border-gray-700">
+          <div class="glass-effect rounded-xl p-6 border border-gray-700 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div class="text-center mb-6">
               <h3 id="battleResultTitle" class="text-3xl font-black text-green-400">胜利</h3>
               <p id="battleResultStage" class="text-gray-400 italic">关卡名称</p>
@@ -623,6 +623,9 @@
             </div>
           </div>
         </div>
+        <button id="battleExitFab" class="absolute z-[60] bg-gray-900 bg-opacity-90 border border-gray-700 text-white font-black rounded-full px-4 py-3 shadow-2xl" style="right: calc(env(safe-area-inset-right) + 16px); bottom: calc(env(safe-area-inset-bottom) + 16px);" onclick="closeBattleModal()">
+          退出
+        </button>
       </div>
     </div>
 
