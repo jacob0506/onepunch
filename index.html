@@ -500,12 +500,14 @@
         </section>
 
         <!-- 冒险挑战页面 -->
-        <section id="stages" class="page hidden">
-          <div class="mb-6 px-4">
-            <h2 class="text-2xl font-bold mb-2">冒险挑战</h2>
-            <p class="text-gray-400">击败强大的敌人，获取成长资源</p>
+        <section id="stages" class="page hidden h-[calc(100vh-160px)] md:h-[calc(100vh-220px)] overflow-hidden">
+          <div class="flex flex-col h-full">
+            <div class="mb-3 px-4">
+              <h2 class="text-2xl font-black mb-1">冒险挑战</h2>
+              <p class="text-gray-400 text-sm">通关上一关解锁下一关，已解锁关卡可随时重复挑战</p>
+            </div>
+            <div id="stagesList" class="flex-1 overflow-y-auto space-y-4 px-4 pb-8 custom-scrollbar"></div>
           </div>
-          <div id="stagesList" class="space-y-4 px-4 pb-8"></div>
         </section>
       </div>
     </main>
@@ -582,6 +584,15 @@
                 <div class="flex justify-between"><span>治疗:</span><span id="battleResultHealing">0</span></div>
               </div>
             </div>
+            <div class="flex justify-between items-center mb-2">
+              <div id="battleStatusText" class="text-[10px] text-gray-400">准备战斗...</div>
+              <div class="flex space-x-2">
+                <button id="battleSpeed1" class="px-2 py-1 rounded bg-gray-800 text-[10px] font-bold">x1</button>
+                <button id="battleSpeed2" class="px-2 py-1 rounded bg-gray-800 text-[10px] font-bold text-primary">x2</button>
+                <button id="battleSpeed4" class="px-2 py-1 rounded bg-gray-800 text-[10px] font-bold">x4</button>
+                <button id="battleSkipBtn" class="px-2 py-1 rounded bg-red-900 text-red-200 text-[10px] font-bold">跳过</button>
+              </div>
+            </div>
             <div id="battleLogs" class="bg-black bg-opacity-60 rounded p-3 h-40 overflow-y-auto text-[10px] font-mono mb-6 custom-scrollbar"></div>
             <div class="text-center">
               <button id="continueBattle" class="btn-primary px-12">离开</button>
@@ -616,6 +627,17 @@
 
   <!-- 调试控制台: 真理之门 -->
   <div id="mobile-logger"></div>
+  <div id="mobileNavFab" class="fixed top-1/2 right-3 -translate-y-1/2 md:hidden z-[120]">
+    <button id="mobileNavFabBtn" class="w-12 h-12 rounded-full bg-gray-900 bg-opacity-80 border border-gray-700 shadow-2xl flex items-center justify-center text-white font-black select-none">
+      ☰
+    </button>
+  </div>
+  <div id="mobileNavPanel" class="hidden md:hidden fixed z-[121] right-3 top-1/2 -translate-y-1/2 w-44 glass-panel rounded-xl border border-gray-800 overflow-hidden">
+    <button class="w-full px-4 py-3 text-left text-sm font-black hover:bg-gray-800" data-mobile-nav="home">首页</button>
+    <button class="w-full px-4 py-3 text-left text-sm font-black hover:bg-gray-800" data-mobile-nav="gacha">抽卡</button>
+    <button class="w-full px-4 py-3 text-left text-sm font-black hover:bg-gray-800" data-mobile-nav="characters">养成</button>
+    <button class="w-full px-4 py-3 text-left text-sm font-black hover:bg-gray-800" data-mobile-nav="stages">战斗</button>
+  </div>
   <div id="debugMenu" class="fixed bottom-20 md:bottom-24 right-4 md:right-6 z-[100]">
     <button id="debugToggle" class="w-10 h-10 md:w-12 md:h-12 bg-red-600 rounded-full flex items-center justify-center shadow-2xl border-2 border-white animate-pulse hover:scale-110 transition-transform">
       <span class="text-xl md:text-2xl">👁️</span>
@@ -863,6 +885,7 @@
         const charactersJson = await charactersResponse.json();
         charactersData = charactersJson.characters;
         console.log(`成功加载 ${charactersData.length} 个角色数据`);
+        normalizeCharacterSkills(charactersData);
         
         // 加载装备数据
         const equipmentResponse = await fetch('assets/data/items.json');
@@ -881,12 +904,271 @@
         if (!stagesResponse.ok) throw new Error(`无法加载关卡数据: ${stagesResponse.status}`);
         const stagesJson = await stagesResponse.json();
         stagesData = stagesJson.stages;
+        if (!Array.isArray(stagesData)) stagesData = [];
+        if (stagesData.length < 50) {
+          stagesData = expandStagesTo50(stagesData);
+          console.log(`关卡数据不足，已自动扩展到 ${stagesData.length} 关`);
+        }
         
         console.log("所有游戏数据加载成功");
       } catch (error) {
         console.error("加载游戏数据失败:", error.message);
         throw error;
       }
+    }
+
+    function normalizeCharacterSkills(characters) {
+      if (!Array.isArray(characters)) return;
+      characters.forEach(char => {
+        if (!char || !Array.isArray(char.skills)) return;
+        char.skills.forEach(skill => {
+          if (!skill || (Array.isArray(skill.effects) && skill.effects.length > 0)) return;
+          skill.effects = inferSkillEffects(skill);
+        });
+      });
+    }
+
+    function inferSkillEffects(skill) {
+      const desc = (skill.description || '').trim();
+      const effects = [];
+
+      const percent = (() => {
+        const m = desc.match(/(\d+)\s*%/);
+        return m ? (parseInt(m[1], 10) / 100) : null;
+      })();
+
+      const targetAllEnemies = /敌方全体/.test(desc);
+      const targetEnemy = /敌方单体|单体/.test(desc) && !targetAllEnemies;
+      const targetAllAllies = /全体队友|全队/.test(desc);
+      const targetLowest = /生命(最低|百分比最低)/.test(desc);
+      const randomCount = (() => {
+        const m = desc.match(/随机(\d+)名/);
+        return m ? parseInt(m[1], 10) : null;
+      })();
+      const hits = (() => {
+        const m = desc.match(/(\d+)次/);
+        return m ? parseInt(m[1], 10) : null;
+      })();
+      const stunChance = (() => {
+        const m = desc.match(/(\d+)\s*%[^。\n]*眩晕/);
+        return m ? parseInt(m[1], 10) : null;
+      })();
+      const stunTurns = /(\d+)回合/.test(desc) ? parseInt(desc.match(/(\d+)回合/)[1], 10) : 1;
+      const ignoreDef = (() => {
+        const m = desc.match(/无视目标(\d+)\s*%防御/);
+        return m ? parseInt(m[1], 10) : null;
+      })();
+
+      if (/恢复/.test(desc)) {
+        const scale = percent || 1.0;
+        effects.push({
+          type: 'heal',
+          target: targetAllAllies ? 'allAllies' : (targetLowest ? 'allyLowest' : 'ally'),
+          scale
+        });
+        const atkBuff = desc.match(/增加其(\d+)\s*%攻击力/);
+        if (atkBuff) {
+          effects.push({
+            type: 'buff',
+            target: targetAllAllies ? 'allAllies' : 'ally',
+            stat: 'atkUp',
+            value: parseInt(atkBuff[1], 10),
+            turns: 2
+          });
+        }
+        return effects;
+      }
+
+      if (/造成/.test(desc) && percent) {
+        const target =
+          targetAllEnemies ? 'allEnemies' :
+          randomCount ? 'randomEnemies' :
+          targetEnemy ? (targetLowest ? 'enemyLowest' : 'enemy') :
+          'enemy';
+
+        effects.push({
+          type: 'damage',
+          target,
+          scale: percent,
+          hits: hits || (randomCount ? Math.min(4, randomCount) : 1),
+          ignoreDef
+        });
+
+        if (/灼烧|燃烧/.test(desc)) {
+          effects.push({ type: 'dot', target, dot: 'burn', scale: 0.18, turns: 2, chance: 100 });
+        }
+        if (/流血/.test(desc)) {
+          effects.push({ type: 'dot', target, dot: 'bleed', scale: 0.14, turns: 3, chance: 100 });
+        }
+        if (/中毒/.test(desc)) {
+          effects.push({ type: 'dot', target, dot: 'poison', scale: 0.10, turns: 3, chance: 100 });
+        }
+        if (stunChance) {
+          effects.push({ type: 'cc', target, cc: 'stun', turns: stunTurns, chance: stunChance });
+        }
+        return effects;
+      }
+
+      return effects;
+    }
+
+    function expandStagesTo50(existingStages) {
+      const stageCount = 50;
+      const map = new Map((existingStages || []).map(s => [s.id, s]));
+      const difficultyFor = (i) => {
+        if (i <= 10) return 'normal';
+        if (i <= 25) return 'hard';
+        if (i <= 40) return 'nightmare';
+        return 'abyss';
+      };
+
+      const enemyPools = {
+        normal: [
+          { key: 'slime', name: '史莱姆', class: 'tank', hp: 1.1, atk: 0.8, def: 0.9, spd: 0.9 },
+          { key: 'goblin', name: '哥布林', class: 'warrior', hp: 0.9, atk: 0.95, def: 0.8, spd: 1.0 },
+          { key: 'wolf', name: '森林狼', class: 'assassin', hp: 0.85, atk: 1.0, def: 0.75, spd: 1.15 },
+          { key: 'archer', name: '盗贼弓手', class: 'archer', hp: 0.8, atk: 0.95, def: 0.75, spd: 1.1 }
+        ],
+        hard: [
+          { key: 'elf', name: '黑暗精灵', class: 'archer', hp: 0.95, atk: 1.05, def: 0.85, spd: 1.15 },
+          { key: 'golem', name: '岩石傀儡', class: 'tank', hp: 1.3, atk: 0.9, def: 1.25, spd: 0.85 },
+          { key: 'mage', name: '黑暗法师', class: 'mage', hp: 0.9, atk: 1.2, def: 0.8, spd: 1.0 },
+          { key: 'guard', name: '重甲守卫', class: 'warrior', hp: 1.15, atk: 1.05, def: 1.05, spd: 0.95 }
+        ],
+        nightmare: [
+          { key: 'warlord', name: '深渊战将', class: 'warrior', hp: 1.25, atk: 1.2, def: 1.1, spd: 1.0 },
+          { key: 'reaper', name: '灵魂收割者', class: 'assassin', hp: 1.0, atk: 1.35, def: 0.9, spd: 1.2 },
+          { key: 'oracle', name: '禁术先知', class: 'mage', hp: 1.05, atk: 1.3, def: 0.95, spd: 1.05 },
+          { key: 'bastion', name: '钢铁壁垒', class: 'tank', hp: 1.6, atk: 1.0, def: 1.5, spd: 0.85 }
+        ],
+        abyss: [
+          { key: 'dragon', name: '远古龙裔', class: 'tank', hp: 2.0, atk: 1.15, def: 1.7, spd: 0.9 },
+          { key: 'void', name: '虚空裂隙者', class: 'mage', hp: 1.3, atk: 1.6, def: 1.1, spd: 1.1 },
+          { key: 'phantom', name: '幻影刺客', class: 'assassin', hp: 1.1, atk: 1.65, def: 1.0, spd: 1.3 },
+          { key: 'seraph', name: '堕落圣使', class: 'archer', hp: 1.25, atk: 1.45, def: 1.05, spd: 1.2 }
+        ]
+      };
+
+      const dropTable = (i) => {
+        const drops = [];
+        if (i <= 10) {
+          drops.push({ id: 'eq_001', quantity: 1, dropRate: 0.55 });
+          drops.push({ id: 'eq_002', quantity: 1, dropRate: 0.35 });
+          drops.push({ id: 'ins_001', quantity: 1, dropRate: 0.25 });
+        } else if (i <= 25) {
+          drops.push({ id: 'eq_005', quantity: 1, dropRate: 0.30 });
+          drops.push({ id: 'ins_002', quantity: 1, dropRate: 0.22 });
+          drops.push({ id: 'ins_001', quantity: 1, dropRate: 0.18 });
+        } else if (i <= 40) {
+          drops.push({ id: 'eq_003', quantity: 1, dropRate: 0.16 });
+          drops.push({ id: 'ins_003', quantity: 1, dropRate: 0.14 });
+          drops.push({ id: 'eq_005', quantity: 1, dropRate: 0.12 });
+        } else {
+          drops.push({ id: 'eq_004', quantity: 1, dropRate: 0.10 });
+          drops.push({ id: 'eq_006', quantity: 1, dropRate: 0.06 });
+          drops.push({ id: 'ins_003', quantity: 1, dropRate: 0.10 });
+        }
+        if (i % 10 === 0) {
+          drops.push({ id: 'eq_006', quantity: 1, dropRate: 0.08 });
+        }
+        return drops;
+      };
+
+      const buildEnemies = (i, difficulty) => {
+        const isBoss = i % 5 === 0;
+        const pool = enemyPools[difficulty] || enemyPools.normal;
+        const baseAtk = Math.floor(45 * Math.pow(1.12, i - 1));
+        const baseDef = Math.floor(18 * Math.pow(1.12, i - 1));
+        const baseHp = Math.floor(520 * Math.pow(1.16, i - 1));
+        const baseSpd = 80 + Math.floor(i * 0.8);
+        const count = i <= 10 ? 3 : (i <= 25 ? 4 : 5);
+
+        const enemies = [];
+        for (let idx = 0; idx < count; idx++) {
+          const t = pool[(i + idx) % pool.length];
+          const eliteBoost = (i % 7 === 0 && idx === 0) ? 1.25 : 1.0;
+          enemies.push({
+            id: `enemy_${String(i).padStart(3, '0')}_${idx + 1}`,
+            name: `${t.name}${eliteBoost > 1 ? '·精英' : ''}`,
+            class: t.class,
+            health: Math.floor(baseHp * t.hp * eliteBoost),
+            attack: Math.floor(baseAtk * t.atk * eliteBoost),
+            defense: Math.floor(baseDef * t.def * eliteBoost),
+            speed: Math.floor(baseSpd * t.spd),
+            critRate: Math.min(35, 5 + Math.floor(i * 0.4)),
+            critDmg: 150 + Math.min(80, Math.floor(i * 0.8)),
+            dodgeRate: Math.min(25, 2 + Math.floor(i * 0.25)),
+            blockRate: Math.min(25, 2 + Math.floor(i * 0.25)),
+            dmgReduc: Math.min(35, Math.floor(i * 0.35)),
+            lifesteal: Math.min(18, Math.floor(i * 0.18)),
+            effectHit: Math.min(25, Math.floor(i * 0.35)),
+            penetration: Math.min(30, Math.floor(i * 0.3)),
+            tenacity: Math.min(30, Math.floor(i * 0.3)),
+            isBoss: false
+          });
+        }
+
+        if (isBoss) {
+          const bossTemplate = pool[(i + 2) % pool.length];
+          enemies.push({
+            id: `boss_${String(i).padStart(3, '0')}`,
+            name: `${bossTemplate.name}·首领`,
+            class: bossTemplate.class,
+            health: Math.floor(baseHp * bossTemplate.hp * 4.5),
+            attack: Math.floor(baseAtk * bossTemplate.atk * 2.0),
+            defense: Math.floor(baseDef * bossTemplate.def * 2.2),
+            speed: Math.floor(baseSpd * 0.9),
+            critRate: Math.min(45, 10 + Math.floor(i * 0.6)),
+            critDmg: 170 + Math.min(110, Math.floor(i * 1.2)),
+            dodgeRate: Math.min(18, 2 + Math.floor(i * 0.15)),
+            blockRate: Math.min(30, 5 + Math.floor(i * 0.35)),
+            dmgReduc: Math.min(45, 8 + Math.floor(i * 0.45)),
+            lifesteal: Math.min(25, 3 + Math.floor(i * 0.25)),
+            effectHit: Math.min(35, 8 + Math.floor(i * 0.35)),
+            penetration: Math.min(40, 8 + Math.floor(i * 0.35)),
+            tenacity: Math.min(40, 8 + Math.floor(i * 0.35)),
+            isBoss: true
+          });
+        }
+
+        return enemies;
+      };
+
+      const stages = [];
+      for (let i = 1; i <= stageCount; i++) {
+        const id = `stage_${String(i).padStart(3, '0')}`;
+        const difficulty = difficultyFor(i);
+        const rec = Math.floor(900 * Math.pow(1.13, i - 1) * (i % 5 === 0 ? 1.08 : 1));
+        const existing = map.get(id);
+        const chapter =
+          i <= 10 ? '第一章：元素试炼' :
+          i <= 20 ? '第二章：深渊入侵' :
+          i <= 30 ? '第三章：远古龙庭' :
+          i <= 40 ? '第四章：机械纪元' :
+          '第五章：虚空终章';
+
+        const generated = {
+          id,
+          name: `第${i}关 · ${chapter.replace(/^.+：/, '')}`,
+          chapter,
+          difficulty,
+          recommendedPower: rec,
+          enemies: buildEnemies(i, difficulty),
+          modifiers: {
+            enrageRound: Math.max(6, 12 - Math.floor(i / 6)),
+            boss: i % 5 === 0
+          },
+          rewards: {
+            exp: Math.floor(80 * Math.pow(1.15, i - 1) * (i % 5 === 0 ? 1.5 : 1)),
+            gold: Math.floor(500 * Math.pow(1.18, i - 1) * (i % 5 === 0 ? 1.35 : 1)),
+            items: dropTable(i)
+          }
+        };
+        if (existing && existing.name) generated.name = existing.name;
+        if (existing && existing.difficulty) generated.difficulty = existing.difficulty;
+        stages.push(generated);
+      }
+      return stages;
     }
 
     // 加载失败时的本地兜底数据
@@ -950,7 +1232,7 @@
       ];
       equipmentData = [
         {
-          id: "item_001",
+          id: "eq_001",
           name: "蓝光剑",
           type: "weapon",
           rarity: "R",
@@ -958,7 +1240,7 @@
           imageUrl: "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/45877ab24a85430293a83efafc7f0564~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928671&x-signature=hq1lXj3YUeenP62AX4s97zGvoHA%3D"
         },
         {
-          id: "item_004",
+          id: "eq_005",
           name: "疾风靴",
           type: "shoes",
           rarity: "R",
@@ -999,7 +1281,7 @@
           rewards: {
             exp: 100,
             gold: 500,
-            items: [{ id: "item_001", quantity: 1, dropRate: 0.8 }]
+            items: [{ id: "eq_001", quantity: 1, dropRate: 0.8 }]
           }
         },
         {
@@ -1099,8 +1381,8 @@
       };
 
       const starterEquipment = [
-        pickItem(i => i.id === 'item_001', 0),
-        pickItem(i => i.id === 'item_004', 1)
+        pickItem(i => i.id === 'eq_001', 0),
+        pickItem(i => i.id === 'eq_005', 1)
       ].filter(Boolean);
 
       gameData.equipment = starterEquipment.map(item => ({
@@ -1244,6 +1526,15 @@
       if (continueBattleBtn) continueBattleBtn.addEventListener('click', () => {
         document.getElementById('battleResultModal').classList.add('hidden');
       });
+
+      const battleSpeed1 = document.getElementById('battleSpeed1');
+      if (battleSpeed1) battleSpeed1.addEventListener('click', () => setBattleSpeed(1));
+      const battleSpeed2 = document.getElementById('battleSpeed2');
+      if (battleSpeed2) battleSpeed2.addEventListener('click', () => setBattleSpeed(2));
+      const battleSpeed4 = document.getElementById('battleSpeed4');
+      if (battleSpeed4) battleSpeed4.addEventListener('click', () => setBattleSpeed(4));
+      const battleSkipBtn = document.getElementById('battleSkipBtn');
+      if (battleSkipBtn) battleSkipBtn.addEventListener('click', () => skipBattle());
       
       // 领取离线收益
       const claimRewardsBtn = document.getElementById('claimOfflineRewards');
@@ -1274,6 +1565,90 @@
       if (closeDebugBtn) closeDebugBtn.addEventListener('click', () => {
         document.getElementById('debugPanel').classList.add('hidden');
       });
+
+      initMobileNav();
+    }
+
+    function initMobileNav() {
+      const fab = document.getElementById('mobileNavFab');
+      const fabBtn = document.getElementById('mobileNavFabBtn');
+      const panel = document.getElementById('mobileNavPanel');
+      if (!fab || !fabBtn || !panel) return;
+
+      document.querySelectorAll('[data-mobile-nav]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-mobile-nav');
+          panel.classList.add('hidden');
+          switchPage(target);
+        });
+      });
+
+      let dragging = false;
+      let moved = false;
+      let startX = 0;
+      let startY = 0;
+      let startLeft = 0;
+      let startTop = 0;
+
+      const getPos = () => {
+        const rect = fab.getBoundingClientRect();
+        return { left: rect.left, top: rect.top };
+      };
+
+      const onStart = (clientX, clientY) => {
+        dragging = true;
+        moved = false;
+        const pos = getPos();
+        startLeft = pos.left;
+        startTop = pos.top;
+        startX = clientX;
+        startY = clientY;
+        fab.style.left = `${startLeft}px`;
+        fab.style.top = `${startTop}px`;
+        fab.style.right = 'auto';
+      };
+
+      const onMove = (clientX, clientY) => {
+        if (!dragging) return;
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const rect = fab.getBoundingClientRect();
+        const w = rect.width || 48;
+        const h = rect.height || 48;
+        const left = Math.min(Math.max(8, startLeft + dx), vw - w - 8);
+        const top = Math.min(Math.max(90, startTop + dy), vh - h - 120);
+        fab.style.left = `${left}px`;
+        fab.style.top = `${top}px`;
+      };
+
+      const onEnd = () => {
+        if (!dragging) return;
+        dragging = false;
+      };
+
+      fabBtn.addEventListener('click', () => {
+        if (moved) return;
+        panel.classList.toggle('hidden');
+      });
+
+      fabBtn.addEventListener('touchstart', (e) => {
+        const t = e.touches[0];
+        onStart(t.clientX, t.clientY);
+      }, { passive: true });
+      fabBtn.addEventListener('touchmove', (e) => {
+        const t = e.touches[0];
+        onMove(t.clientX, t.clientY);
+      }, { passive: true });
+      fabBtn.addEventListener('touchend', onEnd);
+
+      fabBtn.addEventListener('mousedown', (e) => {
+        onStart(e.clientX, e.clientY);
+      });
+      window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
+      window.addEventListener('mouseup', onEnd);
     }
 
     // 更新调试界面
@@ -2403,55 +2778,77 @@
     function updateStagesList() {
       const stagesList = document.getElementById('stagesList');
       stagesList.innerHTML = '';
-      
-      stagesData.forEach(stage => {
+
+      const unlockedIndex = Math.max(0, stagesData.findIndex(s => s.id === gameData.currentStage));
+      let lastChapter = null;
+
+      stagesData.forEach((stage, idx) => {
+        const isUnlocked = idx <= unlockedIndex;
+        const isLatest = idx === unlockedIndex;
+        const isCleared = idx < unlockedIndex;
+        const chapterName = stage.chapter || null;
+
+        if (chapterName && chapterName !== lastChapter) {
+          lastChapter = chapterName;
+          const header = document.createElement('div');
+          header.className = 'sticky top-0 z-10 py-2';
+          header.innerHTML = `
+            <div class="glass-panel rounded-xl px-4 py-3 border border-gray-800">
+              <div class="flex items-center justify-between">
+                <div class="text-lg font-black text-shadow-hero">${chapterName}</div>
+                <div class="text-[10px] text-gray-400">${idx + 1}-${Math.min(stagesData.length, idx + 10)}关</div>
+              </div>
+            </div>
+          `;
+          stagesList.appendChild(header);
+        }
+
         const cardElement = document.createElement('div');
-        cardElement.className = 'glass-effect rounded-xl p-6 card-hover';
-        
         const totalPower = calculateTotalPower();
-        const isAvailable = totalPower >= stage.recommendedPower;
-        
+        const isRecommended = totalPower >= stage.recommendedPower;
+
+        cardElement.className = `glass-panel rounded-xl p-4 md:p-6 border border-gray-800 ${isUnlocked ? 'card-hover' : 'opacity-60'}`;
         cardElement.innerHTML = `
-          <div class="flex justify-between items-center mb-4">
+          <div class="flex justify-between items-center mb-3">
             <div>
-              <h3 class="text-xl font-bold">${stage.name}</h3>
+              <h3 class="text-lg md:text-xl font-black">${stage.name}</h3>
               <div class="flex items-center mt-1">
                 <span class="px-2 py-1 rounded text-xs ${getDifficultyClass(stage.difficulty)}">${getDifficultyName(stage.difficulty)}</span>
-                <span class="ml-2 text-sm text-gray-400">推荐战斗力: ${stage.recommendedPower.toLocaleString()}</span>
+                <span class="ml-2 text-[10px] md:text-sm text-gray-400">推荐: ${stage.recommendedPower.toLocaleString()}</span>
               </div>
             </div>
             <div class="text-right">
-              <div class="text-sm text-gray-400">我的战斗力</div>
-              <div class="text-xl font-bold ${isAvailable ? 'text-green-400' : 'text-red-400'}">${totalPower.toLocaleString()}</div>
+              <div class="text-[10px] md:text-sm text-gray-400">${isCleared ? '已通关' : (isLatest ? '当前进度' : (isUnlocked ? '已解锁' : '未解锁'))}</div>
+              <div class="text-lg md:text-xl font-black ${isRecommended ? 'text-green-400' : 'text-yellow-400'}">${totalPower.toLocaleString()}</div>
             </div>
           </div>
           
-          <div class="mb-4">
-            <h4 class="font-bold mb-2">敌人</h4>
+          <div class="mb-3">
+            <div class="text-xs font-bold text-gray-400 mb-2">敌方阵容</div>
             <div class="flex flex-wrap gap-2">
               ${stage.enemies.map(enemy => `
-                <div class="px-3 py-1 bg-gray-800 rounded-full text-sm">
+                <div class="px-3 py-1 bg-gray-800 rounded-full text-xs">
                   ${enemy.name}
                 </div>
               `).join('')}
             </div>
           </div>
           
-          <div class="mb-4">
-            <h4 class="font-bold mb-2">奖励</h4>
+          <div class="mb-3">
+            <div class="text-xs font-bold text-gray-400 mb-2">奖励</div>
             <div class="flex flex-wrap gap-2">
-              <div class="px-3 py-1 bg-gray-800 rounded-full text-sm flex items-center">
+              <div class="px-3 py-1 bg-gray-800 rounded-full text-xs flex items-center">
                 <i class="fa fa-star text-yellow-400 mr-1"></i>
                 经验: ${stage.rewards.exp}
               </div>
-              <div class="px-3 py-1 bg-gray-800 rounded-full text-sm flex items-center">
+              <div class="px-3 py-1 bg-gray-800 rounded-full text-xs flex items-center">
                 <i class="fa fa-coins text-yellow-500 mr-1"></i>
                 金币: ${stage.rewards.gold}
               </div>
               ${stage.rewards.items.map(item => {
                 const itemData = equipmentData.find(i => i.id === item.id) || inscriptionsData.find(i => i.id === item.id);
                 return `
-                  <div class="px-3 py-1 bg-gray-800 rounded-full text-sm">
+                  <div class="px-3 py-1 bg-gray-800 rounded-full text-xs">
                     ${itemData ? itemData.name : item.id} (${Math.floor(item.dropRate * 100)}%)
                   </div>
                 `;
@@ -2460,8 +2857,8 @@
           </div>
           
           <div class="text-center">
-            <button class="btn-primary ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}" ${!isAvailable ? 'disabled' : ''} data-stage="${stage.id}">
-              挑战
+            <button class="btn-primary ${!isUnlocked ? 'opacity-50 cursor-not-allowed' : ''}" ${!isUnlocked ? 'disabled' : ''} data-stage="${stage.id}">
+              ${isUnlocked ? (isCleared ? '再次挑战' : '挑战') : '通关上一关解锁'}
             </button>
           </div>
         `;
@@ -2469,7 +2866,7 @@
         // 绑定挑战按钮事件
         const challengeBtn = cardElement.querySelector('[data-stage]');
         challengeBtn.addEventListener('click', () => {
-          if (isAvailable) {
+          if (isUnlocked) {
             startBattle(stage.id);
           }
         });
@@ -2479,185 +2876,561 @@
     }
 
     // 开始战斗
-    function startBattle(stageId) {
-      const stage = stagesData.find(s => s.id === stageId);
-      if (!stage) return;
-      
-      // 检查战斗力
-      const totalPower = calculateTotalPower();
-      if (totalPower < stage.recommendedPower) {
-        alert('战斗力不足，建议提升角色等级或装备！');
-        return;
-      }
-      
-      // 模拟战斗
-      setTimeout(() => {
-        const battleResult = simulateBattle(stage);
-        showBattleResult(stage, battleResult);
-      }, 1500);
+    let battleRuntime = { speed: 2, skip: false, running: false };
+
+    function setBattleSpeed(multiplier) {
+      battleRuntime.speed = multiplier;
+      const b1 = document.getElementById('battleSpeed1');
+      const b2 = document.getElementById('battleSpeed2');
+      const b4 = document.getElementById('battleSpeed4');
+      if (b1) b1.classList.toggle('text-primary', multiplier === 1);
+      if (b2) b2.classList.toggle('text-primary', multiplier === 2);
+      if (b4) b4.classList.toggle('text-primary', multiplier === 4);
     }
 
-    // 模拟战斗 (迭代3)
-    function simulateBattle(stage) {
+    function skipBattle() {
+      battleRuntime.skip = true;
+    }
+
+    function battleDelayMs() {
+      if (battleRuntime.skip) return 0;
+      const base = 180;
+      return Math.max(0, Math.floor(base / Math.max(1, battleRuntime.speed)));
+    }
+
+    function appendBattleLog(logs, container, html) {
+      logs.push(html);
+      if (container) {
+        container.insertAdjacentHTML('beforeend', html);
+        while (container.childNodes.length > 420) container.removeChild(container.firstChild);
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+
+    async function startBattle(stageId) {
+      const stage = stagesData.find(s => s.id === stageId);
+      if (!stage) return;
+
+      const modal = document.getElementById('battleResultModal');
+      const logsContainer = document.getElementById('battleLogs');
+      const statusText = document.getElementById('battleStatusText');
+      const continueBtn = document.getElementById('continueBattle');
+      const itemsContainer = document.getElementById('battleResultItems');
+      if (logsContainer) logsContainer.innerHTML = '';
+      if (statusText) statusText.textContent = '战斗进行中...';
+      if (itemsContainer) itemsContainer.innerHTML = '<div class="text-gray-400">战斗进行中...</div>';
+
+      document.getElementById('battleResultTitle').textContent = '战斗进行中...';
+      document.getElementById('battleResultTitle').className = 'text-2xl font-bold text-yellow-400';
+      document.getElementById('battleResultStage').textContent = stage.name;
+      document.getElementById('battleResultRounds').textContent = '-';
+      document.getElementById('battleResultMaxDamage').textContent = '-';
+      document.getElementById('battleResultHealing').textContent = '-';
+      document.getElementById('battleResultExp').textContent = '-';
+      document.getElementById('battleResultGold').textContent = '-';
+
+      if (continueBtn) continueBtn.disabled = true;
+      battleRuntime.running = true;
+      battleRuntime.skip = false;
+      setBattleSpeed(2);
+      modal.classList.remove('hidden');
+
+      try {
+        const result = await simulateBattleLive(stage, logsContainer);
+        battleRuntime.running = false;
+        if (statusText) statusText.textContent = '战斗结束';
+        if (continueBtn) continueBtn.disabled = false;
+        showBattleResult(stage, result, true);
+      } catch (e) {
+        battleRuntime.running = false;
+        if (statusText) statusText.textContent = '战斗异常';
+        if (continueBtn) continueBtn.disabled = false;
+        console.error(e);
+        alert('战斗系统发生异常，请打开日志查看错误信息。');
+      }
+    }
+
+    async function simulateBattleLive(stage, logsContainer) {
       const logs = [];
-      const team = gameData.characters.slice(0, 5).map(char => {
+      const maxRounds = 30;
+
+      const buildPlayerUnit = (char) => {
         const stats = calculateTotalStats(char);
         return {
-          ...char,
-          ...stats, // 注入所有二级属性
+          id: char.id,
+          name: char.name,
+          rarity: char.rarity,
+          class: char.class,
+          isPlayer: true,
+          skills: Array.isArray(char.skills) ? char.skills : [],
+          attack: stats.attack,
+          defense: stats.defense,
+          health: stats.health,
+          speed: stats.speed,
+          critRate: stats.critRate || 0,
+          critDmg: stats.critDmg || 150,
+          dodgeRate: stats.dodgeRate || 0,
+          blockRate: stats.blockRate || 0,
+          dmgReduc: stats.dmgReduc || 0,
+          lifesteal: stats.lifesteal || 0,
+          effectHit: stats.effectHit || 0,
+          penetration: stats.penetration || 0,
+          tenacity: stats.tenacity || 0,
           currentHp: stats.health,
           maxHp: stats.health,
-          isPlayer: true,
-          skillCooldown: 0
+          shield: 0,
+          statuses: [],
+          skillCd: 0
         };
-      });
-      
-      const enemies = stage.enemies.map(enemy => ({
-        ...enemy,
-        currentHp: enemy.health,
-        maxHp: enemy.health,
-        // 敌人默认二级属性较低
-        critRate: 5,
-        dodgeRate: 2,
-        blockRate: 2,
-        dmgReduc: 0,
-        lifesteal: 0,
-        isPlayer: false
-      }));
-      
+      };
+
+      const buildEnemyUnit = (enemy) => {
+        return {
+          id: enemy.id,
+          name: enemy.name,
+          rarity: enemy.isBoss ? 'BOSS' : 'ENEMY',
+          class: enemy.class || 'warrior',
+          isPlayer: false,
+          skills: [{ id: `${enemy.id}_skill`, name: '敌方技能', cooldown: enemy.isBoss ? 3 : 4 }],
+          attack: enemy.attack,
+          defense: enemy.defense,
+          health: enemy.health,
+          speed: enemy.speed || 90,
+          critRate: enemy.critRate || 5,
+          critDmg: enemy.critDmg || 150,
+          dodgeRate: enemy.dodgeRate || 2,
+          blockRate: enemy.blockRate || 2,
+          dmgReduc: enemy.dmgReduc || 0,
+          lifesteal: enemy.lifesteal || 0,
+          effectHit: enemy.effectHit || 0,
+          penetration: enemy.penetration || 0,
+          tenacity: enemy.tenacity || 0,
+          currentHp: enemy.health,
+          maxHp: enemy.health,
+          shield: 0,
+          statuses: [],
+          skillCd: 0,
+          isBoss: !!enemy.isBoss
+        };
+      };
+
+      const team = gameData.characters.slice(0, 5).map(buildPlayerUnit);
+      const enemies = (stage.enemies || []).map(buildEnemyUnit);
+
       let round = 1;
-      let totalDamage = 0;
       let totalHealing = 0;
       let maxSingleDamage = 0;
-      
-      logs.push(`<div class="text-primary font-bold">--- 战斗开始: ${stage.name} ---</div>`);
-      
-      while (round <= 20) {
-        logs.push(`<div class="text-gray-400 mt-2 italic">第 ${round} 回合</div>`);
-        
-        // 合并所有单位并按速度排序
-        const allUnits = [...team, ...enemies].sort((a, b) => b.speed - a.speed);
-        
+
+      appendBattleLog(logs, logsContainer, `<div class="text-primary font-bold">--- 战斗开始: ${stage.name} ---</div>`);
+
+      const addStatus = (unit, type, value, turns) => {
+        const existing = unit.statuses.find(s => s.type === type);
+        if (existing) {
+          if (typeof existing.value === 'number' && typeof value === 'number') {
+            existing.value = value >= 0 ? Math.max(existing.value, value) : Math.min(existing.value, value);
+          } else {
+            existing.value = value;
+          }
+          existing.turns = Math.max(existing.turns, turns);
+        } else {
+          unit.statuses.push({ type, value, turns });
+        }
+      };
+
+      const getStatus = (unit, type) => unit.statuses.find(s => s.type === type);
+      const getStatusValue = (unit, type) => unit.statuses.filter(s => s.type === type).reduce((sum, s) => sum + (s.value || 0), 0);
+
+      const cleanStatuses = (unit) => {
+        unit.statuses = unit.statuses.filter(s => s.turns > 0);
+      };
+
+      const tickTurnStart = (unit) => {
+        const burn = getStatus(unit, 'burn');
+        const bleed = getStatus(unit, 'bleed');
+        const poison = getStatus(unit, 'poison');
+        let dot = 0;
+        if (burn) dot += burn.value;
+        if (bleed) dot += bleed.value;
+        if (poison) dot += poison.value;
+        if (dot > 0 && unit.currentHp > 0) {
+          const taken = Math.min(unit.currentHp, Math.floor(dot));
+          unit.currentHp -= taken;
+          appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 受到持续伤害 <span class="text-red-400 font-bold">${taken}</span></div>`);
+        }
+      };
+
+      const chooseTarget = (attacker, candidates) => {
+        const alive = candidates.filter(u => u.currentHp > 0);
+        const taunter = alive.find(u => getStatus(u, 'taunt'));
+        if (taunter) return taunter;
+        if (attacker.class === 'assassin') {
+          return alive.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
+        }
+        return alive[Math.floor(Math.random() * alive.length)];
+      };
+
+      const computeDamage = (attacker, target, multiplier) => {
+        const atkUp = getStatusValue(attacker, 'atkUp');
+        const defDown = getStatusValue(target, 'defDown');
+        const dmgUp = getStatusValue(attacker, 'dmgUp');
+        const atk = attacker.attack * (1 + atkUp / 100);
+        const raw = atk * multiplier * (0.9 + Math.random() * 0.2) * (1 + dmgUp / 100);
+        const effectiveDef = Math.max(0, target.defense * (1 - defDown / 100) * (1 - attacker.penetration / 200));
+        let dmg = Math.max(1, Math.floor(raw * (100 / (100 + effectiveDef))));
+
+        const dodgeRoll = Math.random() * 100;
+        const dodgeChance = Math.max(0, target.dodgeRate - attacker.effectHit * 0.5);
+        if (dodgeRoll < dodgeChance) return { dodged: true, crit: false, block: false, damage: 0 };
+
+        const critRoll = Math.random() * 100;
+        const crit = critRoll < attacker.critRate;
+        if (crit) dmg = Math.floor(dmg * (Math.max(150, attacker.critDmg) / 100));
+
+        const blockRoll = Math.random() * 100;
+        const block = blockRoll < target.blockRate;
+        if (block) dmg = Math.floor(dmg * 0.5);
+
+        const reduc = Math.min(80, (target.dmgReduc || 0) + getStatusValue(target, 'dmgReducUp'));
+        if (reduc > 0) dmg = Math.floor(dmg * (1 - reduc / 100));
+
+        let shieldAbsorb = 0;
+        if (target.shield > 0) {
+          shieldAbsorb = Math.min(target.shield, dmg);
+          target.shield -= shieldAbsorb;
+          dmg -= shieldAbsorb;
+        }
+
+        dmg = Math.max(0, dmg);
+        return { dodged: false, crit, block, damage: dmg, shieldAbsorb };
+      };
+
+      const applyHit = (attacker, target, multiplier, label) => {
+        const r = computeDamage(attacker, target, multiplier);
+        if (r.dodged) {
+          appendBattleLog(logs, logsContainer, `<div><span class="${attacker.isPlayer ? 'text-blue-400' : 'text-red-400'}">${attacker.name}</span> 的${label}被 <span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span> <span class="text-yellow-500 font-bold">闪避</span></div>`);
+          return { damage: 0 };
+        }
+
+        if (r.damage > 0) {
+          target.currentHp -= r.damage;
+          maxSingleDamage = Math.max(maxSingleDamage, r.damage);
+        }
+
+        let parts = [];
+        if (r.crit) parts.push(`<span class="text-orange-500 font-black">暴击</span>`);
+        if (r.block) parts.push(`<span class="text-blue-300 font-bold">格挡</span>`);
+        if (r.shieldAbsorb > 0) parts.push(`<span class="text-purple-300">护盾吸收${r.shieldAbsorb}</span>`);
+        const flags = parts.length ? `（${parts.join(' / ')}）` : '';
+
+        appendBattleLog(
+          logs,
+          logsContainer,
+          `<div><span class="${attacker.isPlayer ? 'text-blue-400' : 'text-red-400'}">${attacker.name}</span> 对 <span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span> 使用${label}，造成 <span class="text-red-500 font-bold">${r.damage}</span> 伤害${flags}</div>`
+        );
+
+        if (attacker.lifesteal > 0 && r.damage > 0) {
+          const heal = Math.floor(r.damage * attacker.lifesteal / 100);
+          const actual = Math.min(attacker.maxHp - attacker.currentHp, heal);
+          if (actual > 0) {
+            attacker.currentHp += actual;
+            totalHealing += actual;
+            appendBattleLog(logs, logsContainer, `<div><span class="text-green-400">${attacker.name}</span> 吸血回复 <span class="text-green-400 font-bold">${actual}</span></div>`);
+          }
+        }
+
+        if (target.currentHp <= 0) {
+          appendBattleLog(logs, logsContainer, `<div class="text-gray-500">[${target.name}] 已倒下</div>`);
+        }
+
+        return { damage: r.damage };
+      };
+
+      const castSkill = (unit, allies, foes) => {
+        const skill = unit.skills[0];
+        const cd = (skill && skill.cooldown) ? skill.cooldown : 4;
+        unit.skillCd = cd;
+        const skillName = skill ? skill.name : '技能';
+        const level = (skill && skill.level) ? skill.level : 1;
+        const rarityBoost = unit.rarity === 'SUR' ? 0.18 : (unit.rarity === 'UR' ? 0.10 : (unit.rarity === 'SSR' ? 0.06 : 0));
+        const lvlBoost = 1 + (level - 1) * 0.05;
+
+        const applyStructuredEffects = () => {
+          const effects = skill && Array.isArray(skill.effects) ? skill.effects : [];
+          if (effects.length === 0) return false;
+
+          const aliveAllies = allies.filter(a => a.currentHp > 0);
+          const aliveFoes = foes.filter(f => f.currentHp > 0);
+          if (aliveFoes.length === 0 && aliveAllies.length === 0) return true;
+
+          const pickLowest = (list) => {
+            const alive = list.filter(u => u.currentHp > 0);
+            if (alive.length === 0) return null;
+            return alive.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
+          };
+
+          const pickTargets = (targetType) => {
+            if (targetType === 'allEnemies') return aliveFoes;
+            if (targetType === 'allAllies') return aliveAllies;
+            if (targetType === 'enemyLowest') return pickLowest(aliveFoes) ? [pickLowest(aliveFoes)] : [];
+            if (targetType === 'allyLowest') return pickLowest(aliveAllies) ? [pickLowest(aliveAllies)] : [];
+            if (targetType === 'ally') return [unit];
+            return aliveFoes.length ? [chooseTarget(unit, aliveFoes)] : [];
+          };
+
+          appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span></div>`);
+
+          effects.forEach(effect => {
+            const chance = typeof effect.chance === 'number' ? effect.chance : 100;
+            if (chance < 100 && Math.random() * 100 >= chance) return;
+
+            const targetType = effect.target || 'enemy';
+            if (effect.type === 'damage') {
+              const hits = Math.max(1, effect.hits || 1);
+              const mult = (effect.scale || 1) * (1 + rarityBoost) * lvlBoost;
+              const ignoreDef = typeof effect.ignoreDef === 'number' ? effect.ignoreDef : null;
+              for (let h = 0; h < hits; h++) {
+                const targets = targetType === 'randomEnemies'
+                  ? (aliveFoes.length ? [aliveFoes[Math.floor(Math.random() * aliveFoes.length)]] : [])
+                  : pickTargets(targetType);
+                targets.forEach(t => {
+                  if (!t || t.currentHp <= 0) return;
+                  const prevPen = unit.penetration;
+                  if (ignoreDef !== null) unit.penetration = Math.min(200, prevPen + ignoreDef * 2);
+                  applyHit(unit, t, mult, '技能');
+                  unit.penetration = prevPen;
+                });
+              }
+              return;
+            }
+
+            if (effect.type === 'heal') {
+              const healBase = unit.attack * (effect.scale || 1) * (1 + rarityBoost) * lvlBoost;
+              let healed = 0;
+              pickTargets(targetType === 'allAllies' ? 'allAllies' : (targetType === 'allyLowest' ? 'allyLowest' : 'ally')).forEach(t => {
+                if (!t || t.currentHp <= 0) return;
+                const amount = Math.min(t.maxHp - t.currentHp, Math.floor(healBase));
+                if (amount > 0) {
+                  t.currentHp += amount;
+                  healed += amount;
+                }
+              });
+              totalHealing += healed;
+              if (healed > 0) appendBattleLog(logs, logsContainer, `<div><span class="text-green-400 font-bold">${unit.name}</span> 治疗 <span class="text-green-400 font-bold">${healed}</span></div>`);
+              return;
+            }
+
+            if (effect.type === 'buff' || effect.type === 'debuff') {
+              const stat = effect.stat;
+              const value = typeof effect.value === 'number' ? effect.value : 0;
+              const turns = typeof effect.turns === 'number' ? effect.turns : 2;
+              pickTargets(targetType).forEach(t => {
+                if (!t || t.currentHp <= 0) return;
+                addStatus(t, stat, value, turns);
+              });
+              return;
+            }
+
+            if (effect.type === 'dot') {
+              const dot = effect.dot;
+              const turns = typeof effect.turns === 'number' ? effect.turns : 2;
+              const value = Math.floor(unit.attack * (effect.scale || 0.1) * lvlBoost);
+              pickTargets(targetType).forEach(t => {
+                if (!t || t.currentHp <= 0) return;
+                addStatus(t, dot, value, turns);
+              });
+              return;
+            }
+
+            if (effect.type === 'cc') {
+              const cc = effect.cc;
+              const turns = typeof effect.turns === 'number' ? effect.turns : 1;
+              pickTargets(targetType).forEach(t => {
+                if (!t || t.currentHp <= 0) return;
+                addStatus(t, cc, 1, turns);
+              });
+              return;
+            }
+
+            if (effect.type === 'shield') {
+              const turns = typeof effect.turns === 'number' ? effect.turns : 2;
+              const amount = Math.floor(unit.attack * (effect.scale || 0.8) * lvlBoost);
+              pickTargets(targetType).forEach(t => {
+                if (!t || t.currentHp <= 0) return;
+                t.shield += amount;
+                addStatus(t, 'shield', 1, turns);
+              });
+              appendBattleLog(logs, logsContainer, `<div><span class="text-purple-300 font-bold">${unit.name}</span> 施加护盾 <span class="text-purple-300 font-bold">${amount}</span></div>`);
+              return;
+            }
+
+            if (effect.type === 'taunt') {
+              addStatus(unit, 'taunt', 1, typeof effect.turns === 'number' ? effect.turns : 2);
+              return;
+            }
+          });
+
+          return true;
+        };
+
+        if (applyStructuredEffects()) return;
+
+        if (unit.class === 'healer') {
+          const healBase = unit.attack * (1.15 + rarityBoost) * lvlBoost;
+          let healed = 0;
+          allies.forEach(a => {
+            if (a.currentHp <= 0) return;
+            const amount = Math.min(a.maxHp - a.currentHp, Math.floor(healBase));
+            if (amount > 0) {
+              a.currentHp += amount;
+              healed += amount;
+            }
+          });
+          totalHealing += healed;
+          allies.forEach(a => a.currentHp > 0 && addStatus(a, 'atkUp', 12 + Math.floor(rarityBoost * 100 / 2), 2));
+          appendBattleLog(logs, logsContainer, `<div><span class="text-green-400 font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>，治疗全队 <span class="text-green-400 font-bold">${healed}</span> 并提升攻击</div>`);
+          return;
+        }
+
+        if (unit.class === 'tank') {
+          const shield = Math.floor(unit.maxHp * (0.10 + rarityBoost * 0.8) * lvlBoost);
+          unit.shield += shield;
+          addStatus(unit, 'taunt', 1, 2);
+          addStatus(unit, 'dmgReducUp', 20, 2);
+          appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>，获得护盾 <span class="text-purple-300 font-bold">${shield}</span> 并嘲讽</div>`);
+          return;
+        }
+
+        if (unit.class === 'mage') {
+          const mult = (1.25 + rarityBoost) * lvlBoost;
+          appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>（群体）</div>`);
+          foes.filter(f => f.currentHp > 0).forEach(f => {
+            const { damage } = applyHit(unit, f, mult, '技能');
+            if (damage > 0) addStatus(f, 'burn', Math.floor(unit.attack * 0.18 * lvlBoost), 2);
+          });
+          return;
+        }
+
+        if (unit.class === 'archer') {
+          appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>（连射）</div>`);
+          const hits = 3 + (unit.rarity === 'SUR' ? 1 : 0);
+          for (let h = 0; h < hits; h++) {
+            const target = chooseTarget(unit, foes);
+            if (!target) break;
+            applyHit(unit, target, (0.75 + rarityBoost * 0.4) * lvlBoost, '连射');
+            addStatus(target, 'defDown', 10, 2);
+          }
+          return;
+        }
+
+        if (unit.class === 'assassin') {
+          const target = chooseTarget(unit, foes);
+          if (!target) return;
+          const hpRate = target.currentHp / target.maxHp;
+          const mult = ((hpRate < 0.35 ? 3.2 : 2.2) + rarityBoost) * lvlBoost;
+          appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>（刺杀）</div>`);
+          const { damage } = applyHit(unit, target, mult, '刺杀');
+          if (damage > 0) addStatus(target, 'bleed', Math.floor(unit.attack * 0.14 * lvlBoost), 3);
+          return;
+        }
+
+        const target = chooseTarget(unit, foes);
+        if (!target) return;
+        const mult = (1.65 + rarityBoost) * lvlBoost;
+        appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span></div>`);
+        applyHit(unit, target, mult, '技能');
+        addStatus(target, 'defDown', 18, 2);
+      };
+
+      for (; round <= maxRounds; round++) {
+        appendBattleLog(logs, logsContainer, `<div class="text-gray-400 mt-2 italic">第 ${round} 回合</div>`);
+        const enrageRound = stage.modifiers && stage.modifiers.enrageRound ? stage.modifiers.enrageRound : 8;
+        if (round >= enrageRound) {
+          enemies.filter(e => e.currentHp > 0 && e.isBoss).forEach(b => addStatus(b, 'atkUp', 25, 99));
+        }
+
+        const allUnits = [...team, ...enemies].filter(u => u.currentHp > 0);
+        allUnits.sort((a, b) => {
+          const aSpd = a.speed * (1 + getStatusValue(a, 'spdUp') / 100) * (1 - getStatusValue(a, 'spdDown') / 100);
+          const bSpd = b.speed * (1 + getStatusValue(b, 'spdUp') / 100) * (1 - getStatusValue(b, 'spdDown') / 100);
+          return bSpd - aSpd;
+        });
+
         for (const unit of allUnits) {
           if (unit.currentHp <= 0) continue;
-          
-          const targets = unit.isPlayer ? enemies : team;
-          const aliveTargets = targets.filter(t => t.currentHp > 0);
-          
-          if (aliveTargets.length === 0) break;
-          
-          const target = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
-          
-          // 1. 检查闪避 (Dodge)
-          if (Math.random() * 100 < target.dodgeRate) {
-            logs.push(`<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 的攻击被 <span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span> <span class="text-yellow-500 font-bold">闪避</span> 了！</div>`);
+          if (team.every(t => t.currentHp <= 0) || enemies.every(e => e.currentHp <= 0)) break;
+
+          tickTurnStart(unit);
+          if (unit.currentHp <= 0) continue;
+
+          const stun = getStatus(unit, 'stun');
+          if (stun) {
+            appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 被控制，无法行动</div>`);
+            stun.turns--;
+            cleanStatuses(unit);
+            await new Promise(r => setTimeout(r, battleDelayMs()));
             continue;
           }
 
-          // 2. 决定基础伤害
-          let damage = 0;
-          let isSkill = false;
-          
-          if (unit.isPlayer && unit.skillCooldown === 0) {
-            const skill = unit.skills[0];
-            isSkill = true;
-            unit.skillCooldown = skill.cooldown;
-            const multiplier = parseInt(skill.description.match(/(\d+)%/)[1]) / 100;
-            damage = Math.floor(unit.attack * multiplier);
-            
-            if (skill.name === "神圣治愈") {
-              const heal = damage;
-              team.forEach(t => {
-                if (t.currentHp > 0) {
-                  const actualHeal = Math.min(t.maxHp - t.currentHp, heal);
-                  t.currentHp += actualHeal;
-                  totalHealing += actualHeal;
-                }
-              });
-              logs.push(`<div><span class="text-green-400 font-bold">${unit.name}</span> 释放了 <span class="text-yellow-400">[${skill.name}]</span>，恢复全队 <span class="text-green-400">${heal}</span> 生命</div>`);
-              continue;
-            }
-            logs.push(`<div><span class="text-blue-400 font-bold">${unit.name}</span> 释放技能 <span class="text-yellow-400">[${skill.name}]</span></div>`);
+          if (unit.skillCd > 0) unit.skillCd--;
+
+          const allies = unit.isPlayer ? team : enemies;
+          const foes = unit.isPlayer ? enemies : team;
+
+          const aliveFoes = foes.filter(f => f.currentHp > 0);
+          if (aliveFoes.length === 0) break;
+
+          if (unit.skillCd === 0 && unit.skills && unit.skills.length > 0) {
+            castSkill(unit, allies, foes);
           } else {
-            damage = Math.floor(unit.attack * (0.9 + Math.random() * 0.2));
-            if (unit.isPlayer && unit.skillCooldown > 0) unit.skillCooldown--;
-          }
-          
-          // 3. 检查暴击 (Crit)
-          let isCrit = false;
-          if (Math.random() * 100 < unit.critRate) {
-            isCrit = true;
-            damage *= 2; // 暴击双倍伤害
+            const target = chooseTarget(unit, foes);
+            if (!target) break;
+            applyHit(unit, target, 1.0, '普攻');
           }
 
-          // 4. 计算防御减免
-          let finalDamage = Math.max(1, Math.floor(damage * (100 / (100 + target.defense))));
-          
-          // 5. 检查格挡 (Block)
-          if (Math.random() * 100 < target.blockRate) {
-            finalDamage = Math.floor(finalDamage * 0.5);
-            logs.push(`<div><span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span> 成功 <span class="text-blue-300 font-bold">格挡</span>，伤害减半</div>`);
-          }
+          unit.statuses.forEach(s => s.turns--);
+          cleanStatuses(unit);
 
-          // 6. 检查免伤 (Damage Reduction)
-          if (target.dmgReduc > 0) {
-            finalDamage = Math.floor(finalDamage * (1 - target.dmgReduc / 100));
-          }
-
-          // 7. 结算伤害
-          target.currentHp -= finalDamage;
-          
-          let damageLog = `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 攻击 <span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span>，造成 `;
-          if (isCrit) damageLog += `<span class="text-orange-500 font-black text-lg">暴击 ${finalDamage}</span>`;
-          else damageLog += `<span class="text-red-500 font-bold">${finalDamage}</span>`;
-          damageLog += ` 伤害</div>`;
-          logs.push(damageLog);
-
-          // 8. 检查吸血 (Lifesteal)
-          if (unit.lifesteal > 0 && finalDamage > 0) {
-            const heal = Math.floor(finalDamage * unit.lifesteal / 100);
-            unit.currentHp = Math.min(unit.maxHp, unit.currentHp + heal);
-            totalHealing += heal;
-            logs.push(`<div><span class="text-green-400">${unit.name}</span> 触发吸血，回复了 <span class="text-green-400">${heal}</span> 生命</div>`);
-          }
-
-          if (unit.isPlayer) {
-            totalDamage += finalDamage;
-            maxSingleDamage = Math.max(maxSingleDamage, finalDamage);
-          }
-          
-          if (target.currentHp <= 0) {
-            logs.push(`<div><span class="text-gray-500">[${target.name}] 已倒下</span></div>`);
-          }
-          
-          if (enemies.every(e => e.currentHp <= 0) || team.every(t => t.currentHp <= 0)) break;
+          await new Promise(r => setTimeout(r, battleDelayMs()));
         }
-        
-        if (enemies.every(e => e.currentHp <= 0) || team.every(t => t.currentHp <= 0)) break;
-        round++;
+
+        if (team.every(t => t.currentHp <= 0) || enemies.every(e => e.currentHp <= 0)) break;
       }
-      
+
       const isWin = enemies.every(e => e.currentHp <= 0);
-      logs.push(`<div class="mt-2 font-bold ${isWin ? 'text-green-400' : 'text-red-400'}">--- 战斗结束: ${isWin ? '胜利' : '失败'} ---</div>`);
-      
-      // 计算奖励 (略，保持原有逻辑)
+      appendBattleLog(logs, logsContainer, `<div class="mt-2 font-bold ${isWin ? 'text-green-400' : 'text-red-400'}">--- 战斗结束: ${isWin ? '胜利' : '失败'} ---</div>`);
+
       const rewards = { exp: stage.rewards.exp, gold: stage.rewards.gold, items: [] };
-      if (isWin) {
+      if (isWin && stage.rewards && Array.isArray(stage.rewards.items)) {
         stage.rewards.items.forEach(item => {
           if (Math.random() < item.dropRate) {
             const itemData = equipmentData.find(i => i.id === item.id) || inscriptionsData.find(i => i.id === item.id);
             if (itemData) {
-              rewards.items.push({ ...itemData, level: 1, exp: 0, refine: 0, instanceId: Date.now() + Math.random() });
+              const instance = { ...JSON.parse(JSON.stringify(itemData)), instanceId: Date.now() + Math.random() };
+              if (equipmentData.some(e => e.id === itemData.id)) {
+                instance.level = 1;
+                instance.refine = 0;
+              } else {
+                instance.level = 1;
+                instance.exp = 0;
+              }
+              rewards.items.push(instance);
             }
           }
         });
       }
-      
-      return { isWin, rounds: Math.min(round, 20), maxDamage: maxSingleDamage, healing: totalHealing, logs, rewards };
+
+      return {
+        isWin,
+        rounds: Math.min(round, maxRounds),
+        maxDamage: maxSingleDamage,
+        healing: totalHealing,
+        logs,
+        rewards
+      };
     }
 
     // 显示战斗结果
-    function showBattleResult(stage, result) {
+    function showBattleResult(stage, result, keepLogs = false) {
       // 更新战斗结果UI
       document.getElementById('battleResultTitle').textContent = result.isWin ? '战斗胜利!' : '战斗失败!';
       document.getElementById('battleResultTitle').className = result.isWin ? 'text-2xl font-bold text-green-400' : 'text-2xl font-bold text-red-400';
@@ -2668,7 +3441,7 @@
       
       // 渲染日志
       const logsContainer = document.getElementById('battleLogs');
-      logsContainer.innerHTML = result.logs.join('');
+      if (!keepLogs) logsContainer.innerHTML = result.logs.join('');
       // 自动滚动到底部
       setTimeout(() => {
         logsContainer.scrollTop = logsContainer.scrollHeight;
@@ -2726,12 +3499,11 @@
           itemsContainer.innerHTML = '<div class="text-gray-400">未获得物品</div>';
         }
         
-        // 更新当前关卡
-        const currentStageIndex = stagesData.findIndex(s => s.id === gameData.currentStage);
-        const nextStageIndex = stagesData.findIndex(s => s.id === stage.id);
-        
-        if (nextStageIndex > currentStageIndex) {
-          gameData.currentStage = stage.id;
+        const unlockedIndex = Math.max(0, stagesData.findIndex(s => s.id === gameData.currentStage));
+        const clearedIndex = stagesData.findIndex(s => s.id === stage.id);
+        if (clearedIndex >= 0) {
+          const nextIndex = Math.max(unlockedIndex, Math.min(stagesData.length - 1, clearedIndex + 1));
+          gameData.currentStage = stagesData[nextIndex].id;
         }
       } else {
         itemsContainer.innerHTML = '<div class="text-gray-400">失败无奖励</div>';
@@ -2762,15 +3534,18 @@
 
     // 检查角色升级
     function checkCharacterLevelUp(char) {
-      const maxLevel = 10 + (char.stars * 5);
-      const expToNextLevel = calculateExpToNextLevel(char.level);
+      const MAX_GLOBAL_LEVEL = GAME_CONFIG.maxLevel || 150;
+      let maxLevel = 15 + (char.stars * 15);
+      if (char.stars >= (GAME_CONFIG.maxStars || 8)) maxLevel = MAX_GLOBAL_LEVEL;
       
-      while (char.exp >= expToNextLevel && char.level < maxLevel) {
+      while (char.level < maxLevel) {
+        const expToNextLevel = calculateExpToNextLevel(char.level);
+        if (char.exp < expToNextLevel) break;
         char.exp -= expToNextLevel;
         char.level++;
         
         // 升级技能
-        char.skills.forEach(skill => {
+        (char.skills || []).forEach(skill => {
           if (Math.random() < 0.3) {
             skill.level++;
           }
@@ -3327,7 +4102,8 @@
       const difficultyNames = {
         'normal': '普通',
         'hard': '困难',
-        'nightmare': '噩梦'
+        'nightmare': '噩梦',
+        'abyss': '深渊'
       };
       
       return difficultyNames[difficulty] || difficulty;
@@ -3338,7 +4114,8 @@
       const difficultyClasses = {
         'normal': 'bg-green-900 text-green-400',
         'hard': 'bg-yellow-900 text-yellow-400',
-        'nightmare': 'bg-red-900 text-red-400'
+        'nightmare': 'bg-red-900 text-red-400',
+        'abyss': 'bg-purple-900 text-purple-300'
       };
       
       return difficultyClasses[difficulty] || 'bg-gray-700 text-gray-400';
