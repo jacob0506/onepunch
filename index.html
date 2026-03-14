@@ -627,7 +627,7 @@
 
   <!-- 调试控制台: 真理之门 -->
   <div id="mobile-logger"></div>
-  <div id="mobileNavFab" class="fixed top-1/2 right-3 -translate-y-1/2 md:hidden z-[120]">
+  <div id="mobileNavFab" class="hidden fixed top-1/2 right-3 -translate-y-1/2 md:hidden z-[120]">
     <button id="mobileNavFabBtn" class="w-12 h-12 rounded-full bg-gray-900 bg-opacity-80 border border-gray-700 shadow-2xl flex items-center justify-center text-white font-black select-none">
       ☰
     </button>
@@ -723,8 +723,6 @@
         div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
         logger.appendChild(div);
         logger.scrollTop = logger.scrollHeight;
-        // 如果有错误，自动显示日志面板
-        if (type === 'error') logger.style.display = 'block';
       }
 
       console.log = (...args) => {
@@ -1545,111 +1543,29 @@
       
       // 调试菜单事件
       const debugToggleBtn = document.getElementById('debugToggle');
-      if (debugToggleBtn) debugToggleBtn.addEventListener('click', () => {
-        // 长按或快速双击切换日志面板
-        const logger = document.getElementById('mobile-logger');
-        if (logger) {
+      if (debugToggleBtn) {
+        let lastClick = 0;
+        debugToggleBtn.addEventListener('click', () => {
+          const panel = document.getElementById('debugPanel');
+          panel.classList.toggle('hidden');
+          if (!panel.classList.contains('hidden')) updateDebugUI();
+
           const now = Date.now();
-          if (this.lastClick && now - this.lastClick < 500) {
+          const logger = document.getElementById('mobile-logger');
+          if (logger && now - lastClick < 500) {
             logger.style.display = logger.style.display === 'none' ? 'block' : 'none';
           }
-          this.lastClick = now;
-        }
-
-        const panel = document.getElementById('debugPanel');
-        panel.classList.toggle('hidden');
-        if (!panel.classList.contains('hidden')) updateDebugUI();
-      });
+          lastClick = now;
+        });
+      }
       
       const closeDebugBtn = document.getElementById('closeDebug');
       if (closeDebugBtn) closeDebugBtn.addEventListener('click', () => {
         document.getElementById('debugPanel').classList.add('hidden');
       });
-
-      initMobileNav();
     }
 
-    function initMobileNav() {
-      const fab = document.getElementById('mobileNavFab');
-      const fabBtn = document.getElementById('mobileNavFabBtn');
-      const panel = document.getElementById('mobileNavPanel');
-      if (!fab || !fabBtn || !panel) return;
-
-      document.querySelectorAll('[data-mobile-nav]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const target = btn.getAttribute('data-mobile-nav');
-          panel.classList.add('hidden');
-          switchPage(target);
-        });
-      });
-
-      let dragging = false;
-      let moved = false;
-      let startX = 0;
-      let startY = 0;
-      let startLeft = 0;
-      let startTop = 0;
-
-      const getPos = () => {
-        const rect = fab.getBoundingClientRect();
-        return { left: rect.left, top: rect.top };
-      };
-
-      const onStart = (clientX, clientY) => {
-        dragging = true;
-        moved = false;
-        const pos = getPos();
-        startLeft = pos.left;
-        startTop = pos.top;
-        startX = clientX;
-        startY = clientY;
-        fab.style.left = `${startLeft}px`;
-        fab.style.top = `${startTop}px`;
-        fab.style.right = 'auto';
-      };
-
-      const onMove = (clientX, clientY) => {
-        if (!dragging) return;
-        const dx = clientX - startX;
-        const dy = clientY - startY;
-        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const rect = fab.getBoundingClientRect();
-        const w = rect.width || 48;
-        const h = rect.height || 48;
-        const left = Math.min(Math.max(8, startLeft + dx), vw - w - 8);
-        const top = Math.min(Math.max(90, startTop + dy), vh - h - 120);
-        fab.style.left = `${left}px`;
-        fab.style.top = `${top}px`;
-      };
-
-      const onEnd = () => {
-        if (!dragging) return;
-        dragging = false;
-      };
-
-      fabBtn.addEventListener('click', () => {
-        if (moved) return;
-        panel.classList.toggle('hidden');
-      });
-
-      fabBtn.addEventListener('touchstart', (e) => {
-        const t = e.touches[0];
-        onStart(t.clientX, t.clientY);
-      }, { passive: true });
-      fabBtn.addEventListener('touchmove', (e) => {
-        const t = e.touches[0];
-        onMove(t.clientX, t.clientY);
-      }, { passive: true });
-      fabBtn.addEventListener('touchend', onEnd);
-
-      fabBtn.addEventListener('mousedown', (e) => {
-        onStart(e.clientX, e.clientY);
-      });
-      window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
-      window.addEventListener('mouseup', onEnd);
-    }
+    function initMobileNav() {}
 
     // 更新调试界面
     function updateDebugUI() {
@@ -2826,7 +2742,7 @@
           <div class="mb-3">
             <div class="text-xs font-bold text-gray-400 mb-2">敌方阵容</div>
             <div class="flex flex-wrap gap-2">
-              ${stage.enemies.map(enemy => `
+              ${(stage.enemies || []).map(enemy => `
                 <div class="px-3 py-1 bg-gray-800 rounded-full text-xs">
                   ${enemy.name}
                 </div>
@@ -2845,7 +2761,7 @@
                 <i class="fa fa-coins text-yellow-500 mr-1"></i>
                 金币: ${stage.rewards.gold}
               </div>
-              ${stage.rewards.items.map(item => {
+              ${((stage.rewards && stage.rewards.items) || []).map(item => {
                 const itemData = equipmentData.find(i => i.id === item.id) || inscriptionsData.find(i => i.id === item.id);
                 return `
                   <div class="px-3 py-1 bg-gray-800 rounded-full text-xs">
