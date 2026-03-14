@@ -600,9 +600,21 @@
                 <button id="battleSpeed2" class="px-2 py-1 rounded bg-gray-800 text-[10px] font-bold text-primary">x2</button>
                 <button id="battleSpeed4" class="px-2 py-1 rounded bg-gray-800 text-[10px] font-bold">x4</button>
                 <button id="battleSkipBtn" class="px-2 py-1 rounded bg-red-900 text-red-200 text-[10px] font-bold">跳过</button>
+                <button id="battleFoldBtn" class="px-2 py-1 rounded bg-gray-800 text-[10px] font-bold">折叠</button>
               </div>
             </div>
-            <div id="battleLogs" class="bg-black bg-opacity-60 rounded p-3 h-40 overflow-y-auto text-[10px] font-mono mb-6 custom-scrollbar"></div>
+            <div id="battleTurnBar" class="flex gap-2 overflow-x-auto overflow-y-hidden pb-2 mb-2 custom-scrollbar"></div>
+            <div id="battleHud" class="grid grid-cols-2 gap-3 mb-3">
+              <div class="bg-black bg-opacity-40 rounded p-2">
+                <div class="text-[10px] text-gray-400 font-bold mb-2">我方</div>
+                <div id="battleTeamPanel" class="space-y-2"></div>
+              </div>
+              <div class="bg-black bg-opacity-40 rounded p-2">
+                <div class="text-[10px] text-gray-400 font-bold mb-2">敌方</div>
+                <div id="battleEnemyPanel" class="space-y-2"></div>
+              </div>
+            </div>
+            <div id="battleLogs" class="bg-black bg-opacity-60 rounded p-3 h-44 overflow-y-auto text-[10px] font-mono mb-6 custom-scrollbar"></div>
             <div class="text-center">
               <button id="continueBattle" class="btn-primary px-12">离开</button>
             </div>
@@ -1033,6 +1045,12 @@
         if (i <= 40) return 'nightmare';
         return 'abyss';
       };
+      const chapterFor = (i) =>
+        i <= 10 ? '第一章：元素试炼' :
+        i <= 20 ? '第二章：深渊入侵' :
+        i <= 30 ? '第三章：远古龙庭' :
+        i <= 40 ? '第四章：机械纪元' :
+        '第五章：虚空终章';
 
       const enemyPools = {
         normal: [
@@ -1152,12 +1170,26 @@
         const difficulty = difficultyFor(i);
         const rec = Math.floor(900 * Math.pow(1.13, i - 1) * (i % 5 === 0 ? 1.08 : 1));
         const existing = map.get(id);
-        const chapter =
-          i <= 10 ? '第一章：元素试炼' :
-          i <= 20 ? '第二章：深渊入侵' :
-          i <= 30 ? '第三章：远古龙庭' :
-          i <= 40 ? '第四章：机械纪元' :
-          '第五章：虚空终章';
+        const chapter = chapterFor(i);
+        const isBoss = i % 5 === 0;
+
+        const affixes = [];
+        if (i >= 6 && i <= 50 && i % 3 === 0) affixes.push({ id: 'healDown', name: '治疗削弱', value: Math.min(45, 10 + Math.floor(i / 2)) });
+        if (i >= 11 && i % 4 === 0) affixes.push({ id: 'critResist', name: '暴击抵抗', value: Math.min(35, 8 + Math.floor(i * 0.35)) });
+        if (chapter === '第一章：元素试炼') affixes.push({ id: 'burnAmp', name: '灼烧增幅', value: Math.min(60, 15 + Math.floor(i * 0.8)) });
+        if (chapter === '第二章：深渊入侵' && i % 2 === 0) affixes.push({ id: 'dotUp', name: '流血/中毒增幅', value: Math.min(60, 12 + Math.floor(i * 0.6)) });
+        if (chapter === '第四章：机械纪元') affixes.push({ id: 'shieldBreak', name: '破盾协议', value: Math.min(55, 18 + Math.floor(i * 0.6)) });
+        if (chapter === '第五章：虚空终章') affixes.push({ id: 'dmgTakenUp', name: '虚空压制', value: Math.min(35, 10 + Math.floor(i * 0.4)) });
+
+        const bossMechanics = isBoss ? {
+          phaseThresholds: [0.7, 0.4],
+          immuneTurns: 1,
+          summonCount: chapter === '第五章：虚空终章' ? 3 : 2,
+          retaliateChance: Math.min(35, 12 + Math.floor(i * 0.4)),
+          phaseAtkUp: Math.min(60, 18 + Math.floor(i * 0.8)),
+          phaseDefUp: Math.min(60, 18 + Math.floor(i * 0.7)),
+          phaseSpeedUp: Math.min(35, 8 + Math.floor(i * 0.35))
+        } : null;
 
         const generated = {
           id,
@@ -1168,7 +1200,9 @@
           enemies: buildEnemies(i, difficulty),
           modifiers: {
             enrageRound: Math.max(6, 12 - Math.floor(i / 6)),
-            boss: i % 5 === 0
+            boss: isBoss,
+            affixes,
+            bossMechanics
           },
           rewards: {
             exp: Math.floor(80 * Math.pow(1.15, i - 1) * (i % 5 === 0 ? 1.5 : 1)),
@@ -1575,6 +1609,8 @@
       if (battleSpeed4) battleSpeed4.addEventListener('click', () => setBattleSpeed(4));
       const battleSkipBtn = document.getElementById('battleSkipBtn');
       if (battleSkipBtn) battleSkipBtn.addEventListener('click', () => skipBattle());
+      const battleFoldBtn = document.getElementById('battleFoldBtn');
+      if (battleFoldBtn) battleFoldBtn.addEventListener('click', () => toggleBattleFold());
       
       // 领取离线收益
       const claimRewardsBtn = document.getElementById('claimOfflineRewards');
@@ -2843,9 +2879,21 @@
     // 铭文镶嵌
     function embedInscription() {
       if (!selectedInscription) return;
-      
-      // 这里应该打开一个角色选择界面，让玩家选择要镶嵌铭文的角色
-      alert('此功能尚未实现，敬请期待！');
+
+      if (!selectedCharacter) {
+        switchPage('characters');
+        alert('请先在养成界面选择一个角色，再执行铭文镶嵌。');
+        return;
+      }
+
+      const useFirst = confirm('镶嵌到铭文槽位 1？\n取消则镶嵌到槽位 2。');
+      const idx = useFirst ? 0 : 1;
+      selectedCharacter.inscriptions[idx] = selectedInscription;
+      saveGameProgress();
+      updateUI();
+      selectCharacterToCultivate(selectedCharacter);
+      document.getElementById('inscriptionDetailModal').classList.add('hidden');
+      alert('铭文镶嵌成功！');
     }
 
     // 更新关卡列表
@@ -2950,7 +2998,7 @@
     }
 
     // 开始战斗
-    let battleRuntime = { speed: 2, skip: false, running: false };
+    let battleRuntime = { speed: 2, skip: false, running: false, foldLogs: true };
 
     function setBattleSpeed(multiplier) {
       battleRuntime.speed = multiplier;
@@ -2964,6 +3012,12 @@
 
     function skipBattle() {
       battleRuntime.skip = true;
+    }
+
+    function toggleBattleFold() {
+      battleRuntime.foldLogs = !battleRuntime.foldLogs;
+      const btn = document.getElementById('battleFoldBtn');
+      if (btn) btn.classList.toggle('text-primary', battleRuntime.foldLogs);
     }
 
     function battleDelayMs() {
@@ -2981,6 +3035,67 @@
       }
     }
 
+    function renderBattleHud(team, enemies, turnOrder, round, stage) {
+      const teamEl = document.getElementById('battleTeamPanel');
+      const enemyEl = document.getElementById('battleEnemyPanel');
+      const barEl = document.getElementById('battleTurnBar');
+      if (!teamEl || !enemyEl || !barEl) return;
+
+      const statusLabel = (type) => {
+        const labels = {
+          burn: { t: '灼', c: 'bg-red-900 text-red-200' },
+          bleed: { t: '血', c: 'bg-red-900 text-red-200' },
+          poison: { t: '毒', c: 'bg-green-900 text-green-200' },
+          stun: { t: '晕', c: 'bg-yellow-900 text-yellow-200' },
+          taunt: { t: '嘲', c: 'bg-blue-900 text-blue-200' },
+          immune: { t: '免', c: 'bg-purple-900 text-purple-200' }
+        };
+        return labels[type] || null;
+      };
+
+      const renderUnit = (u) => {
+        const hpPct = u.maxHp > 0 ? Math.max(0, Math.min(1, u.currentHp / u.maxHp)) : 0;
+        const shieldPct = u.maxHp > 0 ? Math.max(0, Math.min(1, (u.shield || 0) / u.maxHp)) : 0;
+        const statuses = (u.statuses || []).filter(s => s.turns > 0).slice(0, 6);
+        const pills = statuses.map(s => {
+          const m = statusLabel(s.type);
+          if (!m) return '';
+          return `<span class="inline-flex items-center justify-center w-4 h-4 rounded ${m.c} text-[9px] font-black">${m.t}</span>`;
+        }).join('');
+
+        const nameColor = u.isPlayer ? 'text-blue-300' : (u.isBoss ? 'text-purple-300' : 'text-red-300');
+        return `
+          <div class="flex items-center gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex justify-between items-center">
+                <div class="truncate text-[11px] font-black ${nameColor}">${u.name}</div>
+                <div class="text-[10px] text-gray-400">${Math.max(0, Math.floor(u.currentHp))}/${Math.max(0, Math.floor(u.maxHp))}</div>
+              </div>
+              <div class="relative h-2 bg-gray-800 rounded overflow-hidden mt-1">
+                <div class="absolute left-0 top-0 bottom-0 bg-green-600" style="width:${Math.floor(hpPct * 100)}%"></div>
+                <div class="absolute left-0 top-0 bottom-0 bg-purple-600 opacity-80" style="width:${Math.floor(shieldPct * 100)}%"></div>
+              </div>
+            </div>
+            <div class="flex gap-1">${pills}</div>
+          </div>
+        `;
+      };
+
+      teamEl.innerHTML = team.map(renderUnit).join('');
+      enemyEl.innerHTML = enemies.map(renderUnit).join('');
+
+      const next = (turnOrder || []).slice(0, 10);
+      const chip = (u) => {
+        const color = u.isPlayer ? 'bg-blue-900 text-blue-200' : (u.isBoss ? 'bg-purple-900 text-purple-200' : 'bg-red-900 text-red-200');
+        return `<div class="px-2 py-1 rounded-full text-[10px] font-black ${color} whitespace-nowrap">${u.name}</div>`;
+      };
+      barEl.innerHTML = `
+        <div class="px-2 py-1 rounded-full bg-gray-800 text-[10px] font-black text-gray-200 whitespace-nowrap">回合 ${round}</div>
+        ${stage && stage.modifiers && Array.isArray(stage.modifiers.affixes) ? stage.modifiers.affixes.map(a => `<div class="px-2 py-1 rounded-full bg-gray-700 text-[10px] font-bold text-gray-200 whitespace-nowrap">${a.name}</div>`).join('') : ''}
+        ${next.map(chip).join('')}
+      `;
+    }
+
     async function startBattle(stageId) {
       const stage = stagesData.find(s => s.id === stageId);
       if (!stage) return;
@@ -2990,7 +3105,13 @@
       const statusText = document.getElementById('battleStatusText');
       const continueBtn = document.getElementById('continueBattle');
       const itemsContainer = document.getElementById('battleResultItems');
+      const teamPanel = document.getElementById('battleTeamPanel');
+      const enemyPanel = document.getElementById('battleEnemyPanel');
+      const turnBar = document.getElementById('battleTurnBar');
       if (logsContainer) logsContainer.innerHTML = '';
+      if (teamPanel) teamPanel.innerHTML = '';
+      if (enemyPanel) enemyPanel.innerHTML = '';
+      if (turnBar) turnBar.innerHTML = '';
       if (statusText) statusText.textContent = '战斗进行中...';
       if (itemsContainer) itemsContainer.innerHTML = '<div class="text-gray-400">战斗进行中...</div>';
 
@@ -3007,6 +3128,8 @@
       battleRuntime.running = true;
       battleRuntime.skip = false;
       setBattleSpeed(2);
+      const foldBtn = document.getElementById('battleFoldBtn');
+      if (foldBtn) foldBtn.classList.toggle('text-primary', battleRuntime.foldLogs);
       modal.classList.remove('hidden');
 
       try {
@@ -3092,16 +3215,57 @@
           shield: 0,
           statuses: [],
           skillCd: 0,
-          isBoss: !!enemy.isBoss
+          isBoss: !!enemy.isBoss,
+          bossState: enemy.isBoss ? { triggers: {} } : null,
+          bossMechanics: enemy.isBoss && stage.modifiers && stage.modifiers.bossMechanics ? stage.modifiers.bossMechanics : null
         };
       };
 
       const team = getBattleTeamCharacters().map(buildPlayerUnit);
       const enemies = (stage.enemies || []).map(buildEnemyUnit);
 
+      const affixes = (stage.modifiers && Array.isArray(stage.modifiers.affixes)) ? stage.modifiers.affixes : [];
+      const getAffix = (id) => affixes.find(a => a.id === id);
+      const affixValue = (id) => {
+        const a = getAffix(id);
+        return a ? (a.value || 0) : 0;
+      };
+
       let round = 1;
       let totalHealing = 0;
       let maxSingleDamage = 0;
+
+      let roundContainer = logsContainer;
+      let roundSummaryEl = null;
+      let roundKeyCount = 0;
+      const beginRound = (r) => {
+        roundKeyCount = 0;
+        if (!battleRuntime.foldLogs || !logsContainer) {
+          roundContainer = logsContainer;
+          roundSummaryEl = null;
+          appendBattleLog(logs, logsContainer, `<div class="text-gray-400 mt-2 italic">第 ${r} 回合</div>`);
+          return;
+        }
+        const details = document.createElement('details');
+        details.open = r <= 2;
+        details.className = 'mb-2';
+        const summary = document.createElement('summary');
+        summary.className = 'cursor-pointer text-gray-300 font-bold';
+        summary.textContent = `第 ${r} 回合`;
+        details.appendChild(summary);
+        const inner = document.createElement('div');
+        inner.className = 'pl-3 mt-2 space-y-1';
+        details.appendChild(inner);
+        logsContainer.appendChild(details);
+        logsContainer.scrollTop = logsContainer.scrollHeight;
+        roundContainer = inner;
+        roundSummaryEl = summary;
+      };
+
+      const markKey = () => {
+        roundKeyCount++;
+        if (roundSummaryEl) roundSummaryEl.textContent = `第 ${round} 回合（关键 ${roundKeyCount}）`;
+      };
 
       appendBattleLog(logs, logsContainer, `<div class="text-primary font-bold">--- 战斗开始: ${stage.name} ---</div>`);
 
@@ -3131,13 +3295,14 @@
         const bleed = getStatus(unit, 'bleed');
         const poison = getStatus(unit, 'poison');
         let dot = 0;
-        if (burn) dot += burn.value;
-        if (bleed) dot += bleed.value;
-        if (poison) dot += poison.value;
+        if (burn) dot += burn.value * (1 + affixValue('burnAmp') / 100);
+        if (bleed) dot += bleed.value * (1 + affixValue('dotUp') / 100);
+        if (poison) dot += poison.value * (1 + affixValue('dotUp') / 100);
         if (dot > 0 && unit.currentHp > 0) {
           const taken = Math.min(unit.currentHp, Math.floor(dot));
           unit.currentHp -= taken;
-          appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 受到持续伤害 <span class="text-red-400 font-bold">${taken}</span></div>`);
+          appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 受到持续伤害 <span class="text-red-400 font-bold">${taken}</span></div>`);
+          markKey();
         }
       };
 
@@ -3152,6 +3317,10 @@
       };
 
       const computeDamage = (attacker, target, multiplier) => {
+        if (getStatus(target, 'immune')) {
+          return { immune: true, dodged: false, crit: false, block: false, damage: 0, shieldAbsorb: 0 };
+        }
+
         const atkUp = getStatusValue(attacker, 'atkUp');
         const defDown = getStatusValue(target, 'defDown');
         const dmgUp = getStatusValue(attacker, 'dmgUp');
@@ -3165,7 +3334,9 @@
         if (dodgeRoll < dodgeChance) return { dodged: true, crit: false, block: false, damage: 0 };
 
         const critRoll = Math.random() * 100;
-        const crit = critRoll < attacker.critRate;
+        const critResist = attacker.isPlayer ? affixValue('critResist') : 0;
+        const critRate = Math.max(0, (attacker.critRate || 0) - critResist);
+        const crit = critRoll < critRate;
         if (crit) dmg = Math.floor(dmg * (Math.max(150, attacker.critDmg) / 100));
 
         const blockRoll = Math.random() * 100;
@@ -3180,16 +3351,30 @@
           shieldAbsorb = Math.min(target.shield, dmg);
           target.shield -= shieldAbsorb;
           dmg -= shieldAbsorb;
+          const breakPct = affixValue('shieldBreak');
+          if (breakPct > 0 && target.shield > 0) {
+            const extra = Math.floor(shieldAbsorb * breakPct / 100);
+            target.shield = Math.max(0, target.shield - extra);
+          }
         }
 
         dmg = Math.max(0, dmg);
+        if (target.isPlayer && affixValue('dmgTakenUp') > 0) {
+          dmg = Math.floor(dmg * (1 + affixValue('dmgTakenUp') / 100));
+        }
         return { dodged: false, crit, block, damage: dmg, shieldAbsorb };
       };
 
-      const applyHit = (attacker, target, multiplier, label) => {
+      const applyHit = (attacker, target, multiplier, label, opts = {}) => {
         const r = computeDamage(attacker, target, multiplier);
+        if (r.immune) {
+          appendBattleLog(logs, roundContainer, `<div><span class="${attacker.isPlayer ? 'text-blue-400' : 'text-red-400'}">${attacker.name}</span> 的${label}被 <span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span> <span class="text-purple-300 font-black">免疫</span></div>`);
+          markKey();
+          return { damage: 0 };
+        }
         if (r.dodged) {
-          appendBattleLog(logs, logsContainer, `<div><span class="${attacker.isPlayer ? 'text-blue-400' : 'text-red-400'}">${attacker.name}</span> 的${label}被 <span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span> <span class="text-yellow-500 font-bold">闪避</span></div>`);
+          appendBattleLog(logs, roundContainer, `<div><span class="${attacker.isPlayer ? 'text-blue-400' : 'text-red-400'}">${attacker.name}</span> 的${label}被 <span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span> <span class="text-yellow-500 font-bold">闪避</span></div>`);
+          markKey();
           return { damage: 0 };
         }
 
@@ -3206,9 +3391,10 @@
 
         appendBattleLog(
           logs,
-          logsContainer,
+          roundContainer,
           `<div><span class="${attacker.isPlayer ? 'text-blue-400' : 'text-red-400'}">${attacker.name}</span> 对 <span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span> 使用${label}，造成 <span class="text-red-500 font-bold">${r.damage}</span> 伤害${flags}</div>`
         );
+        if (r.crit || r.damage >= Math.floor(target.maxHp * 0.25)) markKey();
 
         if (attacker.lifesteal > 0 && r.damage > 0) {
           const heal = Math.floor(r.damage * attacker.lifesteal / 100);
@@ -3216,12 +3402,20 @@
           if (actual > 0) {
             attacker.currentHp += actual;
             totalHealing += actual;
-            appendBattleLog(logs, logsContainer, `<div><span class="text-green-400">${attacker.name}</span> 吸血回复 <span class="text-green-400 font-bold">${actual}</span></div>`);
+            appendBattleLog(logs, roundContainer, `<div><span class="text-green-400">${attacker.name}</span> 吸血回复 <span class="text-green-400 font-bold">${actual}</span></div>`);
           }
         }
 
         if (target.currentHp <= 0) {
-          appendBattleLog(logs, logsContainer, `<div class="text-gray-500">[${target.name}] 已倒下</div>`);
+          appendBattleLog(logs, roundContainer, `<div class="text-gray-500">[${target.name}] 已倒下</div>`);
+          markKey();
+        }
+
+        if (!opts.isCounter && target.isBoss && target.currentHp > 0 && target.bossMechanics && target.bossMechanics.retaliateChance) {
+          if (Math.random() * 100 < target.bossMechanics.retaliateChance) {
+            applyHit(target, attacker, 0.9, '反击', { isCounter: true });
+            markKey();
+          }
         }
 
         return { damage: r.damage };
@@ -3259,7 +3453,8 @@
             return aliveFoes.length ? [chooseTarget(unit, aliveFoes)] : [];
           };
 
-          appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span></div>`);
+          appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span></div>`);
+          markKey();
 
           effects.forEach(effect => {
             const chance = typeof effect.chance === 'number' ? effect.chance : 100;
@@ -3286,7 +3481,7 @@
             }
 
             if (effect.type === 'heal') {
-              const healBase = unit.attack * (effect.scale || 1) * (1 + rarityBoost) * lvlBoost;
+              const healBase = unit.attack * (effect.scale || 1) * (1 + rarityBoost) * lvlBoost * (1 - Math.min(80, affixValue('healDown')) / 100);
               let healed = 0;
               pickTargets(targetType === 'allAllies' ? 'allAllies' : (targetType === 'allyLowest' ? 'allyLowest' : 'ally')).forEach(t => {
                 if (!t || t.currentHp <= 0) return;
@@ -3297,7 +3492,10 @@
                 }
               });
               totalHealing += healed;
-              if (healed > 0) appendBattleLog(logs, logsContainer, `<div><span class="text-green-400 font-bold">${unit.name}</span> 治疗 <span class="text-green-400 font-bold">${healed}</span></div>`);
+              if (healed > 0) {
+                appendBattleLog(logs, roundContainer, `<div><span class="text-green-400 font-bold">${unit.name}</span> 治疗 <span class="text-green-400 font-bold">${healed}</span></div>`);
+                markKey();
+              }
               return;
             }
 
@@ -3315,11 +3513,13 @@
             if (effect.type === 'dot') {
               const dot = effect.dot;
               const turns = typeof effect.turns === 'number' ? effect.turns : 2;
-              const value = Math.floor(unit.attack * (effect.scale || 0.1) * lvlBoost);
+              const extra = dot === 'burn' ? affixValue('burnAmp') : affixValue('dotUp');
+              const value = Math.floor(unit.attack * (effect.scale || 0.1) * lvlBoost * (1 + extra / 100));
               pickTargets(targetType).forEach(t => {
                 if (!t || t.currentHp <= 0) return;
                 addStatus(t, dot, value, turns);
               });
+              markKey();
               return;
             }
 
@@ -3341,7 +3541,8 @@
                 t.shield += amount;
                 addStatus(t, 'shield', 1, turns);
               });
-              appendBattleLog(logs, logsContainer, `<div><span class="text-purple-300 font-bold">${unit.name}</span> 施加护盾 <span class="text-purple-300 font-bold">${amount}</span></div>`);
+              appendBattleLog(logs, roundContainer, `<div><span class="text-purple-300 font-bold">${unit.name}</span> 施加护盾 <span class="text-purple-300 font-bold">${amount}</span></div>`);
+              markKey();
               return;
             }
 
@@ -3357,7 +3558,7 @@
         if (applyStructuredEffects()) return;
 
         if (unit.class === 'healer') {
-          const healBase = unit.attack * (1.15 + rarityBoost) * lvlBoost;
+          const healBase = unit.attack * (1.15 + rarityBoost) * lvlBoost * (1 - Math.min(80, affixValue('healDown')) / 100);
           let healed = 0;
           allies.forEach(a => {
             if (a.currentHp <= 0) return;
@@ -3369,7 +3570,8 @@
           });
           totalHealing += healed;
           allies.forEach(a => a.currentHp > 0 && addStatus(a, 'atkUp', 12 + Math.floor(rarityBoost * 100 / 2), 2));
-          appendBattleLog(logs, logsContainer, `<div><span class="text-green-400 font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>，治疗全队 <span class="text-green-400 font-bold">${healed}</span> 并提升攻击</div>`);
+          appendBattleLog(logs, roundContainer, `<div><span class="text-green-400 font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>，治疗全队 <span class="text-green-400 font-bold">${healed}</span> 并提升攻击</div>`);
+          markKey();
           return;
         }
 
@@ -3378,22 +3580,25 @@
           unit.shield += shield;
           addStatus(unit, 'taunt', 1, 2);
           addStatus(unit, 'dmgReducUp', 20, 2);
-          appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>，获得护盾 <span class="text-purple-300 font-bold">${shield}</span> 并嘲讽</div>`);
+          appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>，获得护盾 <span class="text-purple-300 font-bold">${shield}</span> 并嘲讽</div>`);
+          markKey();
           return;
         }
 
         if (unit.class === 'mage') {
           const mult = (1.25 + rarityBoost) * lvlBoost;
-          appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>（群体）</div>`);
+          appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>（群体）</div>`);
+          markKey();
           foes.filter(f => f.currentHp > 0).forEach(f => {
             const { damage } = applyHit(unit, f, mult, '技能');
-            if (damage > 0) addStatus(f, 'burn', Math.floor(unit.attack * 0.18 * lvlBoost), 2);
+            if (damage > 0) addStatus(f, 'burn', Math.floor(unit.attack * 0.18 * lvlBoost * (1 + affixValue('burnAmp') / 100)), 2);
           });
           return;
         }
 
         if (unit.class === 'archer') {
-          appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>（连射）</div>`);
+          appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>（连射）</div>`);
+          markKey();
           const hits = 3 + (unit.rarity === 'SUR' ? 1 : 0);
           for (let h = 0; h < hits; h++) {
             const target = chooseTarget(unit, foes);
@@ -3409,26 +3614,90 @@
           if (!target) return;
           const hpRate = target.currentHp / target.maxHp;
           const mult = ((hpRate < 0.35 ? 3.2 : 2.2) + rarityBoost) * lvlBoost;
-          appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>（刺杀）</div>`);
+          appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>（刺杀）</div>`);
+          markKey();
           const { damage } = applyHit(unit, target, mult, '刺杀');
-          if (damage > 0) addStatus(target, 'bleed', Math.floor(unit.attack * 0.14 * lvlBoost), 3);
+          if (damage > 0) addStatus(target, 'bleed', Math.floor(unit.attack * 0.14 * lvlBoost * (1 + affixValue('dotUp') / 100)), 3);
           return;
         }
 
         const target = chooseTarget(unit, foes);
         if (!target) return;
         const mult = (1.65 + rarityBoost) * lvlBoost;
-        appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span></div>`);
+        appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span></div>`);
+        markKey();
         applyHit(unit, target, mult, '技能');
         addStatus(target, 'defDown', 18, 2);
       };
 
+      const summonAdds = (boss) => {
+        const m = boss.bossMechanics;
+        if (!m || !m.summonCount) return;
+        for (let i = 0; i < m.summonCount; i++) {
+          const hp = Math.floor(boss.maxHp * 0.22);
+          enemies.push({
+            id: `${boss.id}_add_${round}_${i}_${Date.now()}`,
+            name: `${stage.chapter ? stage.chapter.replace(/^.+：/, '') : '首领'}·爪牙`,
+            rarity: 'ENEMY',
+            class: i % 2 === 0 ? 'assassin' : 'mage',
+            isPlayer: false,
+            skills: [{ id: `${boss.id}_add_skill_${i}`, name: '爪牙袭击', cooldown: 4 }],
+            attack: Math.floor(boss.attack * 0.55),
+            defense: Math.floor(boss.defense * 0.55),
+            health: hp,
+            speed: Math.floor(boss.speed * 1.05),
+            critRate: 8,
+            critDmg: 150,
+            dodgeRate: 4,
+            blockRate: 4,
+            dmgReduc: 0,
+            lifesteal: 0,
+            effectHit: 10,
+            penetration: 8,
+            tenacity: 8,
+            currentHp: hp,
+            maxHp: hp,
+            shield: 0,
+            statuses: [],
+            skillCd: 0,
+            isBoss: false,
+            bossState: null,
+            bossMechanics: null
+          });
+        }
+        appendBattleLog(logs, roundContainer, `<div class="text-purple-300 font-black">首领召唤了援军！</div>`);
+        markKey();
+      };
+
+      const processBossPhases = () => {
+        enemies.filter(e => e.currentHp > 0 && e.isBoss && e.bossMechanics).forEach(boss => {
+          const m = boss.bossMechanics;
+          const hpRate = boss.maxHp > 0 ? boss.currentHp / boss.maxHp : 0;
+          (m.phaseThresholds || []).forEach((th, idx) => {
+            const key = `p${idx}`;
+            if (!boss.bossState || boss.bossState.triggers[key]) return;
+            if (hpRate <= th) {
+              boss.bossState.triggers[key] = true;
+              boss.attack = Math.floor(boss.attack * (1 + (m.phaseAtkUp || 0) / 100));
+              boss.defense = Math.floor(boss.defense * (1 + (m.phaseDefUp || 0) / 100));
+              boss.speed = Math.floor(boss.speed * (1 + (m.phaseSpeedUp || 0) / 100));
+              addStatus(boss, 'immune', 1, m.immuneTurns || 1);
+              boss.shield += Math.floor(boss.maxHp * 0.12);
+              appendBattleLog(logs, roundContainer, `<div class="text-purple-300 font-black">首领进入阶段 ${idx + 2}：获得免疫与护盾，属性提升！</div>`);
+              markKey();
+              summonAdds(boss);
+            }
+          });
+        });
+      };
+
       for (; round <= maxRounds; round++) {
-        appendBattleLog(logs, logsContainer, `<div class="text-gray-400 mt-2 italic">第 ${round} 回合</div>`);
+        beginRound(round);
         const enrageRound = stage.modifiers && stage.modifiers.enrageRound ? stage.modifiers.enrageRound : 8;
         if (round >= enrageRound) {
           enemies.filter(e => e.currentHp > 0 && e.isBoss).forEach(b => addStatus(b, 'atkUp', 25, 99));
         }
+        processBossPhases();
 
         const allUnits = [...team, ...enemies].filter(u => u.currentHp > 0);
         allUnits.sort((a, b) => {
@@ -3436,6 +3705,7 @@
           const bSpd = b.speed * (1 + getStatusValue(b, 'spdUp') / 100) * (1 - getStatusValue(b, 'spdDown') / 100);
           return bSpd - aSpd;
         });
+        renderBattleHud(team, enemies, allUnits, round, stage);
 
         for (const unit of allUnits) {
           if (unit.currentHp <= 0) continue;
@@ -3446,9 +3716,11 @@
 
           const stun = getStatus(unit, 'stun');
           if (stun) {
-            appendBattleLog(logs, logsContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 被控制，无法行动</div>`);
+            appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 被控制，无法行动</div>`);
+            markKey();
             stun.turns--;
             cleanStatuses(unit);
+            renderBattleHud(team, enemies, allUnits, round, stage);
             await new Promise(r => setTimeout(r, battleDelayMs()));
             continue;
           }
@@ -3471,6 +3743,7 @@
 
           unit.statuses.forEach(s => s.turns--);
           cleanStatuses(unit);
+          renderBattleHud(team, enemies, allUnits, round, stage);
 
           await new Promise(r => setTimeout(r, battleDelayMs()));
         }
@@ -3666,15 +3939,16 @@
         
         // 点击添加/更换角色 (使用 onclick 覆盖，防止多次绑定)
         slotElement.onclick = () => {
-          // 这里应该打开一个角色选择界面
-          alert('此功能尚未实现，敬请期待！');
+          switchPage('characters');
+          alert('请在养成界面右侧【上阵设置（最多6人）】中调整上阵阵容。');
         };
       }
     }
 
     // 编辑阵容
     function editFormation() {
-      alert('此功能尚未实现，敬请期待！');
+      switchPage('characters');
+      alert('请在养成界面右侧【上阵设置（最多6人）】中调整上阵阵容。');
     }
 
     // 检查离线收益
