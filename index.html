@@ -867,7 +867,7 @@
       char_sur_013: { name: '真理启示', desc: '真视强化，穿透与控场显著提升', bonus: { atkPercent: 18, effectHit: 18, penetration: 15, critRate: 8, speed: 10 }, passiveEffect: '无视目标15%防御；攻击时有30%几率魅惑目标1回合；对带有感电标记的目标伤害提升35%' },
       char_sur_014: { name: '千树永春', desc: '守护与净化强化，团队生存大幅提升', bonus: { atkPercent: 14, hpPercent: 18, tenacity: 18, speed: 8 }, passiveEffect: '复活1次，每次复活恢复30%生命；每回合开始时，获得自身生命上限10%的护盾；队友生命低于60%时，自动为其提供一个等同于鲤攻击力280%的护盾' },
 
-      char_ur_001: { name: '冰魄觉醒', desc: '减速压制强化', bonus: { atkPercent: 10, critRate: 6, effectHit: 8, speed: 8 }, passiveEffect: '攻击带有减速效果的目标时，伤害提升25%' },
+      char_ur_001: { name: '星潮觉醒', desc: '星雨侵蚀更深，控场与爆发跃迁', bonus: { atkPercent: 18, critRate: 10, effectHit: 16, penetration: 14, speed: 12 }, passiveEffect: '无视目标15%防御；攻击时有45%几率沉默目标1回合；攻击带有沉默效果的目标时，伤害提升40%；普通攻击有20%几率触发追击，造成80%伤害' },
       char_ur_002: { name: '炽焰觉醒', desc: '灼烧压制强化', bonus: { atkPercent: 12, critRate: 6, effectHit: 6 }, passiveEffect: '对灼烧目标伤害提升40%' },
       char_ur_003: { name: '圣裁觉醒', desc: '攻守一体强化', bonus: { hpPercent: 10, defPercent: 10, blockRate: 8, dmgReduc: 4 }, passiveEffect: '每回合开始时，获得自身生命上限6%的护盾' },
       char_ur_004: { name: '影杀觉醒', desc: '爆发与收割提升', bonus: { atkPercent: 14, critRate: 8, penetration: 8, speed: 10 }, passiveEffect: '暴击时伤害额外增加45%' },
@@ -1168,8 +1168,12 @@
           s.cost = 2;
           s.cooldown = 4;
           s.effects = [
-            { type: 'damage', target: 'enemy', scale: 2.8, hits: 1 },
-            { type: 'debuff', target: 'enemy', stat: 'spdDown', value: 30, turns: 2 }
+            { type: 'debuff', target: 'allEnemies', stat: 'spdFlatDown', value: 40, turns: 2 },
+            { type: 'damage', target: 'randomEnemies', scale: 1.35, hits: 8 },
+            { type: 'cc', target: 'randomEnemies', cc: 'silence', turns: 1, chance: 35 },
+            { type: 'cc', target: 'randomEnemies', cc: 'silence', turns: 1, chance: 35 },
+            { type: 'cc', target: 'randomEnemies', cc: 'silence', turns: 1, chance: 35 },
+            { type: 'trueDamage', target: 'randomEnemies', scaleFrom: 'targetMaxHp', scale: 0.06, hits: 2, requireStatus: 'silence' }
           ];
         }
 
@@ -4036,6 +4040,7 @@
           { re: /对中毒目标伤害提升(\d+)%/, status: 'poison' },
           { re: /对流血目标伤害提升(\d+)%/, status: 'bleed' },
           { re: /攻击带有减速效果的目标时，伤害提升(\d+)%/, status: 'spdDown' },
+          { re: /攻击带有沉默效果的目标时，伤害提升(\d+)%/, status: 'silence' },
           { re: /对带有感电标记的目标伤害提升(\d+)%/, status: 'shock' }
         ];
         bonusMatchers.forEach(b => {
@@ -4226,8 +4231,12 @@
       let starGuardTriggered = new Set();
       let coreState = { active: false, ownerId: 'char_sur_007', spent: 0, threshold: 0, triggers: 0, enhancedPct: 0.2, thresholdPct: 0.7, energyPerTurn: 3, fieldTurns: 2 };
       let catLinkState = { active: false, catId: 'char_sur_010' };
+      let rainFlowerBondState = 'none';
 
       const getTeamUnit = (id) => team.find(u => u.id === id) || null;
+      const removeStatusType = (unit, type) => {
+        unit.statuses = (unit.statuses || []).filter(s => s.type !== type);
+      };
 
       const initCoreIfNeeded = () => {
         const owner = getTeamUnit(coreState.ownerId);
@@ -4313,6 +4322,89 @@
         markKey();
       };
 
+      const updateRainFlowerBondState = () => {
+        const koi = getTeamUnit('char_sur_014');
+        const yoru = getTeamUnit('char_ur_001');
+        const koiAlive = !!(koi && koi.currentHp > 0);
+        const yoruAlive = !!(yoru && yoru.currentHp > 0);
+
+        const clearBond = () => {
+          team.forEach(u => {
+            removeStatusType(u, 'bondSpdUp');
+            removeStatusType(u, 'bondReducUp');
+          });
+        };
+        const clearMoran = () => {
+          team.forEach(u => {
+            removeStatusType(u, 'moranSpdUp');
+            removeStatusType(u, 'moranReducUp');
+            removeStatusType(u, 'moranAtkUp');
+            removeStatusType(u, 'moranDmgUp');
+            removeStatusType(u, 'moranControl');
+          });
+        };
+
+        if (koiAlive && yoruAlive) {
+          if (rainFlowerBondState !== 'bond') {
+            appendBattleLog(logs, roundContainer, `<div class="text-pink-300 font-black">雨花共鸣：双星同在，全队受福泽</div>`);
+            markKey();
+          }
+          clearMoran();
+          team.forEach(u => {
+            if (u.currentHp <= 0) return;
+            addStatus(u, 'bondSpdUp', 12, 999);
+            addStatus(u, 'bondReducUp', 10, 999);
+          });
+          if (rainFlowerBondState !== 'bond') {
+            team.forEach(u => u.currentHp > 0 && addStatus(u, 'ccImmune', 1, 1));
+          }
+          rainFlowerBondState = 'bond';
+          return;
+        }
+
+        if (koiAlive || yoruAlive) {
+          const survivor = koiAlive ? koi : yoru;
+          const state = koiAlive ? 'moranKoi' : 'moranYoru';
+          if (rainFlowerBondState !== state) {
+            appendBattleLog(
+              logs,
+              roundContainer,
+              `<div class="text-yellow-300 font-black">蓦然回首：${survivor.name} ${koiAlive ? '花域不散，守护全队' : '星幕独照，控场加深'}</div>`
+            );
+            markKey();
+          }
+          clearBond();
+          clearMoran();
+
+          if (koiAlive) {
+            team.forEach(u => {
+              if (u.currentHp <= 0) return;
+              addStatus(u, 'moranSpdUp', 14, 999);
+              addStatus(u, 'moranReducUp', 14, 999);
+              addStatus(u, 'moranAtkUp', 22, 999);
+              addStatus(u, 'moranDmgUp', 8, 999);
+            });
+            team.forEach(u => u.currentHp > 0 && addStatus(u, 'ccImmune', 1, 1));
+          } else {
+            addStatus(yoru, 'moranSpdUp', 18, 999);
+            addStatus(yoru, 'moranReducUp', 12, 999);
+            addStatus(yoru, 'moranAtkUp', 10, 999);
+            addStatus(yoru, 'moranDmgUp', 0, 999);
+            addStatus(yoru, 'moranControl', 1, 999, { chanceBonus: 20, turnsBonus: 1, spdFlatDown: 25 });
+            addStatus(yoru, 'ccImmune', 1, 1);
+          }
+
+          rainFlowerBondState = state;
+          return;
+        }
+
+        if (rainFlowerBondState !== 'none') {
+          clearBond();
+          clearMoran();
+          rainFlowerBondState = 'none';
+        }
+      };
+
       const getCatLinkInfo = () => {
         if (!catLinkState.active) return null;
         const cat = getTeamUnit(catLinkState.catId);
@@ -4377,6 +4469,7 @@
         if (round === 1) {
           initCoreIfNeeded();
           initCatLinkIfNeeded();
+          updateRainFlowerBondState();
           team.forEach(u => {
             if (u.currentHp <= 0) return;
             const text = (u.passive && u.passive.text) || '';
@@ -4392,6 +4485,7 @@
             }
           });
         }
+        updateRainFlowerBondState();
         giveCoreEnergy();
 
         team.forEach(u => {
@@ -4532,9 +4626,9 @@
           target.passive.firstHitUsed = true;
         }
 
-        const atkUp = getStatusValue(attacker, 'atkUp');
+        const atkUp = getStatusValue(attacker, 'atkUp') + getStatusValue(attacker, 'moranAtkUp');
         const defDown = getStatusValue(target, 'defDown');
-        const dmgUp = getStatusValue(attacker, 'dmgUp');
+        const dmgUp = getStatusValue(attacker, 'dmgUp') + getStatusValue(attacker, 'moranDmgUp');
         let atk = attacker.attack * (1 + atkUp / 100);
         if (attacker.passive && attacker.passive.berserkPer10) {
           const lost = attacker.maxHp > 0 ? (1 - attacker.currentHp / attacker.maxHp) : 0;
@@ -4572,7 +4666,7 @@
         const block = blockRoll < target.blockRate;
         if (block) dmg = Math.floor(dmg * 0.5);
 
-        const reduc = Math.min(80, (target.dmgReduc || 0) + getStatusValue(target, 'dmgReducUp'));
+        const reduc = Math.min(80, (target.dmgReduc || 0) + getStatusValue(target, 'dmgReducUp') + getStatusValue(target, 'bondReducUp') + getStatusValue(target, 'moranReducUp'));
         if (reduc > 0) dmg = Math.floor(dmg * (1 - reduc / 100));
 
         const limitField = getStatusValue(target, 'limitField');
@@ -4672,7 +4766,11 @@
         }
         if (r.damage > 0 && attacker.passive && attacker.passive.onHitCc && target.currentHp > 0) {
           const cc = attacker.passive.onHitCc;
-          if (!getStatus(target, 'ccImmune') && Math.random() * 100 < (cc.chance || 0)) {
+          const moranCtl = attacker.isPlayer ? getStatus(attacker, 'moranControl') : null;
+          const extraChance = moranCtl && moranCtl.meta && typeof moranCtl.meta.chanceBonus === 'number' ? moranCtl.meta.chanceBonus : 0;
+          const extraTurns = moranCtl && moranCtl.meta && typeof moranCtl.meta.turnsBonus === 'number' ? moranCtl.meta.turnsBonus : 0;
+          const extraSpd = moranCtl && moranCtl.meta && typeof moranCtl.meta.spdFlatDown === 'number' ? moranCtl.meta.spdFlatDown : 0;
+          if (!getStatus(target, 'ccImmune') && Math.random() * 100 < Math.min(95, (cc.chance || 0) + extraChance)) {
             let blocked = false;
             if (target.isPlayer) {
               const ccResist = affixValue('ccResist');
@@ -4682,7 +4780,10 @@
               const resistChance = Math.max(0, ten - hit * 0.5);
               if (resistChance > 0 && Math.random() * 100 < resistChance) blocked = true;
             }
-            if (!blocked) addStatus(target, cc.type, 1, cc.turns || 1);
+            if (!blocked) {
+              addStatus(target, cc.type, 1, (cc.turns || 1) + extraTurns);
+              if (extraSpd > 0) addStatus(target, 'spdFlatDown', Math.abs(extraSpd), 1);
+            }
           }
         }
 
@@ -4736,6 +4837,7 @@
             target.statuses = (target.statuses || []).filter(s => ['revive', 'lifeLink'].includes(s.type));
             appendBattleLog(logs, roundContainer, `<div class="text-green-300 font-black">复活：${target.name} 重新站起（剩余 ${revive.meta.charges}）</div>`);
             markKey();
+            updateRainFlowerBondState();
             return { damage: r.damage };
           }
           appendBattleLog(logs, roundContainer, `<div class="text-gray-500">[${target.name}] 已倒下</div>`);
@@ -4763,6 +4865,7 @@
               }
             });
           }
+          updateRainFlowerBondState();
         }
 
         if (label === '普攻' && !opts.isFollowUp && attacker.passive && attacker.passive.followUpOnBasic && target.currentHp > 0) {
@@ -4941,7 +5044,7 @@
                   let amount = Math.max(1, Math.floor((base + (effect.addFlat || 0) * scaleFactor) * (1 + tdUp / 100)));
                   if (!t.isPlayer && trueResist > 0) amount = Math.max(1, Math.floor(amount * (1 - Math.min(80, trueResist) / 100)));
                   if (coreState.active) {
-                    const reduc = Math.min(80, (t.dmgReduc || 0) + getStatusValue(t, 'dmgReducUp'));
+                    const reduc = Math.min(80, (t.dmgReduc || 0) + getStatusValue(t, 'dmgReducUp') + getStatusValue(t, 'bondReducUp') + getStatusValue(t, 'moranReducUp'));
                     if (reduc > 0) amount = Math.max(1, Math.floor(amount * (1 - reduc / 100)));
                   }
 
@@ -5389,8 +5492,8 @@
         allUnits.sort((a, b) => {
           const aBase = Math.max(1, (a.speed || 0) + getStatusValue(a, 'spdFlatUp') - getStatusValue(a, 'spdFlatDown'));
           const bBase = Math.max(1, (b.speed || 0) + getStatusValue(b, 'spdFlatUp') - getStatusValue(b, 'spdFlatDown'));
-          const aSpd = aBase * (1 + getStatusValue(a, 'spdUp') / 100) * (1 - getStatusValue(a, 'spdDown') / 100);
-          const bSpd = bBase * (1 + getStatusValue(b, 'spdUp') / 100) * (1 - getStatusValue(b, 'spdDown') / 100);
+          const aSpd = aBase * (1 + (getStatusValue(a, 'spdUp') + getStatusValue(a, 'bondSpdUp') + getStatusValue(a, 'moranSpdUp')) / 100) * (1 - getStatusValue(a, 'spdDown') / 100);
+          const bSpd = bBase * (1 + (getStatusValue(b, 'spdUp') + getStatusValue(b, 'bondSpdUp') + getStatusValue(b, 'moranSpdUp')) / 100) * (1 - getStatusValue(b, 'spdDown') / 100);
           return bSpd - aSpd;
         });
         renderBattleHud(team, enemies, allUnits, round, stage);
