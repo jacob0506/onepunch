@@ -413,6 +413,7 @@
                 <div class="glass-effect rounded-xl p-4 border border-gray-800 md:block hidden">
                   <h3 id="cultivateName" class="text-xl font-black mb-1">---</h3>
                   <div id="cultivateRarity" class="text-xl font-black mb-4 tracking-widest">---</div>
+                  <div id="cultivateLevel" class="text-sm font-black text-gray-300 mb-3">Lv.1</div>
                   <div id="cultivatePower" class="mb-4">
                     <div class="text-[10px] text-gray-500 uppercase">当前战力</div>
                     <div class="text-2xl font-black text-accent">0</div>
@@ -434,6 +435,7 @@
                   <div>
                     <div class="text-[10px] text-gray-500 uppercase">当前战力</div>
                     <div id="cultivatePowerMobile" class="text-2xl font-black text-accent">0</div>
+                    <div id="cultivateLevelMobile" class="text-[10px] font-black text-gray-300 mt-1">Lv.1</div>
                   </div>
                   <div class="text-right">
                     <div id="cultivateClassMobile" class="text-xs font-bold text-primary">---</div>
@@ -553,6 +555,31 @@
             <div id="skillPopupLevel" class="text-xs text-gray-500 mb-3">等级: 1</div>
             <p id="skillPopupDesc" class="text-sm text-gray-300 leading-relaxed mb-4">技能描述...</p>
             <div class="text-[10px] text-gray-500">冷却: <span id="skillPopupCD">3</span>回合 | 点击空白处关闭</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="awakenModal" class="fixed inset-0 z-[80] hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-70" onclick="this.parentElement.classList.add('hidden')"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-md">
+          <div class="glass-effect rounded-xl p-6 border border-yellow-700 shadow-2xl">
+            <div class="flex justify-between items-center mb-3">
+              <div>
+                <div class="text-[10px] text-gray-400">觉醒</div>
+                <h3 id="awakenTitle" class="text-xl font-black text-yellow-400">---</h3>
+              </div>
+              <button class="text-gray-400 hover:text-white text-2xl" onclick="document.getElementById('awakenModal').classList.add('hidden')">×</button>
+            </div>
+            <div id="awakenDesc" class="text-sm text-gray-200 leading-relaxed mb-4">---</div>
+            <div class="bg-black bg-opacity-40 rounded-lg p-4 border border-gray-800 mb-4">
+              <div class="text-xs font-bold text-gray-400 mb-2">消耗</div>
+              <div id="awakenCost" class="text-sm text-gray-200">---</div>
+              <div id="awakenHint" class="text-[10px] text-gray-500 mt-2">觉醒仅可进行一次，永久生效</div>
+            </div>
+            <div class="flex gap-3">
+              <button id="awakenConfirmBtn" class="flex-1 py-2 bg-gradient-to-r from-yellow-700 to-yellow-500 hover:opacity-90 rounded font-black text-sm">确认觉醒</button>
+              <button class="flex-1 py-2 bg-gray-800 hover:bg-gray-700 rounded font-bold text-sm" onclick="document.getElementById('awakenModal').classList.add('hidden')">取消</button>
+            </div>
           </div>
         </div>
       </div>
@@ -824,6 +851,63 @@
       maxStars: 8
     };
 
+    const AWAKEN_PROFILES = {
+      char_sur_001: { name: '虚空觉醒', desc: '虚空侵蚀强化，获得穿透与控制能力', bonus: { atkPercent: 18, critRate: 8, penetration: 12, effectHit: 12 }, passiveEffect: '暴击时伤害额外增加20%；无视目标15%防御；攻击时有20%几率魅惑目标1回合' },
+      char_sur_002: { name: '剑意无垠', desc: '剑意更深，技能叠攻并提升爆发上限', bonus: { atkPercent: 16, critRate: 10, critDmg: 20, penetration: 10 }, passiveEffect: '每释放一次技能，攻击力永久增加8%（最高叠加5层）' },
+      char_sur_003: { name: '审判降临', desc: '审判强化，提升命中与控制稳定性', bonus: { atkPercent: 14, critRate: 8, effectHit: 12 }, passiveEffect: '攻击时有25%几率眩晕目标1回合' },
+      char_sur_004: { name: '龙魂永燃', desc: '坦度与续航显著提升', bonus: { hpPercent: 18, defPercent: 12, dmgReduc: 8, tenacity: 10 }, passiveEffect: '每回合开始时，获得自身生命上限8%的护盾；复活1次，每次复活恢复30%生命' },
+      char_sur_005: { name: '星辉永续', desc: '治疗与保护更稳定', bonus: { atkPercent: 14, hpPercent: 14, tenacity: 12, speed: 10 }, passiveEffect: '每回合开始时，获得自身生命上限8%的护盾；闪避成功时回复3%最大生命值' },
+      char_sur_006: { name: '幽影收割', desc: '收割节奏更快，追击强化', bonus: { atkPercent: 18, critRate: 10, dodgeRate: 8, speed: 12 }, passiveEffect: '普通攻击有25%几率触发追击，造成80%伤害；击杀目标后进入隐身状态一回合' },
+      char_sur_007: { name: '核心超载', desc: '核心强化，特化生命与能量供给提升', bonus: { atkPercent: 10, effectHit: 12, tenacity: 12 }, passiveEffect: '每回合可获得4点能量；特化生命值等同于最大生命值25%的额外生命层；每累计消耗60%特化生命值时触发极限力场持续2回合' },
+      char_sur_008: { name: '大地母神', desc: '更厚的身躯与更稳的抗性', bonus: { hpPercent: 20, defPercent: 12, dmgReduc: 6, tenacity: 12 }, passiveEffect: '每回合回复自身6%最大生命值；反弹10%伤害' },
+      char_sur_009: { name: '战神不屈', desc: '狂战强化，低血反打与生存提升', bonus: { atkPercent: 16, critRate: 6, lifesteal: 6, dmgReduc: 4 }, passiveEffect: '非暴击不死；暴击时伤害额外增加15%' },
+      char_sur_010: { name: '嗜虐终式', desc: '链接更强，追击更狠', bonus: { atkPercent: 10, critRate: 8, speed: 14, dodgeRate: 6 }, passiveEffect: '特化加速60%；生命链接持续7回合；以90%强度发动一次蓄能追击；最多4次' },
+      char_sur_011: { name: '天罚雷冠', desc: '感电覆盖更强，爆发上限提升', bonus: { atkPercent: 16, critRate: 8, effectHit: 10 }, passiveEffect: '攻击时有70%几率给目标添加“感电”标记；暴击时伤害额外增加15%' },
+      char_sur_012: { name: '时之主宰', desc: '团队节奏显著提升', bonus: { atkPercent: 10, critRate: 6, speed: 16, tenacity: 10 }, passiveEffect: '每回合结束时，增加全队8%速度（最高40%）' },
+
+      char_ur_001: { name: '冰魄觉醒', desc: '减速压制强化', bonus: { atkPercent: 10, critRate: 6, effectHit: 8, speed: 8 }, passiveEffect: '攻击带有减速效果的目标时，伤害提升25%' },
+      char_ur_002: { name: '炽焰觉醒', desc: '灼烧压制强化', bonus: { atkPercent: 12, critRate: 6, effectHit: 6 }, passiveEffect: '对灼烧目标伤害提升40%' },
+      char_ur_003: { name: '圣裁觉醒', desc: '攻守一体强化', bonus: { hpPercent: 10, defPercent: 10, blockRate: 8, dmgReduc: 4 }, passiveEffect: '每回合开始时，获得自身生命上限6%的护盾' },
+      char_ur_004: { name: '影杀觉醒', desc: '爆发与收割提升', bonus: { atkPercent: 14, critRate: 8, penetration: 8, speed: 10 }, passiveEffect: '暴击时伤害额外增加45%' },
+      char_ur_005: { name: '磐石觉醒', desc: '控制与坦度提升', bonus: { hpPercent: 12, defPercent: 12, tenacity: 10 }, passiveEffect: '受到攻击时有20%几率眩晕目标1回合' },
+      char_ur_006: { name: '剑风觉醒', desc: '连斩上限提升', bonus: { atkPercent: 12, critRate: 6, critDmg: 10, speed: 8 }, passiveEffect: '暴击伤害提升10%' },
+      char_ur_007: { name: '雷锁觉醒', desc: '控制稳定性与命中提升', bonus: { atkPercent: 10, effectHit: 12, speed: 6 }, passiveEffect: '攻击时有25%几率眩晕目标1回合' },
+      char_ur_008: { name: '森语觉醒', desc: '续航与韧性提升', bonus: { hpPercent: 12, tenacity: 12, atkPercent: 8 }, passiveEffect: '每回合开始时，获得自身生命上限6%的护盾' },
+      char_ur_009: { name: '狂鲨觉醒', desc: '吸血更强，残局能力提升', bonus: { atkPercent: 12, lifesteal: 8, dmgReduc: 3 }, passiveEffect: '生命低于30%时，获得免疫1回合' },
+      char_ur_010: { name: '毒素觉醒', desc: '中毒压制强化', bonus: { atkPercent: 10, effectHit: 14, penetration: 6 }, passiveEffect: '对中毒目标伤害提升20%' },
+      char_ur_011: { name: '铁血觉醒', desc: '反击与防护提升', bonus: { hpPercent: 10, defPercent: 10, blockRate: 10 }, passiveEffect: '受到攻击时有35%几率反击，造成100%攻击伤害' },
+      char_ur_012: { name: '幻影觉醒', desc: '保命更稳定', bonus: { atkPercent: 10, critRate: 8, dodgeRate: 6, speed: 10 }, passiveEffect: '每回合有30%几率免疫受到的第一次伤害' },
+      char_ur_013: { name: '晨曦觉醒', desc: '辅助节奏提升', bonus: { atkPercent: 10, speed: 10, tenacity: 10 }, passiveEffect: '闪避成功后回复4点能量' },
+      char_ur_014: { name: '霜冠觉醒', desc: '控场与爆发提升', bonus: { atkPercent: 12, effectHit: 10, critRate: 6 }, passiveEffect: '攻击时有20%几率眩晕目标1回合' },
+      char_ur_015: { name: '兽王觉醒', desc: '多段输出更稳', bonus: { atkPercent: 12, critRate: 8, speed: 8 }, passiveEffect: '普通攻击有15%几率触发追击，造成80%伤害' },
+      char_ur_016: { name: '熔岩觉醒', desc: '坦度与压制提升', bonus: { hpPercent: 14, defPercent: 10, dmgReduc: 4, tenacity: 10 }, passiveEffect: '每回合开始时，获得自身生命上限6%的护盾' },
+      char_ur_017: { name: '虚空觉醒', desc: '能量压制强化', bonus: { atkPercent: 12, speed: 10, penetration: 8 }, passiveEffect: '击杀目标后进入隐身状态一回合' },
+      char_ur_018: { name: '龙裔觉醒', desc: '持续作战提升', bonus: { atkPercent: 12, hpPercent: 12, lifesteal: 4 }, passiveEffect: '每回合回复自身4%最大生命值' },
+      char_ur_019: { name: '战姬觉醒', desc: '成长型爆伤更快', bonus: { atkPercent: 12, critRate: 6, speed: 8 }, passiveEffect: '每攻击一次，暴击伤害提升6%（无上限）' },
+      char_ur_020: { name: '冥界觉醒', desc: '斩杀更稳定，压制节奏', bonus: { atkPercent: 12, effectHit: 12, penetration: 6 }, passiveEffect: '敌方每死亡一人，哈迪增加12%攻击力' },
+      char_ur_021: { name: '翠龙觉醒', desc: '破甲更稳定', bonus: { atkPercent: 12, penetration: 12, critRate: 6 }, passiveEffect: '无视目标20%防御' },
+      char_ur_022: { name: '烈阳觉醒', desc: '控制与抗性提升', bonus: { atkPercent: 10, effectHit: 12, tenacity: 12 }, passiveEffect: '对负面状态的抗性提升30%' },
+      char_ur_023: { name: '月影觉醒', desc: '闪避与追击节奏提升', bonus: { atkPercent: 10, dodgeRate: 10, speed: 10 }, passiveEffect: '闪避成功后回复10点能量' },
+      char_ur_024: { name: '天元觉醒', desc: '雷击更频繁', bonus: { atkPercent: 12, critRate: 8, speed: 6 }, passiveEffect: '普通攻击有15%几率触发追击，造成80%伤害' }
+    };
+
+    function getAwakenProfile(char) {
+      if (!char) return null;
+      const p = AWAKEN_PROFILES[char.id];
+      if (p) return p;
+      if (char.rarity === 'SUR') return { name: '终极觉醒', desc: '觉醒提升', bonus: { atkPercent: 14, hpPercent: 14, critRate: 6, tenacity: 10 }, passiveEffect: '每回合开始时，获得自身生命上限6%的护盾' };
+      if (char.rarity === 'UR') return { name: '高级觉醒', desc: '觉醒提升', bonus: { atkPercent: 10, hpPercent: 10, critRate: 4, tenacity: 8 }, passiveEffect: '' };
+      return null;
+    }
+
+    function getAwakenCost(char) {
+      if (!char) return null;
+      const rarity = char.rarity;
+      if (rarity === 'SUR') return { gold: 80000, gems: 800, fragments: 60 };
+      if (rarity === 'UR') return { gold: 30000, gems: 400, fragments: 30 };
+      return null;
+    }
+
     // 角色数据
     let charactersData = [];
     // 装备数据
@@ -895,6 +979,7 @@
           if (!char.inscriptions) {
             char.inscriptions = [null, null];
           }
+          if (typeof char.awakened !== 'boolean') char.awakened = false;
           if (typeof char.goldSpentOnLevelUps !== 'number') char.goldSpentOnLevelUps = 0;
           (char.skills || []).forEach(s => {
             if (typeof s.goldSpentOnUpgrades !== 'number') s.goldSpentOnUpgrades = 0;
@@ -2041,7 +2126,9 @@
       if (costumeBtn) costumeBtn.addEventListener('click', () => alert('时装系统暂未开放，敬请期待！'));
       
       const awakenBtn = document.getElementById('awakenBtn');
-      if (awakenBtn) awakenBtn.addEventListener('click', () => alert('角色觉醒系统暂未开放，SSR及以上稀有度角色可进行觉醒！'));
+      if (awakenBtn) awakenBtn.addEventListener('click', () => openAwakenModal());
+      const awakenConfirmBtn = document.getElementById('awakenConfirmBtn');
+      if (awakenConfirmBtn) awakenConfirmBtn.addEventListener('click', () => confirmAwaken());
 
       // 筛选
       const charFilter = document.getElementById('characterFilter');
@@ -2320,6 +2407,7 @@
         
         item.innerHTML = `
           <img src="${char.imageUrl}" class="w-full h-full object-cover">
+          <div class="absolute top-1 right-1 bg-black bg-opacity-70 rounded-full px-1.5 py-0.5 text-[8px] font-black text-white">Lv.${char.level || 1}</div>
           <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-[8px] text-center font-bold text-rarity-${char.rarity.toLowerCase()}">
             ${char.rarity}
           </div>
@@ -2352,6 +2440,9 @@
         rarityEl.textContent = char.rarity;
         rarityEl.className = `text-xl font-black mb-4 tracking-widest text-rarity-${char.rarity.toLowerCase()}`;
       }
+
+      const levelEl = document.getElementById('cultivateLevel');
+      if (levelEl) levelEl.textContent = `Lv.${char.level || 1}`;
       
       const powerEl = document.querySelector('#cultivatePower div:last-child');
       if (powerEl) powerEl.textContent = powerValue.toLocaleString();
@@ -2379,6 +2470,9 @@
       
       const powerMobile = document.getElementById('cultivatePowerMobile');
       if (powerMobile) powerMobile.textContent = powerValue.toLocaleString();
+
+      const levelMobile = document.getElementById('cultivateLevelMobile');
+      if (levelMobile) levelMobile.textContent = `Lv.${char.level || 1}`;
       
       const classMobile = document.getElementById('cultivateClassMobile');
       if (classMobile) classMobile.textContent = getClassName(char.class);
@@ -2390,8 +2484,13 @@
       const rarityRank = { 'R': 1, 'SR': 2, 'SSR': 3, 'UR': 4, 'SUR': 5 };
       const awakenBtn = document.getElementById('awakenBtn');
       if (awakenBtn) {
-        if (rarityRank[char.rarity] >= 3) awakenBtn.classList.remove('hidden');
+        if (rarityRank[char.rarity] >= 4) awakenBtn.classList.remove('hidden');
         else awakenBtn.classList.add('hidden');
+        const awakened = !!char.awakened;
+        awakenBtn.disabled = awakened;
+        awakenBtn.classList.toggle('opacity-60', awakened);
+        awakenBtn.classList.toggle('cursor-not-allowed', awakened);
+        awakenBtn.innerHTML = awakened ? '<i class="fa fa-check mr-1 text-yellow-500"></i>已觉醒' : '<i class="fa fa-fire mr-1 text-yellow-500"></i>觉醒';
       }
 
       // 更新技能图标 (迭代4)
@@ -2416,7 +2515,7 @@
           <i class="fa fa-star text-gray-400 ${hasPassive ? 'group-hover:text-purple-300' : ''}"></i>
           <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-[8px] text-center font-black text-purple-300">被动</div>
         `;
-        if (hasPassive) passiveIcon.onclick = () => showPassivePopup(char.passive);
+        if (hasPassive) passiveIcon.onclick = () => showPassivePopup(getCharacterPassivePreviewText(char));
         skillsContainer.appendChild(passiveIcon);
       }
 
@@ -2603,6 +2702,105 @@
       document.getElementById('skillPopupDesc').textContent = desc || '无';
       document.getElementById('skillPopupCD').textContent = '-';
       document.getElementById('skillDetailModal').classList.remove('hidden');
+    }
+
+    function getCharacterPassivePreviewText(char) {
+      if (!char) return '';
+      const parts = [];
+      if (char.passive) parts.push(String(char.passive));
+      if (char.awakened) {
+        const p = getAwakenProfile(char);
+        if (p && p.passiveEffect) parts.push(`觉醒：${p.passiveEffect}`);
+      }
+      const equipments = char.equipments || {};
+      Object.values(equipments).forEach(item => {
+        if (item && item.passiveEffect) parts.push(String(item.passiveEffect));
+      });
+      const setCounts = {};
+      const inscriptions = Array.isArray(char.inscriptions) ? char.inscriptions : [];
+      inscriptions.forEach(ins => {
+        if (!ins) return;
+        if (ins.passiveEffect) parts.push(String(ins.passiveEffect));
+        if (ins.setEffect) {
+          const setName = ins.name.split('铭文')[0];
+          setCounts[setName] = (setCounts[setName] || 0) + 1;
+        }
+      });
+      for (const [name, count] of Object.entries(setCounts)) {
+        const insData = inscriptionsData.find(i => i && i.name && i.name.startsWith(name));
+        if (insData && insData.setEffect && count >= insData.setEffect.pieces) {
+          if (insData.setEffect.effect) parts.push(String(insData.setEffect.effect));
+        }
+      }
+      return parts.filter(Boolean).join('；');
+    }
+
+    function openAwakenModal() {
+      if (!selectedCharacter) return;
+      const char = selectedCharacter;
+      if (char.rarity !== 'UR' && char.rarity !== 'SUR') return;
+      if (char.awakened) return;
+
+      const profile = getAwakenProfile(char);
+      const cost = getAwakenCost(char);
+      if (!profile || !cost) return;
+
+      document.getElementById('awakenTitle').textContent = `${char.name} · ${profile.name}`;
+      const bonusParts = [];
+      Object.entries(profile.bonus || {}).forEach(([k, v]) => {
+        const isPercent = k.includes('Rate') || k.includes('Reduc') || k.includes('Hit') || k.includes('Percent') || ['critRate', 'critDmg', 'dodgeRate', 'blockRate', 'dmgReduc', 'lifesteal', 'effectHit', 'tenacity', 'atkPercent', 'defPercent', 'hpPercent'].includes(k);
+        bonusParts.push(`${getStatName(k)} +${v}${isPercent ? '%' : ''}`);
+      });
+      const extra = profile.passiveEffect ? `\n觉醒机制：${profile.passiveEffect}` : '';
+      document.getElementById('awakenDesc').textContent = `${profile.desc}\n${bonusParts.join('，')}${extra}`;
+
+      const ownedFrag = gameData.fragments[char.id] || 0;
+      document.getElementById('awakenCost').innerHTML = `
+        <div class="flex justify-between"><span>金币</span><span class="font-black ${gameData.player.gold >= cost.gold ? 'text-yellow-400' : 'text-red-400'}">${cost.gold.toLocaleString()}</span></div>
+        <div class="flex justify-between"><span>钻石</span><span class="font-black ${gameData.player.gems >= cost.gems ? 'text-yellow-400' : 'text-red-400'}">${cost.gems.toLocaleString()}</span></div>
+        <div class="flex justify-between"><span>碎片</span><span class="font-black ${ownedFrag >= cost.fragments ? 'text-yellow-400' : 'text-red-400'}">${ownedFrag}/${cost.fragments}</span></div>
+      `;
+
+      document.getElementById('awakenModal').classList.remove('hidden');
+    }
+
+    function confirmAwaken() {
+      if (!selectedCharacter) return;
+      const char = selectedCharacter;
+      if (char.awakened) return;
+      if (char.rarity !== 'UR' && char.rarity !== 'SUR') return;
+      const profile = getAwakenProfile(char);
+      const cost = getAwakenCost(char);
+      if (!profile || !cost) return;
+
+      const ownedFrag = gameData.fragments[char.id] || 0;
+      if (gameData.player.gold < cost.gold) {
+        alert('金币不足');
+        return;
+      }
+      if (gameData.player.gems < cost.gems) {
+        alert('钻石不足');
+        return;
+      }
+      if (ownedFrag < cost.fragments) {
+        alert('碎片不足');
+        return;
+      }
+      const ok = confirm(`确认觉醒【${char.name}】？\n- 觉醒仅一次且永久生效\n- 消耗：金币${cost.gold}，钻石${cost.gems}，碎片${cost.fragments}`);
+      if (!ok) return;
+
+      gameData.player.gold -= cost.gold;
+      gameData.player.gems -= cost.gems;
+      gameData.fragments[char.id] = ownedFrag - cost.fragments;
+
+      char.awakened = true;
+      char.awakenedAt = Date.now();
+
+      saveGameProgress();
+      updateUI();
+      selectCharacterToCultivate(char);
+      document.getElementById('awakenModal').classList.add('hidden');
+      alert(`觉醒完成：${profile.name}`);
     }
 
     // 迭代4: 显示详细属性弹窗
@@ -3818,6 +4016,10 @@
       const getLoadoutPassiveText = (char) => {
         const parts = [];
         if (char.passive) parts.push(String(char.passive));
+        if (char.awakened) {
+          const p = getAwakenProfile(char);
+          if (p && p.passiveEffect) parts.push(`觉醒：${String(p.passiveEffect)}`);
+        }
 
         const equipments = char.equipments || {};
         Object.values(equipments).forEach(item => {
@@ -3990,7 +4192,7 @@
       };
 
       let starGuardTriggered = new Set();
-      let coreState = { active: false, ownerId: 'char_sur_007', spent: 0, threshold: 0, triggers: 0 };
+      let coreState = { active: false, ownerId: 'char_sur_007', spent: 0, threshold: 0, triggers: 0, enhancedPct: 0.2, thresholdPct: 0.7, energyPerTurn: 3, fieldTurns: 2 };
       let catLinkState = { active: false, catId: 'char_sur_010' };
 
       const getTeamUnit = (id) => team.find(u => u.id === id) || null;
@@ -3998,14 +4200,23 @@
       const initCoreIfNeeded = () => {
         const owner = getTeamUnit(coreState.ownerId);
         if (!owner) return;
+        const text = (owner.passive && owner.passive.text) || '';
+        const mHp = text.match(/特化生命值[^，。；]*最大生命值(\d+)%/);
+        coreState.enhancedPct = mHp ? Math.max(0.05, Math.min(0.5, parseInt(mHp[1], 10) / 100)) : 0.2;
+        const mEnergy = text.match(/每回合可获得(\d+)点能量/);
+        coreState.energyPerTurn = mEnergy ? Math.max(0, Math.min(6, parseInt(mEnergy[1], 10))) : 3;
+        const mThreshold = text.match(/每累计消耗(\d+)%特化生命值/);
+        coreState.thresholdPct = mThreshold ? Math.max(0.2, Math.min(0.95, parseInt(mThreshold[1], 10) / 100)) : 0.7;
+        const mField = text.match(/极限力场[^，。；]*持续(\d+)回合/);
+        coreState.fieldTurns = mField ? Math.max(1, Math.min(6, parseInt(mField[1], 10))) : 2;
         coreState.active = true;
         coreState.spent = 0;
         coreState.triggers = 0;
         team.forEach(u => {
-          u.enhancedHpMax = Math.floor(u.maxHp * 0.2);
+          u.enhancedHpMax = Math.floor(u.maxHp * coreState.enhancedPct);
           u.enhancedHp = u.enhancedHpMax;
         });
-        coreState.threshold = Math.max(1, Math.floor(team.reduce((sum, u) => sum + (u.enhancedHpMax || 0), 0) * 0.7));
+        coreState.threshold = Math.max(1, Math.floor(team.reduce((sum, u) => sum + (u.enhancedHpMax || 0), 0) * coreState.thresholdPct));
         appendBattleLog(logs, roundContainer, `<div class="text-amber-300 font-black">核心启动：全队获得特化生命值，并每回合额外获得能量</div>`);
         markKey();
       };
@@ -4014,7 +4225,7 @@
         if (!coreState.active) return;
         team.forEach(u => {
           if (u.currentHp <= 0) return;
-          u.energy = Math.min(u.maxEnergy || 4, (u.energy || 0) + 3);
+          u.energy = Math.min(u.maxEnergy || 4, (u.energy || 0) + coreState.energyPerTurn);
         });
       };
 
@@ -4024,7 +4235,7 @@
         const targets = enemies.filter(e => e.currentHp > 0);
         if (!owner || targets.length === 0) return;
         const t = targets[Math.floor(Math.random() * targets.length)];
-        addStatus(t, 'limitField', 30, 2);
+        addStatus(t, 'limitField', 30, coreState.fieldTurns);
         const dmg = Math.max(1, Math.floor(owner.attack * 10));
         t.currentHp = Math.max(0, t.currentHp - dmg);
         appendBattleLog(logs, roundContainer, `<div class="text-amber-300 font-black">极限力场：对 <span class="text-red-300">${t.name}</span> 造成 <span class="text-red-500 font-black">${dmg}</span> 并使其易伤</div>`);
@@ -4046,16 +4257,26 @@
       const initCatLinkIfNeeded = () => {
         const cat = getTeamUnit(catLinkState.catId);
         if (!cat) return;
-        if (!/生命链接/.test((cat.passive && cat.passive.text) || '')) return;
+        const text = (cat.passive && cat.passive.text) || '';
+        if (!/生命链接/.test(text)) return;
         catLinkState.active = true;
 
-        addStatus(cat, 'spdUp', 46, 6);
+        const mSpd = text.match(/特化加速(\d+)%/);
+        const spd = mSpd ? Math.max(0, Math.min(120, parseInt(mSpd[1], 10))) : 46;
+        const mTurns = text.match(/生命链接[^，。]*持续(\d+)回合/);
+        const turns = mTurns ? Math.max(1, Math.min(12, parseInt(mTurns[1], 10))) : 6;
+        const mFollow = text.match(/以(\d+)%强度/);
+        const followScale = mFollow ? Math.max(0.3, Math.min(1.2, parseInt(mFollow[1], 10) / 100)) : 0.8;
+        const mTransfer = text.match(/最多(\d+)次/);
+        const transfersLeft = mTransfer ? Math.max(0, Math.min(10, parseInt(mTransfer[1], 10))) : 3;
+
+        addStatus(cat, 'spdUp', spd, turns);
 
         const candidates = team.filter(u => u.currentHp > 0 && u.id !== cat.id);
         if (candidates.length === 0) return;
         const partner = candidates.sort((a, b) => b.attack - a.attack)[0];
-        addStatus(cat, 'lifeLink', 1, 6, { role: 'source', partnerId: partner.id, transfersLeft: 3 });
-        addStatus(partner, 'lifeLink', 1, 6, { role: 'partner', partnerId: cat.id, transfersLeft: 3 });
+        addStatus(cat, 'lifeLink', 1, turns, { role: 'source', partnerId: partner.id, transfersLeft, followScale, turns });
+        addStatus(partner, 'lifeLink', 1, turns, { role: 'partner', partnerId: cat.id, transfersLeft, followScale, turns });
         appendBattleLog(logs, roundContainer, `<div class="text-blue-300 font-black">生命链接：露露链接 <span class="text-blue-200">${partner.name}</span></div>`);
         markKey();
       };
@@ -4098,8 +4319,9 @@
 
         src.meta.transfersLeft -= 1;
         src.meta.partnerId = next.id;
-        src.turns = 6;
-        addStatus(next, 'lifeLink', 1, 6, { role: 'partner', partnerId: cat.id, transfersLeft: src.meta.transfersLeft });
+        const turns = src.meta.turns || 6;
+        src.turns = turns;
+        addStatus(next, 'lifeLink', 1, turns, { role: 'partner', partnerId: cat.id, transfersLeft: src.meta.transfersLeft, followScale: src.meta.followScale, turns });
         appendBattleLog(logs, roundContainer, `<div class="text-blue-300 font-black">生命链接转移：链接至 <span class="text-blue-200">${next.name}</span></div>`);
         markKey();
       };
@@ -4107,10 +4329,11 @@
       const triggerStoredFollowUp = () => {
         const info = getCatLinkInfo();
         if (!info) return;
-        const { cat, partner } = info;
+        const { cat, src, partner } = info;
         if (!partner || partner.currentHp <= 0 || cat.currentHp <= 0) return;
         if (roundFollowUpUsed) return;
-        const used = castSkill(partner, team, enemies, { bypassCost: true, bypassCd: true, bypassSilence: true, scaleFactor: 0.8, announcePrefix: '蓄能追击' });
+        const power = (src && src.meta && typeof src.meta.followScale === 'number') ? src.meta.followScale : 0.8;
+        const used = castSkill(partner, team, enemies, { bypassCost: true, bypassCd: true, bypassSilence: true, scaleFactor: power, announcePrefix: '蓄能追击' });
         if (used) {
           roundFollowUpUsed = true;
           markKey();
@@ -4200,13 +4423,22 @@
       };
 
       const applyRoundEndPassives = () => {
-        const timeMaster = team.find(u => u.currentHp > 0 && /每回合结束时，增加全队5%速度/.test((u.passive && u.passive.text) || ''));
-        if (!timeMaster) return;
+        let perTurn = 0;
+        let maxPct = 0;
+        team.forEach(u => {
+          if (u.currentHp <= 0) return;
+          const text = (u.passive && u.passive.text) || '';
+          const m = text.match(/每回合结束时，增加全队(\d+)%速度（最高(\d+)%）/);
+          if (!m) return;
+          perTurn = Math.max(perTurn, parseInt(m[1], 10));
+          maxPct = Math.max(maxPct, parseInt(m[2], 10));
+        });
+        if (perTurn <= 0 || maxPct <= 0) return;
 
         team.forEach(u => {
           if (u.currentHp <= 0) return;
           const current = getStatusValue(u, 'spdUpAura') || 0;
-          const next = Math.min(25, current + 5);
+          const next = Math.min(maxPct, current + perTurn);
           addStatus(u, 'spdUpAura', next, 999);
           addStatus(u, 'spdUp', next, 999);
         });
@@ -4799,7 +5031,19 @@
           return true;
         };
 
-        if (applyStructuredEffects()) return true;
+        const structuredUsed = applyStructuredEffects();
+        if (structuredUsed) {
+          if (unit.passive && unit.passive.skillAtkStack) {
+            const st = unit.passive.skillAtkStack;
+            if ((st.stacks || 0) < st.max) {
+              st.stacks = (st.stacks || 0) + 1;
+              unit.attack = Math.floor(unit.attack * (1 + st.value / 100));
+              appendBattleLog(logs, roundContainer, `<div class="text-yellow-300 font-bold">${unit.name} 叠加剑意（${st.stacks}/${st.max}）</div>`);
+              markKey();
+            }
+          }
+          return true;
+        }
 
         if (unit.class === 'healer') {
           const healDebuff = Math.min(80, affixValue('healDown') + affixValue('antiHeal'));
@@ -4819,6 +5063,15 @@
           allies.forEach(a => a.currentHp > 0 && addStatus(a, 'atkUp', 12 + Math.floor(rarityBoost * 100 / 2), 2));
           appendBattleLog(logs, roundContainer, `<div><span class="text-green-400 font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>，治疗全队 <span class="text-green-400 font-bold">${healed}</span> 并提升攻击</div>`);
           markKey();
+          if (unit.passive && unit.passive.skillAtkStack) {
+            const st = unit.passive.skillAtkStack;
+            if ((st.stacks || 0) < st.max) {
+              st.stacks = (st.stacks || 0) + 1;
+              unit.attack = Math.floor(unit.attack * (1 + st.value / 100));
+              appendBattleLog(logs, roundContainer, `<div class="text-yellow-300 font-bold">${unit.name} 叠加剑意（${st.stacks}/${st.max}）</div>`);
+              markKey();
+            }
+          }
           return true;
         }
 
@@ -5598,6 +5851,20 @@
       if (stars >= 6) stats.lifesteal += 4;
       if (stars >= 7) stats.critDmg += 12;
       if (stars >= 8) stats.speed += 8;
+
+      if (char.awakened) {
+        const p = getAwakenProfile(char);
+        if (p && p.bonus) {
+          Object.entries(p.bonus).forEach(([k, v]) => {
+            if (typeof v !== 'number') return;
+            if (typeof stats[k] === 'number') stats[k] += v;
+            else if (k === 'attack') stats.attack += v;
+            else if (k === 'defense') stats.defense += v;
+            else if (k === 'health') stats.health += v;
+            else if (k === 'speed') stats.speed += v;
+          });
+        }
+      }
 
       // 2. 整合装备属性 (槽位制)
       const equipments = char.equipments || {};
