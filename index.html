@@ -911,7 +911,8 @@
     };
 
     const BATTLE_SCENE_CONFIG = {
-      backgroundImageUrl: './assets/backgrounds/battle_scene_bg.jpg'
+      backgroundImageUrl: './assets/backgrounds/battle_scene_bg.jpg',
+      replaceFormal: true
     };
 
     const AWAKEN_PROFILES = {
@@ -3783,7 +3784,10 @@
         // 绑定挑战按钮事件
         const challengeBtn = cardElement.querySelector('[data-stage]');
         challengeBtn.addEventListener('click', () => {
-          if (isUnlocked) {
+          if (!isUnlocked) return;
+          if (BATTLE_SCENE_CONFIG && BATTLE_SCENE_CONFIG.replaceFormal) {
+            openBattleSceneDebug(stage.id);
+          } else {
             startBattle(stage.id);
           }
         });
