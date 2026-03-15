@@ -3810,13 +3810,35 @@
         .replace(/'/g, '&#39;');
     }
 
-    function openBattleSceneDebug(stageId) {
-      const stage = stagesData.find(s => s && s.id === stageId);
-      if (!stage) return;
-      const bg = document.getElementById('battleSceneDebugBg');
-      if (bg) {
-        bg.style.backgroundImage = BATTLE_SCENE_CONFIG.backgroundImageUrl ? `url('${BATTLE_SCENE_CONFIG.backgroundImageUrl}')` : '';
-      }
+    function battleSceneDebugGetLoadoutPassiveText(char) {
+      try {
+        if (typeof getLoadoutPassiveText === 'function') return getLoadoutPassiveText(char);
+      } catch (_) {}
+      const parts = [];
+      if (char && char.passive) parts.push(String(char.passive));
+      try {
+        if (char && char.awakened && typeof AWAKEN_PROFILES === 'object') {
+          const p = AWAKEN_PROFILES[char.id];
+          if (p && p.passiveEffect) parts.push(`觉醒：${String(p.passiveEffect)}`);
+        }
+      } catch (_) {}
+      try {
+        const equipments = (char && char.equipments) ? char.equipments : {};
+        Object.values(equipments).forEach(item => {
+          if (item && item.passiveEffect) parts.push(String(item.passiveEffect));
+        });
+      } catch (_) {}
+      try {
+        const inscriptions = Array.isArray(char && char.inscriptions) ? char.inscriptions : [];
+        inscriptions.forEach(ins => {
+          if (!ins) return;
+          if (ins.passiveEffect) parts.push(String(ins.passiveEffect));
+          if (ins.setEffect && ins.setEffect.effect) parts.push(String(ins.setEffect.effect));
+        });
+      } catch (_) {}
+      return parts.filter(Boolean).join('；');
+    }
+    function battleSceneDebugApplyShellUI() {
       const debugMenu = document.getElementById('debugMenu');
       if (debugMenu) {
         document.body.dataset.prevDebugMenuHidden = debugMenu.classList.contains('hidden') ? '1' : '0';
@@ -3846,129 +3868,9 @@
       document.body.dataset.prevBodyOverflow = document.body.style.overflow || '';
       document.documentElement.style.overflow = 'hidden';
       document.body.style.overflow = 'hidden';
-      ensureFormation();
-      const ids = gameData.formation.filter(Boolean);
-      const picked = ids.map(id => gameData.characters.find(c => c.id === id)).filter(Boolean).slice(0, 6);
-      const player = [];
-      for (let i = 0; i < 6; i++) {
-        const c = picked[i];
-        if (!c) {
-          player.push(null);
-          continue;
-        }
-        const stats = calculateTotalStats(c);
-        const skills = Array.isArray(c.skills) ? JSON.parse(JSON.stringify(c.skills)) : [];
-        player.push({
-          id: c.id,
-          name: c.name,
-          displayName: c.name,
-          imageUrl: c.imageUrl,
-          rarity: c.rarity,
-          class: c.class,
-          maxHp: Math.floor(stats.health || 1),
-          currentHp: Math.floor(stats.health || 1),
-          attack: Math.floor(stats.attack || 0),
-          defense: Math.floor(stats.defense || 0),
-          speed: Math.floor(stats.speed || 0),
-          isEnemy: false,
-          statuses: [],
-          shield: 0,
-          skills,
-          skillCd: skills.map(() => 0)
-        });
-      }
-
-      const enemies = [];
-      const enemyList = Array.isArray(stage.enemies) ? stage.enemies : [];
-      for (let i = 0; i < 6; i++) {
-        const e = enemyList[i];
-        if (!e) {
-          enemies.push(null);
-          continue;
-        }
-        enemies.push({
-          id: e.id || `enemy_${i + 1}`,
-          name: e.name || `敌人${i + 1}`,
-          imageUrl: '',
-          maxHp: typeof e.health === 'number' ? e.health : 1000,
-          currentHp: typeof e.health === 'number' ? e.health : 1000,
-          attack: typeof e.attack === 'number' ? e.attack : 100,
-          defense: typeof e.defense === 'number' ? e.defense : 50,
-          speed: typeof e.speed === 'number' ? e.speed : 100,
-          isEnemy: true,
-          statuses: [],
-          shield: 0,
-          skills: [],
-          skillCd: []
-        });
-      }
-
-      const ensureUniqueNames = (left, right) => {
-        const used = new Map();
-        const apply = (unit, suffix) => {
-          if (!unit) return;
-          let base = String(unit.name || '单位');
-          if (!used.has(base)) {
-            used.set(base, 1);
-            unit.displayName = base;
-            return;
-          }
-          const n = used.get(base) + 1;
-          used.set(base, n);
-          unit.displayName = `${base}${suffix}${n}`;
-        };
-        left.forEach(u => apply(u, '·我'));
-        right.forEach(u => apply(u, '·敌'));
-      };
-
-      ensureUniqueNames(player.filter(Boolean), enemies.filter(Boolean));
-
-      battleSceneDebugState = {
-        stageId,
-        stageName: stage.name,
-        round: 1,
-        auto: false,
-        speed: 2,
-        energy: 6,
-        player,
-        enemies,
-        feed: [],
-        running: false,
-        awaitingTarget: null,
-        turnOrder: [],
-        turnCursor: 0
-      };
-
-      document.getElementById('battleSceneDebugStageName').textContent = stage.name;
-      document.getElementById('battleSceneDebug').classList.remove('hidden');
-      renderBattleSceneDebug();
-      pushBattleSceneDebugFeed(`进入战斗场景调试：${stage.name}`);
-      battleSceneDebugSyncControls();
-      battleSceneDebugInitRound(true);
-
-      const btn = document.getElementById('battleSceneDebugAutoBtn');
-      if (btn) {
-        btn.onclick = () => {
-          if (!battleSceneDebugState) return;
-          battleSceneDebugState.auto = !battleSceneDebugState.auto;
-          pushBattleSceneDebugFeed(`切换模式：${battleSceneDebugState.auto ? '自动' : '手动'}`);
-          battleSceneDebugSyncControls();
-        };
-      }
-      const sel = document.getElementById('battleSceneDebugSpeed');
-      if (sel) {
-        sel.onchange = () => {
-          if (!battleSceneDebugState) return;
-          battleSceneDebugState.speed = parseInt(sel.value, 10) || 2;
-          pushBattleSceneDebugFeed(`切换速度：x${battleSceneDebugState.speed}`);
-          battleSceneDebugSyncControls();
-        };
-      }
     }
 
-    function closeBattleSceneDebug() {
-      const runBtn = document.getElementById('battleSceneDebugRunBtn');
-      if (runBtn) runBtn.textContent = '开始';
+    function battleSceneDebugRestoreShellUI() {
       const debugMenu = document.getElementById('debugMenu');
       if (debugMenu && document.body.dataset.prevDebugMenuHidden === '0') debugMenu.classList.remove('hidden');
       const footer = document.querySelector('footer');
@@ -3981,6 +3883,167 @@
       if (logger && document.body.dataset.prevMobileLoggerHidden === '0') logger.classList.remove('hidden');
       document.documentElement.style.overflow = document.body.dataset.prevHtmlOverflow || '';
       document.body.style.overflow = document.body.dataset.prevBodyOverflow || '';
+    }
+
+    function openBattleSceneDebug(stageId) {
+      const stage = stagesData.find(s => s && s.id === stageId);
+      if (!stage) return;
+      try {
+        ensureFormation();
+        const ids = gameData.formation.filter(Boolean);
+        const picked = ids.map(id => gameData.characters.find(c => c.id === id)).filter(Boolean).slice(0, 6);
+        const player = [];
+        for (let i = 0; i < 6; i++) {
+          const c = picked[i];
+          if (!c) {
+            player.push(null);
+            continue;
+          }
+          const stats = calculateTotalStats(c);
+          const skills = Array.isArray(c.skills) ? JSON.parse(JSON.stringify(c.skills)) : [];
+          const passiveText = battleSceneDebugGetLoadoutPassiveText(c);
+          const passiveRuntime = battleSceneDebugParsePassiveText(passiveText);
+          const atk = Math.floor((stats.attack || 0) * (1 + (passiveRuntime.atkPercent || 0) / 100));
+          const def = Math.floor(stats.defense || 0);
+          const hp = Math.floor(stats.health || 1);
+          const spd = Math.floor((stats.speed || 0) + (passiveRuntime.speed || 0));
+          player.push({
+            id: c.id,
+            name: c.name,
+            displayName: c.name,
+            imageUrl: c.imageUrl,
+            rarity: c.rarity,
+            class: c.class,
+            maxHp: hp,
+            currentHp: hp,
+            attack: atk,
+            defense: def,
+            speed: spd,
+            critRate: Math.floor((stats.critRate || 0) + (passiveRuntime.critRate || 0)),
+            critDmg: Math.floor((stats.critDmg || 150) + (passiveRuntime.critDmg || 0)),
+            dodgeRate: Math.floor(stats.dodgeRate || 0),
+            blockRate: Math.floor(stats.blockRate || 0),
+            lifesteal: Math.floor(stats.lifesteal || 0),
+            penetration: Math.floor((stats.penetration || 0) + (passiveRuntime.penetration || 0)),
+            effectHit: Math.floor((stats.effectHit || 0) + (passiveRuntime.effectHit || 0)),
+            tenacity: Math.floor((stats.tenacity || 0) + (passiveRuntime.tenacity || 0)),
+            dmgReduc: Math.floor((stats.dmgReduc || 0) + (passiveRuntime.dmgReduc || 0)),
+            isEnemy: false,
+            statuses: [],
+            shield: 0,
+            skills,
+            skillCd: skills.map(() => 0),
+            passiveText,
+            passiveRuntime
+          });
+        }
+
+        const enemies = [];
+        const enemyList = Array.isArray(stage.enemies) ? stage.enemies : [];
+        for (let i = 0; i < 6; i++) {
+          const e = enemyList[i];
+          if (!e) {
+            enemies.push(null);
+            continue;
+          }
+          enemies.push({
+            id: e.id || `enemy_${i + 1}`,
+            name: e.name || `敌人${i + 1}`,
+            imageUrl: '',
+            maxHp: typeof e.health === 'number' ? e.health : 1000,
+            currentHp: typeof e.health === 'number' ? e.health : 1000,
+            attack: typeof e.attack === 'number' ? e.attack : 100,
+            defense: typeof e.defense === 'number' ? e.defense : 50,
+            speed: typeof e.speed === 'number' ? e.speed : 100,
+            isEnemy: true,
+            statuses: [],
+            shield: 0,
+            skills: [],
+            skillCd: []
+          });
+        }
+
+        const ensureUniqueNames = (left, right) => {
+          const used = new Map();
+          const apply = (unit, suffix) => {
+            if (!unit) return;
+            let base = String(unit.name || '单位');
+            if (!used.has(base)) {
+              used.set(base, 1);
+              unit.displayName = base;
+              return;
+            }
+            const n = used.get(base) + 1;
+            used.set(base, n);
+            unit.displayName = `${base}${suffix}${n}`;
+          };
+          left.forEach(u => apply(u, '·我'));
+          right.forEach(u => apply(u, '·敌'));
+        };
+
+        ensureUniqueNames(player.filter(Boolean), enemies.filter(Boolean));
+
+        battleSceneDebugState = {
+          stageId,
+          stageName: stage.name,
+          round: 1,
+          auto: false,
+          speed: 2,
+          energy: 6,
+          player,
+          enemies,
+          feed: [],
+          running: false,
+          awaitingTarget: null,
+          turnOrder: [],
+          turnCursor: 0
+        };
+
+        battleSceneDebugApplyShellUI();
+
+        const bg = document.getElementById('battleSceneDebugBg');
+        if (bg) {
+          bg.style.backgroundImage = BATTLE_SCENE_CONFIG.backgroundImageUrl ? `url('${BATTLE_SCENE_CONFIG.backgroundImageUrl}')` : '';
+        }
+
+        document.getElementById('battleSceneDebugStageName').textContent = stage.name;
+        document.getElementById('battleSceneDebug').classList.remove('hidden');
+        renderBattleSceneDebug();
+        pushBattleSceneDebugFeed(`进入战斗场景调试：${stage.name}`);
+        battleSceneDebugSyncControls();
+        battleSceneDebugInitRound(true);
+
+        const btn = document.getElementById('battleSceneDebugAutoBtn');
+        if (btn) {
+          btn.onclick = () => {
+            if (!battleSceneDebugState) return;
+            battleSceneDebugState.auto = !battleSceneDebugState.auto;
+            pushBattleSceneDebugFeed(`切换模式：${battleSceneDebugState.auto ? '自动' : '手动'}`);
+            battleSceneDebugSyncControls();
+          };
+        }
+        const sel = document.getElementById('battleSceneDebugSpeed');
+        if (sel) {
+          sel.onchange = () => {
+            if (!battleSceneDebugState) return;
+            battleSceneDebugState.speed = parseInt(sel.value, 10) || 2;
+            pushBattleSceneDebugFeed(`切换速度：x${battleSceneDebugState.speed}`);
+            battleSceneDebugSyncControls();
+          };
+        }
+      } catch (e) {
+        console.error(e);
+        try { document.getElementById('battleSceneDebug').classList.add('hidden'); } catch (_) {}
+        battleSceneDebugState = null;
+        battleSceneDebugRestoreShellUI();
+        alert(`进入战斗场景失败：${e && e.message ? e.message : e}`);
+      }
+    }
+
+    function closeBattleSceneDebug() {
+      const runBtn = document.getElementById('battleSceneDebugRunBtn');
+      if (runBtn) runBtn.textContent = '开始';
+      battleSceneDebugRestoreShellUI();
       document.getElementById('battleSceneDebug').classList.add('hidden');
       battleSceneDebugState = null;
     }
@@ -4048,7 +4111,7 @@
           const hpPct = unit.maxHp > 0 ? Math.max(0, Math.min(100, Math.floor(unit.currentHp / unit.maxHp * 100))) : 0;
           const outline = 'ring-1 ring-white/10';
           const isActor = currentTurn && currentTurn.side === side && currentTurn.index === i;
-          const actorOutline = isActor ? (side === 'player' ? 'ring-2 ring-sky-400' : 'ring-2 ring-red-400') : outline;
+          const actorOutline = (isActor && !battleSceneDebugState.awaitingTarget) ? (side === 'player' ? 'ring-2 ring-sky-400' : 'ring-2 ring-red-400') : outline;
           const selecting = !!battleSceneDebugState.awaitingTarget;
           const pickSide = selecting ? battleSceneDebugState.awaitingTarget.pickSide : null;
           const targetable = selecting && pickSide === side && !dead;
@@ -4090,6 +4153,7 @@
         const buttons = document.getElementById('battleSceneDebugActionButtons');
         const cancelBtn = document.getElementById('battleSceneDebugActionCancel');
         const energy = battleSceneDebugState.energy || 0;
+        const silenced = !!(actor && battleSceneDebugGetStatus(actor, 'silence'));
         if (hint) {
           const pickText = battleSceneDebugState.awaitingTarget.pickSide === 'player' ? '点选我方目标' : '点选敌方目标';
           hint.textContent = actor ? `操作：${actor.displayName || actor.name}，选择行动并${pickText}` : '请选择目标';
@@ -4116,13 +4180,14 @@
             const cost = battleSceneDebugGetSkillCost(s);
             const cd = actor && Array.isArray(actor.skillCd) ? (actor.skillCd[idx] || 0) : 0;
             const spec = battleSceneDebugGetSkillTargetSpec(s);
-            const disabled = cd > 0 || energy < cost;
+            const disabled = silenced || cd > 0 || energy < cost;
             const selected = battleSceneDebugState.awaitingTarget.actionType === 'skill' && battleSceneDebugState.awaitingTarget.skillIndex === idx;
             const label = `${s && s.name ? s.name : `技能${idx + 1}`}${cd > 0 ? ` CD${cd}` : ''}（-${cost}）`;
             addBtn(label, selected, disabled, () => {
               if (!battleSceneDebugState || !battleSceneDebugState.awaitingTarget) return;
               if ((battleSceneDebugState.energy || 0) < cost) return;
               if (cd > 0) return;
+              if (silenced) return;
               if (spec.kind === 'auto') {
                 const ok = battleSceneDebugApplySkill(actor, 'player', idx, 'enemy', 0);
                 if (ok) {
@@ -4174,13 +4239,19 @@
     function buildBattleSceneDebugTurnOrder() {
       if (!battleSceneDebugState) return [];
       const order = [];
+      const effectiveSpeed = (u) => {
+        const base = Math.max(1, (u.speed || 0) + battleSceneDebugGetStatusValue(u, 'spdFlatUp') - battleSceneDebugGetStatusValue(u, 'spdFlatDown'));
+        const up = battleSceneDebugGetStatusValue(u, 'spdUp');
+        const down = battleSceneDebugGetStatusValue(u, 'spdDown');
+        return base * (1 + up / 100) * (1 - down / 100);
+      };
       battleSceneDebugState.player.forEach((u, idx) => {
         if (!u || u.currentHp <= 0) return;
-        order.push({ side: 'player', index: idx, speed: u.speed || 0 });
+        order.push({ side: 'player', index: idx, speed: effectiveSpeed(u) });
       });
       battleSceneDebugState.enemies.forEach((u, idx) => {
         if (!u || u.currentHp <= 0) return;
-        order.push({ side: 'enemy', index: idx, speed: u.speed || 0 });
+        order.push({ side: 'enemy', index: idx, speed: effectiveSpeed(u) });
       });
       order.sort((a, b) => (b.speed || 0) - (a.speed || 0));
       return order;
@@ -4249,18 +4320,134 @@
       });
     }
 
-    function computeDebugDamage(attacker, target, mult) {
+    function computeDebugDamage(attacker, target, mult, opts = {}) {
+      if (battleSceneDebugGetStatus(target, 'immune')) return { immune: true, dodged: false, crit: false, block: false, damage: 0 };
+
       const atkUp = battleSceneDebugGetStatusValue(attacker, 'atkUp');
-      const dmgUp = battleSceneDebugGetStatusValue(attacker, 'dmgUp');
+      let dmgUp = battleSceneDebugGetStatusValue(attacker, 'dmgUp');
       const defDown = battleSceneDebugGetStatusValue(target, 'defDown');
+      const dodgeUp = battleSceneDebugGetStatusValue(target, 'dodgeUp');
       const dmgReducUp = battleSceneDebugGetStatusValue(target, 'dmgReducUp');
 
+      const dodgeChance = Math.max(0, (target.dodgeRate || 0) + dodgeUp - (attacker.effectHit || 0) * 0.5);
+      if (dodgeChance > 0 && Math.random() * 100 < dodgeChance) return { immune: false, dodged: true, crit: false, block: false, damage: 0 };
+
+      const passive = attacker && attacker.passiveRuntime ? attacker.passiveRuntime : null;
+      if (passive && passive.bonusVs) {
+        Object.entries(passive.bonusVs).forEach(([k, v]) => {
+          if (!v) return;
+          if (battleSceneDebugGetStatus(target, k)) dmgUp += v;
+        });
+      }
       const atk = Math.max(1, (attacker.attack || 1) * (1 + atkUp / 100));
-      const raw = atk * mult * (0.9 + Math.random() * 0.2) * (1 + dmgUp / 100);
-      const def = Math.max(0, (target.defense || 0) * (1 - defDown / 100));
+      const base = opts.rawOverride != null ? opts.rawOverride : (atk * mult);
+      const raw = base * (0.9 + Math.random() * 0.2) * (1 + dmgUp / 100);
+      const ignoreDef = Math.max(
+        typeof opts.ignoreDef === 'number' ? opts.ignoreDef : 0,
+        passive && typeof passive.ignoreDef === 'number' ? passive.ignoreDef : 0
+      );
+      const pen = Math.max(0, Math.min(200, (attacker.penetration || 0) + ignoreDef * 2));
+      const def = Math.max(0, (target.defense || 0) * (1 - defDown / 100) * (1 - pen / 200));
       let dmg = Math.max(1, Math.floor(raw * (100 / (100 + def))));
-      if (dmgReducUp > 0) dmg = Math.max(1, Math.floor(dmg * (1 - Math.min(80, dmgReducUp) / 100)));
-      return dmg;
+
+      const crit = (Math.random() * 100) < Math.max(0, attacker.critRate || 0);
+      if (crit) dmg = Math.max(1, Math.floor(dmg * (Math.max(150, attacker.critDmg || 150) / 100)));
+
+      const block = (Math.random() * 100) < Math.max(0, target.blockRate || 0);
+      if (block) dmg = Math.max(1, Math.floor(dmg * 0.5));
+
+      const reduc = Math.min(80, (target.dmgReduc || 0) + dmgReducUp);
+      if (reduc > 0) dmg = Math.max(1, Math.floor(dmg * (1 - reduc / 100)));
+
+      return { immune: false, dodged: false, crit, block, damage: dmg };
+    }
+
+    function battleSceneDebugParsePassiveText(text) {
+      const t = String(text || '');
+      const getNum = (re) => {
+        const m = t.match(re);
+        if (!m) return 0;
+        return parseInt(m[1], 10) || 0;
+      };
+      const bonusVs = {};
+      [
+        ['burn', /对灼烧目标伤害提升(\d+)%/],
+        ['poison', /对中毒目标伤害提升(\d+)%/],
+        ['bleed', /对流血目标伤害提升(\d+)%/],
+        ['spdDown', /攻击带有减速效果的目标时，伤害提升(\d+)%/],
+        ['silence', /攻击带有沉默效果的目标时，伤害提升(\d+)%/],
+        ['shock', /对带有感电标记的目标伤害提升(\d+)%/]
+      ].forEach(([k, re]) => {
+        const v = getNum(re);
+        if (v) bonusVs[k] = v;
+      });
+
+      const runtime = {
+        atkPercent: getNum(/攻击力提升(\d+)%/),
+        critRate: getNum(/暴击率提升(\d+)%/),
+        critDmg: getNum(/暴击伤害提升(\d+)%/),
+        effectHit: getNum(/效果命中提升(\d+)%/),
+        penetration: getNum(/穿透提升(\d+)%/),
+        tenacity: getNum(/抗性提升(\d+)%/),
+        speed: getNum(/速度提升(\d+)%/),
+        dmgReduc: getNum(/免伤提升(\d+)%/),
+        ignoreDef: getNum(/无视目标(\d+)%防御/),
+        bonusVs,
+        onHitCc: null,
+        onHitMark: null
+      };
+
+      const mCc = t.match(/攻击时有(\d+)%几率(魅惑|眩晕|沉默)目标(\d+)回合/);
+      if (mCc) {
+        const map = { 魅惑: 'charm', 眩晕: 'stun', 沉默: 'silence' };
+        runtime.onHitCc = { chance: parseInt(mCc[1], 10) || 0, type: map[mCc[2]] || 'stun', turns: parseInt(mCc[3], 10) || 1 };
+      }
+      const mShock = t.match(/攻击时有(\d+)%几率给目标添加“感电”标记/);
+      if (mShock) runtime.onHitMark = { chance: parseInt(mShock[1], 10) || 0, type: 'shock', turns: 2 };
+      return runtime;
+    }
+
+    function battleSceneDebugAfterHit(attacker, target, isBasic) {
+      if (!attacker || !target || target.currentHp <= 0) return;
+      const p = attacker.passiveRuntime;
+      if (!p) return;
+      if (p.onHitMark && Math.random() * 100 < (p.onHitMark.chance || 0)) {
+        battleSceneDebugAddStatus(target, p.onHitMark.type, 1, p.onHitMark.turns || 2);
+      }
+      if (p.onHitCc && Math.random() * 100 < (p.onHitCc.chance || 0)) {
+        if (!battleSceneDebugGetStatus(target, 'ccImmune')) {
+          const resistChance = Math.max(0, (target.tenacity || 0) - (attacker.effectHit || 0) * 0.5);
+          if (!(resistChance > 0 && Math.random() * 100 < resistChance)) {
+            battleSceneDebugAddStatus(target, p.onHitCc.type, 1, p.onHitCc.turns || 1);
+          }
+        }
+      }
+    }
+
+    function battleSceneDebugChooseTarget(attacker, candidates) {
+      const alive = candidates.filter(u => u && u.currentHp > 0);
+      if (alive.length === 0) return null;
+      const taunter = alive.find(u => battleSceneDebugGetStatus(u, 'taunt'));
+      if (taunter) return taunter;
+      if (attacker && attacker.class === 'assassin') {
+        return alive.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
+      }
+      return alive[Math.floor(Math.random() * alive.length)];
+    }
+
+    function battleSceneDebugTickTurnStart(unit) {
+      if (!unit || unit.currentHp <= 0) return;
+      const burn = battleSceneDebugGetStatus(unit, 'burn');
+      const bleed = battleSceneDebugGetStatus(unit, 'bleed');
+      const poison = battleSceneDebugGetStatus(unit, 'poison');
+      let dot = 0;
+      if (burn) dot += burn.value || 0;
+      if (bleed) dot += bleed.value || 0;
+      if (poison) dot += poison.value || 0;
+      if (dot > 0) {
+        const { dealt } = battleSceneDebugApplyDamage(unit, dot);
+        if (dealt > 0) pushBattleSceneDebugFeed(`${unit.displayName || unit.name} 受到持续伤害 ${dealt}`);
+      }
     }
 
     function battleSceneDebugApplyDamage(target, amount) {
@@ -4300,8 +4487,8 @@
         if (!e) return;
         const t = e.target || 'enemy';
         hasAny = true;
-        if (t === 'enemy') needsEnemyPick = true;
         if (t === 'allySelect') needsAllyPick = true;
+        if (t === 'enemy') needsEnemyPick = true;
       });
       if (!hasAny) return { kind: 'enemyPick' };
       if (needsAllyPick) return { kind: 'allyPick' };
@@ -4327,18 +4514,19 @@
       const allies = battleSceneDebugState.player;
       const pickList = (side) => (side === 'enemy' ? enemies : allies);
       const targetsFromType = (type) => {
-        const list = type.includes('Enemy') ? enemies : allies;
-        const alive = list.filter(u => u && u.currentHp > 0);
-        if (type === 'allEnemies' || type === 'allAllies') return alive;
-        if (type === 'randomEnemies') return alive.length ? [alive[Math.floor(Math.random() * alive.length)]] : [];
-        if (type === 'randomAllies') return alive.length ? [alive[Math.floor(Math.random() * alive.length)]] : [];
+        const aliveEnemies = enemies.filter(u => u && u.currentHp > 0);
+        const aliveAllies = allies.filter(u => u && u.currentHp > 0);
+        if (type === 'allEnemies') return aliveEnemies;
+        if (type === 'allAllies') return aliveAllies;
+        if (type === 'randomEnemies') return aliveEnemies.length ? [aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)]] : [];
+        if (type === 'randomAllies') return aliveAllies.length ? [aliveAllies[Math.floor(Math.random() * aliveAllies.length)]] : [];
         if (type === 'enemyLowest') {
-          if (!alive.length) return [];
-          return [alive.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0]];
+          if (!aliveEnemies.length) return [];
+          return [aliveEnemies.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0]];
         }
         if (type === 'allyLowest') {
-          if (!alive.length) return [];
-          return [alive.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0]];
+          if (!aliveAllies.length) return [];
+          return [aliveAllies.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0]];
         }
         if (type === 'ally') return [actor];
         if (type === 'enemy') {
@@ -4361,18 +4549,38 @@
         const chance = typeof effect.chance === 'number' ? effect.chance : 100;
         if (chance < 100 && Math.random() * 100 >= chance) return;
         const targetType = effect.target || 'enemy';
-        const targets = targetsFromType(targetType);
+
+        if (effect.type === 'selfCost') {
+          if (effect.costType === 'currentHpPct' && typeof effect.value === 'number') {
+            const costHp = Math.floor(actor.currentHp * Math.min(95, effect.value) / 100);
+            actor.currentHp = Math.max(1, actor.currentHp - costHp);
+            pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 消耗生命 ${costHp}`);
+          }
+          return;
+        }
 
         if (effect.type === 'damage') {
           const hits = Math.max(1, effect.hits || 1);
+          const ignoreDef = typeof effect.ignoreDef === 'number' ? effect.ignoreDef : 0;
           for (let h = 0; h < hits; h++) {
-            targets.forEach(t => {
+            const hitTargets = (targetType === 'randomEnemies' || targetType === 'randomAllies') ? targetsFromType(targetType) : targetsFromType(targetType);
+            hitTargets.forEach(t => {
               if (!t || t.currentHp <= 0) return;
               if (effect.requireStatus && !battleSceneDebugGetStatus(t, effect.requireStatus)) return;
               const scale = typeof effect.scale === 'number' ? effect.scale : 1.0;
-              const dmg = computeDebugDamage(actor, t, scale);
-              const { dealt } = battleSceneDebugApplyDamage(t, dmg);
-              if (dealt > 0) setBattleSceneDebugHitFx(t.isEnemy ? 'enemy' : 'player', (t.isEnemy ? enemies : allies).indexOf(t));
+              const scaleFrom = effect.scaleFrom || 'atk';
+              const rawOverride =
+                scaleFrom === 'maxHp' ? Math.floor((actor.maxHp || 0) * scale + (effect.addFlat || 0)) :
+                scaleFrom === 'targetMaxHp' ? Math.floor((t.maxHp || 0) * scale + (effect.addFlat || 0)) :
+                null;
+              const r = computeDebugDamage(actor, t, scale, { rawOverride, ignoreDef });
+              if (r.immune) return;
+              if (r.dodged) return;
+              const { dealt } = battleSceneDebugApplyDamage(t, r.damage);
+              if (dealt > 0) {
+                setBattleSceneDebugHitFx(t.isEnemy ? 'enemy' : 'player', (t.isEnemy ? enemies : allies).indexOf(t));
+                battleSceneDebugAfterHit(actor, t, false);
+              }
             });
           }
           return;
@@ -4381,7 +4589,8 @@
         if (effect.type === 'trueDamage') {
           const hits = Math.max(1, effect.hits || 1);
           for (let h = 0; h < hits; h++) {
-            targets.forEach(t => {
+            const hitTargets = (targetType === 'randomEnemies' || targetType === 'randomAllies') ? targetsFromType(targetType) : targetsFromType(targetType);
+            hitTargets.forEach(t => {
               if (!t || t.currentHp <= 0) return;
               if (effect.requireStatus && !battleSceneDebugGetStatus(t, effect.requireStatus)) return;
               const scale = typeof effect.scale === 'number' ? effect.scale : 0.1;
@@ -4392,7 +4601,10 @@
                 (actor.attack || 0) * scale;
               const amount = Math.max(1, Math.floor(base));
               const { dealt } = battleSceneDebugApplyDamage(t, amount);
-              if (dealt > 0) setBattleSceneDebugHitFx(t.isEnemy ? 'enemy' : 'player', (t.isEnemy ? enemies : allies).indexOf(t));
+              if (dealt > 0) {
+                setBattleSceneDebugHitFx(t.isEnemy ? 'enemy' : 'player', (t.isEnemy ? enemies : allies).indexOf(t));
+                battleSceneDebugAfterHit(actor, t, false);
+              }
             });
           }
           return;
@@ -4400,7 +4612,7 @@
 
         if (effect.type === 'heal') {
           const scale = typeof effect.scale === 'number' ? effect.scale : 1.0;
-          targets.forEach(t => {
+          targetsFromType(targetType).forEach(t => {
             if (!t || t.currentHp <= 0) return;
             const amount = Math.max(1, Math.floor((actor.attack || 1) * scale));
             battleSceneDebugApplyHeal(t, amount);
@@ -4412,9 +4624,21 @@
           const stat = effect.stat;
           const value = typeof effect.value === 'number' ? effect.value : 0;
           const turns = typeof effect.turns === 'number' ? effect.turns : 2;
-          targets.forEach(t => {
+          targetsFromType(targetType).forEach(t => {
             if (!t || t.currentHp <= 0) return;
             battleSceneDebugAddStatus(t, stat, value, turns);
+          });
+          return;
+        }
+
+        if (effect.type === 'dot') {
+          const dot = effect.dot;
+          const turns = typeof effect.turns === 'number' ? effect.turns : 2;
+          const scale = typeof effect.scale === 'number' ? effect.scale : 0.1;
+          const value = Math.max(1, Math.floor((actor.attack || 0) * scale));
+          targetsFromType(targetType).forEach(t => {
+            if (!t || t.currentHp <= 0) return;
+            battleSceneDebugAddStatus(t, dot, value, turns);
           });
           return;
         }
@@ -4422,7 +4646,7 @@
         if (effect.type === 'shield') {
           const scale = typeof effect.scale === 'number' ? effect.scale : 0.5;
           const turns = typeof effect.turns === 'number' ? effect.turns : 2;
-          targets.forEach(t => {
+          targetsFromType(targetType).forEach(t => {
             if (!t || t.currentHp <= 0) return;
             const amount = Math.max(1, Math.floor((actor.attack || 1) * scale));
             t.shield = (t.shield || 0) + amount;
@@ -4431,11 +4655,19 @@
           return;
         }
 
+        if (effect.type === 'taunt') {
+          battleSceneDebugAddStatus(actor, 'taunt', 1, typeof effect.turns === 'number' ? effect.turns : 2);
+          return;
+        }
+
         if (effect.type === 'cc') {
           const cc = effect.cc;
           const turns = typeof effect.turns === 'number' ? effect.turns : 1;
-          targets.forEach(t => {
+          targetsFromType(targetType).forEach(t => {
             if (!t || t.currentHp <= 0) return;
+            if (battleSceneDebugGetStatus(t, 'ccImmune')) return;
+            const resistChance = Math.max(0, (t.tenacity || 0) - (actor.effectHit || 0) * 0.5);
+            if (resistChance > 0 && Math.random() * 100 < resistChance) return;
             battleSceneDebugAddStatus(t, cc, 1, turns);
           });
           return;
@@ -4443,7 +4675,7 @@
 
         if (effect.type === 'dispel') {
           const remove = Array.isArray(effect.statuses) ? effect.statuses : [];
-          targets.forEach(t => {
+          targetsFromType(targetType).forEach(t => {
             if (!t || t.currentHp <= 0) return;
             t.statuses = (t.statuses || []).filter(s => s && !remove.includes(s.type));
           });
@@ -4495,6 +4727,14 @@
         return;
       }
 
+      battleSceneDebugTickTurnStart(actor);
+      if (actor.currentHp <= 0) {
+        pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 已倒下`);
+        battleSceneDebugState.turnCursor += 1;
+        renderBattleSceneDebug();
+        return;
+      }
+
       if (turn.side === 'player' && !battleSceneDebugState.auto) {
         const aliveEnemy = battleSceneDebugState.enemies.some(u => u && u.currentHp > 0);
         if (!aliveEnemy) return;
@@ -4507,12 +4747,15 @@
       }
 
       if (turn.side === 'enemy') {
-        const target = pickRandomAlive(battleSceneDebugState.player);
+        const target = battleSceneDebugChooseTarget(actor, battleSceneDebugState.player);
         if (!target) return;
-        const dmg = computeDebugDamage(actor, target, 1.0);
-        battleSceneDebugApplyDamage(target, dmg);
+        const r = computeDebugDamage(actor, target, 1.0);
+        if (!r.immune && !r.dodged) {
+          battleSceneDebugApplyDamage(target, r.damage);
+          battleSceneDebugAfterHit(actor, target, true);
+        }
         setBattleSceneDebugHitFx('player', battleSceneDebugState.player.indexOf(target));
-        pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 普攻 → ${target.displayName || target.name} 造成 ${dmg}`);
+        pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 普攻 → ${target.displayName || target.name}${r.immune ? '（免疫）' : (r.dodged ? '（闪避）' : ` 造成 ${r.damage}${r.crit ? '（暴击）' : ''}${r.block ? '（格挡）' : ''}`)}`);
         battleSceneDebugState.turnCursor += 1;
         renderBattleSceneDebug();
         return;
@@ -4524,10 +4767,10 @@
       if (hasSkill) {
         const cost = battleSceneDebugGetSkillCost(skills[0]);
         const cd = Array.isArray(actor.skillCd) ? (actor.skillCd[0] || 0) : 0;
-        if ((battleSceneDebugState.energy || 0) >= cost && cd <= 0) {
+        if ((battleSceneDebugState.energy || 0) >= cost && cd <= 0 && !battleSceneDebugGetStatus(actor, 'silence')) {
           const spec = battleSceneDebugGetSkillTargetSpec(skills[0]);
           if (spec.kind === 'enemyPick') {
-            const t = pickRandomAlive(battleSceneDebugState.enemies);
+            const t = battleSceneDebugChooseTarget(actor, battleSceneDebugState.enemies);
             if (t) {
               const idx = battleSceneDebugState.enemies.indexOf(t);
               used = battleSceneDebugApplySkill(actor, 'player', 0, 'enemy', idx);
@@ -4543,7 +4786,7 @@
         }
       }
       if (!used) {
-        const target = pickRandomAlive(battleSceneDebugState.enemies);
+        const target = battleSceneDebugChooseTarget(actor, battleSceneDebugState.enemies);
         if (!target) return;
         const mult =
           actor.class === 'assassin' ? 1.1 :
@@ -4551,10 +4794,13 @@
           actor.class === 'archer' ? 1.0 :
           actor.class === 'mage' ? 1.0 :
           1.0;
-        const dmg = computeDebugDamage(actor, target, mult);
-        battleSceneDebugApplyDamage(target, dmg);
+        const r = computeDebugDamage(actor, target, mult);
+        if (!r.immune && !r.dodged) {
+          battleSceneDebugApplyDamage(target, r.damage);
+          battleSceneDebugAfterHit(actor, target, true);
+        }
         setBattleSceneDebugHitFx('enemy', battleSceneDebugState.enemies.indexOf(target));
-        pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 普攻 → ${target.displayName || target.name} 造成 ${dmg}`);
+        pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 普攻 → ${target.displayName || target.name}${r.immune ? '（免疫）' : (r.dodged ? '（闪避）' : ` 造成 ${r.damage}${r.crit ? '（暴击）' : ''}${r.block ? '（格挡）' : ''}`)}`);
       }
       battleSceneDebugState.turnCursor += 1;
       renderBattleSceneDebug();
@@ -4579,10 +4825,13 @@
           actor.class === 'archer' ? 1.0 :
           actor.class === 'mage' ? 1.0 :
           1.0;
-        const dmg = computeDebugDamage(actor, target, mult);
-        battleSceneDebugApplyDamage(target, dmg);
+        const r = computeDebugDamage(actor, target, mult);
+        if (!r.immune && !r.dodged) {
+          battleSceneDebugApplyDamage(target, r.damage);
+          battleSceneDebugAfterHit(actor, target, true);
+        }
         setBattleSceneDebugHitFx('enemy', targetIndex);
-        pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 普攻 → ${target.displayName || target.name} 造成 ${dmg}`);
+        pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 普攻 → ${target.displayName || target.name}${r.immune ? '（免疫）' : (r.dodged ? '（闪避）' : ` 造成 ${r.damage}${r.crit ? '（暴击）' : ''}${r.block ? '（格挡）' : ''}`)}`);
       } else if (pending.actionType === 'skill' && typeof pending.skillIndex === 'number') {
         const ok = battleSceneDebugApplySkill(actor, 'player', pending.skillIndex, targetSide, targetIndex);
         if (ok) setBattleSceneDebugHitFx(targetSide, targetIndex);
