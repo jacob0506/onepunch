@@ -269,10 +269,10 @@
                 <div class="space-y-4">
                   <div class="bg-gray-800 bg-opacity-50 rounded-lg p-4 flex justify-between items-center">
                     <div>
-                      <h3 class="font-bold">新手村外围</h3>
-                      <p class="text-sm text-gray-400">推荐战斗力: 1,000</p>
+                      <h3 id="recommendedStageName" class="font-bold">-</h3>
+                      <p id="recommendedStagePower" class="text-sm text-gray-400">推荐战斗力: -</p>
                     </div>
-                    <button class="btn-primary" onclick="switchPage('stages')">
+                    <button id="recommendedStageBtn" class="btn-primary">
                       前往挑战
                     </button>
                   </div>
@@ -718,7 +718,7 @@
     <!-- 底部导航栏 -->
     <footer class="glass-effect rounded-xl p-2 md:p-4">
       <div class="flex justify-around">
-        <button class="footer-btn flex flex-col items-center" data-target="home">
+        <button class="footer-btn flex flex-col items-center text-primary" data-target="home">
           <i class="fa fa-home text-xl md:text-2xl mb-1"></i>
           <span class="text-[10px] md:text-xs">首页</span>
         </button>
@@ -726,7 +726,7 @@
           <i class="fa fa-gift text-xl md:text-2xl mb-1"></i>
           <span class="text-[10px] md:text-xs">抽卡</span>
         </button>
-        <button class="footer-btn flex flex-col items-center text-primary" data-target="characters">
+        <button class="footer-btn flex flex-col items-center" data-target="characters">
           <i class="fa fa-users text-xl md:text-2xl mb-1"></i>
           <span class="text-[10px] md:text-xs">养成</span>
         </button>
@@ -2146,13 +2146,40 @@
       if (totalPowerEl) totalPowerEl.textContent = calculateTotalPower().toLocaleString();
       
       const characterCountEl = document.getElementById('characterCount');
-      if (characterCountEl) characterCountEl.textContent = `${gameData.characters.length}/20`;
+      if (characterCountEl) characterCountEl.textContent = `${gameData.characters.length}/${(charactersData && charactersData.length) ? charactersData.length : gameData.characters.length}`;
+
+      updateHomeRecommendedStage();
       
       // 更新当前选中的角色 (如果是养成页面)
       if (selectedCharacter) {
         selectCharacterToCultivate(selectedCharacter);
       }
       renderCultivateFormationUI();
+    }
+
+    function updateHomeRecommendedStage() {
+      const nameEl = document.getElementById('recommendedStageName');
+      const powerEl = document.getElementById('recommendedStagePower');
+      const btn = document.getElementById('recommendedStageBtn');
+      if (!nameEl || !powerEl || !btn) return;
+      const stage = stagesData.find(s => s && s.id === gameData.currentStage) || stagesData[0] || null;
+      if (!stage) {
+        nameEl.textContent = '-';
+        powerEl.textContent = '推荐战斗力: -';
+        btn.onclick = () => switchPage('stages');
+        return;
+      }
+      nameEl.textContent = stage.name || '-';
+      powerEl.textContent = `推荐战斗力: ${(stage.recommendedPower || 0).toLocaleString()}`;
+      btn.onclick = () => goToStage(stage.id);
+    }
+
+    function goToStage(stageId) {
+      switchPage('stages');
+      setTimeout(() => {
+        const el = document.getElementById(`stageCard_${stageId}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
     }
 
     // 绑定事件
@@ -2224,7 +2251,7 @@
       if (costumeBtn) costumeBtn.addEventListener('click', () => alert('时装系统暂未开放，敬请期待！'));
       
       const awakenBtn = document.getElementById('awakenBtn');
-      if (awakenBtn) awakenBtn.addEventListener('click', () => openAwakenModal());
+      if (awakenBtn) awakenBtn.addEventListener('click', () => openAwakenModal(true));
       const awakenConfirmBtn = document.getElementById('awakenConfirmBtn');
       if (awakenConfirmBtn) awakenConfirmBtn.addEventListener('click', () => confirmAwaken());
 
@@ -2585,9 +2612,8 @@
         if (rarityRank[char.rarity] >= 4) awakenBtn.classList.remove('hidden');
         else awakenBtn.classList.add('hidden');
         const awakened = !!char.awakened;
-        awakenBtn.disabled = awakened;
+        awakenBtn.disabled = false;
         awakenBtn.classList.toggle('opacity-60', awakened);
-        awakenBtn.classList.toggle('cursor-not-allowed', awakened);
         awakenBtn.innerHTML = awakened ? '<i class="fa fa-check mr-1 text-yellow-500"></i>已觉醒' : '<i class="fa fa-fire mr-1 text-yellow-500"></i>觉醒';
       }
 
@@ -2833,15 +2859,13 @@
       return parts.filter(Boolean).join('；');
     }
 
-    function openAwakenModal() {
+    function openAwakenModal(allowInfo = false) {
       if (!selectedCharacter) return;
       const char = selectedCharacter;
       if (char.rarity !== 'UR' && char.rarity !== 'SUR') return;
-      if (char.awakened) return;
-
       const profile = getAwakenProfile(char);
       const cost = getAwakenCost(char);
-      if (!profile || !cost) return;
+      if (!profile) return;
 
       document.getElementById('awakenTitle').textContent = `${char.name} · ${profile.name}`;
       const bonusParts = [];
@@ -2852,12 +2876,27 @@
       const extra = profile.passiveEffect ? `\n觉醒机制：${profile.passiveEffect}` : '';
       document.getElementById('awakenDesc').textContent = `${profile.desc}\n${bonusParts.join('，')}${extra}`;
 
-      const ownedFrag = gameData.fragments[char.id] || 0;
-      document.getElementById('awakenCost').innerHTML = `
-        <div class="flex justify-between"><span>金币</span><span class="font-black ${gameData.player.gold >= cost.gold ? 'text-yellow-400' : 'text-red-400'}">${cost.gold.toLocaleString()}</span></div>
-        <div class="flex justify-between"><span>钻石</span><span class="font-black ${gameData.player.gems >= cost.gems ? 'text-yellow-400' : 'text-red-400'}">${cost.gems.toLocaleString()}</span></div>
-        <div class="flex justify-between"><span>碎片</span><span class="font-black ${ownedFrag >= cost.fragments ? 'text-yellow-400' : 'text-red-400'}">${ownedFrag}/${cost.fragments}</span></div>
-      `;
+      const costEl = document.getElementById('awakenCost');
+      const confirmBtn = document.getElementById('awakenConfirmBtn');
+      const showInfo = !!char.awakened || !cost || !allowInfo;
+      if (showInfo) {
+        if (costEl) {
+          costEl.innerHTML = '';
+          costEl.classList.add('hidden');
+        }
+        if (confirmBtn) confirmBtn.classList.add('hidden');
+      } else {
+        const ownedFrag = gameData.fragments[char.id] || 0;
+        if (costEl) {
+          costEl.classList.remove('hidden');
+          costEl.innerHTML = `
+            <div class="flex justify-between"><span>金币</span><span class="font-black ${gameData.player.gold >= cost.gold ? 'text-yellow-400' : 'text-red-400'}">${cost.gold.toLocaleString()}</span></div>
+            <div class="flex justify-between"><span>钻石</span><span class="font-black ${gameData.player.gems >= cost.gems ? 'text-yellow-400' : 'text-red-400'}">${cost.gems.toLocaleString()}</span></div>
+            <div class="flex justify-between"><span>碎片</span><span class="font-black ${ownedFrag >= cost.fragments ? 'text-yellow-400' : 'text-red-400'}">${ownedFrag}/${cost.fragments}</span></div>
+          `;
+        }
+        if (confirmBtn) confirmBtn.classList.remove('hidden');
+      }
 
       document.getElementById('awakenModal').classList.remove('hidden');
     }
@@ -3720,6 +3759,7 @@
         const totalPower = calculateTotalPower();
         const isRecommended = totalPower >= stage.recommendedPower;
 
+        cardElement.id = `stageCard_${stage.id}`;
         cardElement.className = `glass-panel rounded-xl p-4 md:p-6 border border-gray-800 ${isUnlocked ? 'card-hover' : 'opacity-60'}`;
         cardElement.innerHTML = `
           <div class="flex justify-between items-center mb-3">
@@ -3813,6 +3853,10 @@
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
     }
+
+    let battleSceneDebugCoreState = { active: false, ownerId: 'char_sur_007', spent: 0, threshold: 0, triggers: 0, enhancedPct: 0.2, thresholdPct: 0.7, energyPerTurn: 3, fieldTurns: 2 };
+    let battleSceneDebugCatLinkState = { active: false, catId: 'char_sur_010', roundFollowUpUsed: false };
+    let battleSceneDebugRainFlowerBondState = 'none';
 
     function battleSceneDebugGetLoadoutPassiveText(char) {
       try {
@@ -3908,8 +3952,8 @@
           const passiveText = battleSceneDebugGetLoadoutPassiveText(c);
           const passiveRuntime = battleSceneDebugParsePassiveText(passiveText);
           const atk = Math.floor((stats.attack || 0) * (1 + (passiveRuntime.atkPercent || 0) / 100));
-          const def = Math.floor(stats.defense || 0);
-          const hp = Math.floor(stats.health || 1);
+          const def = Math.floor((stats.defense || 0) * (1 + (passiveRuntime.defPercent || 0) / 100));
+          const hp = Math.floor((stats.health || 1) * (1 + (passiveRuntime.hpPercent || 0) / 100));
           const spd = Math.floor((stats.speed || 0) + (passiveRuntime.speed || 0));
           player.push({
             id: c.id,
@@ -4198,8 +4242,12 @@
                 const ok = battleSceneDebugApplySkill(actor, 'player', idx, 'enemy', 0);
                 if (ok) {
                   battleSceneDebugState.awaitingTarget = null;
+                  battleSceneDebugTickAfterAction(actor);
                   battleSceneDebugState.turnCursor += 1;
                   renderBattleSceneDebug();
+                  if (aliveCount(battleSceneDebugState.player) === 0 || aliveCount(battleSceneDebugState.enemies) === 0) {
+                    battleSceneDebugFinish(aliveCount(battleSceneDebugState.player) > 0);
+                  }
                 }
                 return;
               }
@@ -4226,10 +4274,6 @@
 
     function battleSceneDebugInitRound(isFirst) {
       if (!battleSceneDebugState) return;
-      if (!isFirst) {
-        battleSceneDebugTickRound(battleSceneDebugState.player);
-        battleSceneDebugTickRound(battleSceneDebugState.enemies);
-      }
       const dead = battleSceneDebugState.player.filter(u => u && u.currentHp <= 0).length;
       const gain = Math.max(0, 6 - 2 * dead);
       if (!isFirst) battleSceneDebugState.round += 1;
@@ -4239,6 +4283,7 @@
       battleSceneDebugState.awaitingTarget = null;
       if (isFirst) pushBattleSceneDebugFeed(`战斗开始：初始能量 6`);
       else pushBattleSceneDebugFeed(`回合开始：死亡${dead}人，获得能量 +${gain}（公式 6-2*死亡数）`);
+      battleSceneDebugApplyRoundStartPassives();
       renderBattleSceneDebug();
     }
 
@@ -4309,8 +4354,10 @@
         if (typeof existing.value === 'number' && typeof value === 'number') existing.value = value >= 0 ? Math.max(existing.value, value) : Math.min(existing.value, value);
         else existing.value = value;
         existing.turns = Math.max(existing.turns || 0, turns || 0);
+        if (arguments.length >= 5 && arguments[4] && typeof arguments[4] === 'object') existing.meta = { ...(existing.meta || {}), ...arguments[4] };
       } else {
-        unit.statuses.push({ type, value, turns: turns || 0 });
+        const meta = arguments.length >= 5 && arguments[4] && typeof arguments[4] === 'object' ? arguments[4] : undefined;
+        unit.statuses.push(meta ? { type, value, turns: turns || 0, meta } : { type, value, turns: turns || 0 });
       }
     }
 
@@ -4326,14 +4373,308 @@
       });
     }
 
+    function battleSceneDebugTickAfterAction(unit) {
+      if (!unit) return;
+      (unit.statuses || []).forEach(s => {
+        if (!s) return;
+        if ((s.turns || 0) > 0) s.turns -= 1;
+      });
+      unit.statuses = (unit.statuses || []).filter(s => s && (s.turns || 0) > 0);
+      if (Array.isArray(unit.skillCd)) unit.skillCd = unit.skillCd.map(cd => Math.max(0, (cd || 0) - 1));
+    }
+
+    function battleSceneDebugGetStage() {
+      if (!battleSceneDebugState) return null;
+      return stagesData.find(s => s && s.id === battleSceneDebugState.stageId) || null;
+    }
+
+    function battleSceneDebugAffixValue(id) {
+      const stage = battleSceneDebugGetStage();
+      if (!stage || !stage.modifiers || !Array.isArray(stage.modifiers.affixes)) return 0;
+      const a = stage.modifiers.affixes.find(x => x && x.id === id);
+      return a && typeof a.value === 'number' ? a.value : 0;
+    }
+
+    function battleSceneDebugApplyRoundStartPassives() {
+      if (!battleSceneDebugState) return;
+      battleSceneDebugCatLinkState.roundFollowUpUsed = false;
+      const all = [...battleSceneDebugState.player, ...battleSceneDebugState.enemies].filter(u => u && u.currentHp > 0);
+      all.forEach(u => {
+        const text = (u.passiveText || (u.passive && u.passive.text) || '');
+        if (!text) return;
+        if (battleSceneDebugState.round === 1) {
+          const mRevive = text.match(/复活(\d+)次/);
+          if (mRevive) {
+            const charges = Math.max(0, parseInt(mRevive[1], 10));
+            if (charges > 0) battleSceneDebugAddStatus(u, 'revive', 1, 999, { charges, hpPct: 0.3 });
+          }
+          if (/非暴击不死/.test(text)) {
+            battleSceneDebugAddStatus(u, 'nonCritUndying', 1, 999, { charges: 1 });
+          }
+        }
+        const mShield = text.match(/每回合开始时[^。]*生命上限(\d+)%的护盾/);
+        if (mShield) {
+          const pct = Math.max(1, Math.min(80, parseInt(mShield[1], 10)));
+          const shield = Math.floor((u.maxHp || 0) * pct / 100);
+          if (shield > 0) u.shield = (u.shield || 0) + shield;
+        }
+        const mHeal = text.match(/每回合回复自身(\d+)%最大生命值/);
+        if (mHeal) {
+          const pct = Math.max(1, Math.min(50, parseInt(mHeal[1], 10)));
+          const heal = Math.floor((u.maxHp || 0) * pct / 100);
+          battleSceneDebugApplyHeal(u, heal);
+        }
+      });
+
+      if (battleSceneDebugState.round === 1) {
+        battleSceneDebugInitCoreIfNeeded();
+        battleSceneDebugInitCatLinkIfNeeded();
+      }
+      battleSceneDebugUpdateRainFlowerBondState();
+      battleSceneDebugGiveCoreEnergy();
+    }
+
+    function battleSceneDebugApplyRoundEndPassives() {
+      if (!battleSceneDebugState) return;
+      battleSceneDebugState.player.filter(u => u && u.currentHp > 0).forEach(u => {
+        const text = (u.passiveText || (u.passive && u.passive.text) || '');
+        if (!text) return;
+        const m = text.match(/每回合结束时，增加全队(\d+)%速度（最高(\d+)%）/);
+        if (m) {
+          const inc = Math.max(1, Math.min(30, parseInt(m[1], 10)));
+          const cap = Math.max(8, Math.min(80, parseInt(m[2], 10)));
+          battleSceneDebugState.player.filter(x => x && x.currentHp > 0).forEach(t => {
+            const cur = battleSceneDebugGetStatusValue(t, 'spdUp');
+            const next = Math.min(cap, cur + inc);
+            battleSceneDebugAddStatus(t, 'spdUp', next, 999);
+          });
+        }
+      });
+    }
+
+    function battleSceneDebugGetTeamUnit(id) {
+      if (!battleSceneDebugState) return null;
+      return battleSceneDebugState.player.find(u => u && u.id === id) || null;
+    }
+
+    function battleSceneDebugInitCoreIfNeeded() {
+      const owner = battleSceneDebugGetTeamUnit(battleSceneDebugCoreState.ownerId);
+      if (!owner) return;
+      const text = owner.passiveText || '';
+      const mHp = text.match(/特化生命值[^，。；]*最大生命值(\d+)%/);
+      battleSceneDebugCoreState.enhancedPct = mHp ? Math.max(0.05, Math.min(0.5, parseInt(mHp[1], 10) / 100)) : 0.2;
+      const mEnergy = text.match(/每回合可获得(\d+)点能量/);
+      battleSceneDebugCoreState.energyPerTurn = mEnergy ? Math.max(0, Math.min(12, parseInt(mEnergy[1], 10))) : 3;
+      const mThreshold = text.match(/每累计消耗(\d+)%特化生命值/);
+      battleSceneDebugCoreState.thresholdPct = mThreshold ? Math.max(0.2, Math.min(0.95, parseInt(mThreshold[1], 10) / 100)) : 0.7;
+      const mField = text.match(/极限力场[^，。；]*持续(\d+)回合/);
+      battleSceneDebugCoreState.fieldTurns = mField ? Math.max(1, Math.min(6, parseInt(mField[1], 10))) : 2;
+      battleSceneDebugCoreState.active = true;
+      battleSceneDebugCoreState.spent = 0;
+      battleSceneDebugCoreState.triggers = 0;
+
+      battleSceneDebugState.player.forEach(u => {
+        if (!u) return;
+        u.enhancedHpMax = Math.floor((u.maxHp || 0) * battleSceneDebugCoreState.enhancedPct);
+        u.enhancedHp = u.enhancedHpMax;
+      });
+      battleSceneDebugCoreState.threshold = Math.max(1, Math.floor(battleSceneDebugState.player.reduce((sum, u) => sum + ((u && u.enhancedHpMax) || 0), 0) * battleSceneDebugCoreState.thresholdPct));
+      pushBattleSceneDebugFeed(`核心启动：全队获得特化生命值，并每回合额外获得能量`);
+    }
+
+    function battleSceneDebugGiveCoreEnergy() {
+      if (!battleSceneDebugCoreState.active || !battleSceneDebugState) return;
+      battleSceneDebugState.energy = (battleSceneDebugState.energy || 0) + (battleSceneDebugCoreState.energyPerTurn || 0);
+    }
+
+    function battleSceneDebugTriggerLimitField() {
+      if (!battleSceneDebugCoreState.active || !battleSceneDebugState) return;
+      const owner = battleSceneDebugGetTeamUnit(battleSceneDebugCoreState.ownerId);
+      const targets = battleSceneDebugState.enemies.filter(e => e && e.currentHp > 0);
+      if (!owner || targets.length === 0) return;
+      const t = targets[Math.floor(Math.random() * targets.length)];
+      battleSceneDebugAddStatus(t, 'limitField', 30, battleSceneDebugCoreState.fieldTurns);
+      const dmg = Math.max(1, Math.floor((owner.attack || 0) * 10));
+      battleSceneDebugApplyDamage(t, dmg);
+      pushBattleSceneDebugFeed(`极限力场：对 ${t.displayName || t.name} 造成 ${dmg} 并使其易伤`);
+      if (t.currentHp <= 0) pushBattleSceneDebugFeed(`[${t.displayName || t.name}] 已倒下`);
+    }
+
+    function battleSceneDebugMaybeTriggerCore() {
+      if (!battleSceneDebugCoreState.active) return;
+      while (battleSceneDebugCoreState.spent >= battleSceneDebugCoreState.threshold * (battleSceneDebugCoreState.triggers + 1)) {
+        battleSceneDebugCoreState.triggers++;
+        battleSceneDebugTriggerLimitField();
+      }
+    }
+
+    function battleSceneDebugInitCatLinkIfNeeded() {
+      const cat = battleSceneDebugGetTeamUnit(battleSceneDebugCatLinkState.catId);
+      if (!cat) return;
+      const text = cat.passiveText || '';
+      if (!/生命链接/.test(text)) return;
+      battleSceneDebugCatLinkState.active = true;
+
+      const mSpd = text.match(/特化加速(\d+)%/);
+      const spd = mSpd ? Math.max(0, Math.min(120, parseInt(mSpd[1], 10))) : 46;
+      const mTurns = text.match(/生命链接[^，。]*持续(\d+)回合/);
+      const turns = mTurns ? Math.max(1, Math.min(12, parseInt(mTurns[1], 10))) : 6;
+      const mFollow = text.match(/以(\d+)%强度/);
+      const followScale = mFollow ? Math.max(0.3, Math.min(1.2, parseInt(mFollow[1], 10) / 100)) : 0.8;
+      const mTransfer = text.match(/最多(\d+)次/);
+      const transfersLeft = mTransfer ? Math.max(0, Math.min(10, parseInt(mTransfer[1], 10))) : 3;
+
+      battleSceneDebugAddStatus(cat, 'spdUp', spd, turns);
+
+      const candidates = battleSceneDebugState.player.filter(u => u && u.currentHp > 0 && u.id !== cat.id);
+      if (candidates.length === 0) return;
+      const partner = candidates.sort((a, b) => (b.attack || 0) - (a.attack || 0))[0];
+      battleSceneDebugAddStatus(cat, 'lifeLink', 1, turns, { role: 'source', partnerId: partner.id, transfersLeft, followScale, turns });
+      battleSceneDebugAddStatus(partner, 'lifeLink', 1, turns, { role: 'partner', partnerId: cat.id, transfersLeft, followScale, turns });
+      pushBattleSceneDebugFeed(`生命链接：露露链接 ${partner.displayName || partner.name}`);
+    }
+
+    function battleSceneDebugGetCatLinkInfo() {
+      if (!battleSceneDebugCatLinkState.active || !battleSceneDebugState) return null;
+      const cat = battleSceneDebugGetTeamUnit(battleSceneDebugCatLinkState.catId);
+      if (!cat) return null;
+      const src = battleSceneDebugGetStatus(cat, 'lifeLink');
+      if (!src || !src.meta || src.meta.role !== 'source') return null;
+      const partner = battleSceneDebugGetTeamUnit(src.meta.partnerId);
+      return { cat, src, partner };
+    }
+
+    function battleSceneDebugTryPreventLifeLinkDeath(unit) {
+      const info = battleSceneDebugGetCatLinkInfo();
+      if (!info) return false;
+      const { cat, partner } = info;
+      if (!partner || partner.currentHp <= 0 || cat.currentHp <= 0) return false;
+      if (unit.id === cat.id || unit.id === partner.id) {
+        unit.currentHp = 1;
+        pushBattleSceneDebugFeed(`生命链接：${unit.displayName || unit.name} 受到致命伤但被保护`);
+        return true;
+      }
+      return false;
+    }
+
+    function battleSceneDebugTransferLifeLink() {
+      const info = battleSceneDebugGetCatLinkInfo();
+      if (!info) return;
+      const { cat, src } = info;
+      if (!cat || cat.currentHp <= 0) return;
+      if (!src.meta || typeof src.meta.transfersLeft !== 'number') src.meta.transfersLeft = 3;
+      if (src.meta.transfersLeft <= 0) return;
+
+      const candidates = battleSceneDebugState.player.filter(u => u && u.currentHp > 0 && u.id !== cat.id).sort((a, b) => (b.attack || 0) - (a.attack || 0));
+      const next = candidates.find(u => u.id !== src.meta.partnerId);
+      if (!next) return;
+
+      src.meta.transfersLeft -= 1;
+      src.meta.partnerId = next.id;
+      const turns = src.meta.turns || 6;
+      src.turns = turns;
+      battleSceneDebugAddStatus(next, 'lifeLink', 1, turns, { role: 'partner', partnerId: cat.id, transfersLeft: src.meta.transfersLeft, followScale: src.meta.followScale, turns });
+      pushBattleSceneDebugFeed(`生命链接转移：链接至 ${next.displayName || next.name}`);
+    }
+
+    function battleSceneDebugTriggerStoredFollowUp() {
+      const info = battleSceneDebugGetCatLinkInfo();
+      if (!info) return;
+      const { cat, src, partner } = info;
+      if (!partner || partner.currentHp <= 0 || cat.currentHp <= 0) return;
+      if (battleSceneDebugCatLinkState.roundFollowUpUsed) return;
+      const power = (src && src.meta && typeof src.meta.followScale === 'number') ? src.meta.followScale : 0.8;
+      const target = battleSceneDebugChooseTarget(partner, battleSceneDebugState.enemies);
+      if (!target) return;
+      battleSceneDebugApplyHit(partner, target, power, '蓄能追击', { isFollowUp: true });
+      battleSceneDebugCatLinkState.roundFollowUpUsed = true;
+    }
+
+    function battleSceneDebugUpdateRainFlowerBondState() {
+      if (!battleSceneDebugState) return;
+      const koi = battleSceneDebugGetTeamUnit('char_sur_014');
+      const yoru = battleSceneDebugGetTeamUnit('char_ur_001');
+      const koiAlive = !!(koi && koi.currentHp > 0);
+      const yoruAlive = !!(yoru && yoru.currentHp > 0);
+
+      const clearBond = () => {
+        battleSceneDebugState.player.forEach(u => {
+          if (!u) return;
+          u.statuses = (u.statuses || []).filter(s => !['bondSpdUp', 'bondReducUp'].includes(s.type));
+        });
+      };
+      const clearMoran = () => {
+        battleSceneDebugState.player.forEach(u => {
+          if (!u) return;
+          u.statuses = (u.statuses || []).filter(s => !['moranSpdUp', 'moranReducUp', 'moranAtkUp', 'moranDmgUp', 'moranControl'].includes(s.type));
+        });
+      };
+
+      if (koiAlive && yoruAlive) {
+        if (battleSceneDebugRainFlowerBondState !== 'bond') pushBattleSceneDebugFeed(`雨花共鸣：双星同在，全队受福泽`);
+        clearMoran();
+        battleSceneDebugState.player.forEach(u => {
+          if (!u || u.currentHp <= 0) return;
+          battleSceneDebugAddStatus(u, 'bondSpdUp', 12, 999);
+          battleSceneDebugAddStatus(u, 'bondReducUp', 10, 999);
+        });
+        if (battleSceneDebugRainFlowerBondState !== 'bond') {
+          battleSceneDebugState.player.forEach(u => u && u.currentHp > 0 && battleSceneDebugAddStatus(u, 'ccImmune', 1, 1));
+        }
+        battleSceneDebugRainFlowerBondState = 'bond';
+        return;
+      }
+
+      if (koiAlive || yoruAlive) {
+        const survivor = koiAlive ? koi : yoru;
+        const state = koiAlive ? 'moranKoi' : 'moranYoru';
+        if (battleSceneDebugRainFlowerBondState !== state) pushBattleSceneDebugFeed(`蓦然回首：${survivor.displayName || survivor.name}`);
+        clearBond();
+        clearMoran();
+        if (koiAlive) {
+          battleSceneDebugState.player.forEach(u => {
+            if (!u || u.currentHp <= 0) return;
+            battleSceneDebugAddStatus(u, 'moranSpdUp', 14, 999);
+            battleSceneDebugAddStatus(u, 'moranReducUp', 14, 999);
+            battleSceneDebugAddStatus(u, 'moranAtkUp', 22, 999);
+            battleSceneDebugAddStatus(u, 'moranDmgUp', 8, 999);
+          });
+          battleSceneDebugState.player.forEach(u => u && u.currentHp > 0 && battleSceneDebugAddStatus(u, 'ccImmune', 1, 1));
+        } else {
+          battleSceneDebugAddStatus(yoru, 'moranSpdUp', 18, 999);
+          battleSceneDebugAddStatus(yoru, 'moranReducUp', 12, 999);
+          battleSceneDebugAddStatus(yoru, 'moranAtkUp', 10, 999);
+          battleSceneDebugAddStatus(yoru, 'moranDmgUp', 0, 999);
+          battleSceneDebugAddStatus(yoru, 'moranControl', 1, 999, { chanceBonus: 20, turnsBonus: 1, spdFlatDown: 25 });
+          battleSceneDebugAddStatus(yoru, 'ccImmune', 1, 1);
+        }
+        battleSceneDebugRainFlowerBondState = state;
+        return;
+      }
+
+      if (battleSceneDebugRainFlowerBondState !== 'none') {
+        clearBond();
+        clearMoran();
+        battleSceneDebugRainFlowerBondState = 'none';
+      }
+    }
+
     function computeDebugDamage(attacker, target, mult, opts = {}) {
       if (battleSceneDebugGetStatus(target, 'immune')) return { immune: true, dodged: false, crit: false, block: false, damage: 0 };
+      const tPassive = target && target.passiveRuntime ? target.passiveRuntime : null;
+      if (target && !target.isEnemy && tPassive && tPassive.firstHitImmuneChance > 0 && !tPassive.firstHitUsed) {
+        if (Math.random() * 100 < tPassive.firstHitImmuneChance) {
+          tPassive.firstHitUsed = true;
+          return { immune: true, dodged: false, crit: false, block: false, damage: 0 };
+        }
+        tPassive.firstHitUsed = true;
+      }
 
-      const atkUp = battleSceneDebugGetStatusValue(attacker, 'atkUp');
+      const atkUp = battleSceneDebugGetStatusValue(attacker, 'atkUp') + battleSceneDebugGetStatusValue(attacker, 'moranAtkUp');
       let dmgUp = battleSceneDebugGetStatusValue(attacker, 'dmgUp');
       const defDown = battleSceneDebugGetStatusValue(target, 'defDown');
       const dodgeUp = battleSceneDebugGetStatusValue(target, 'dodgeUp');
-      const dmgReducUp = battleSceneDebugGetStatusValue(target, 'dmgReducUp');
+      const dmgReducUp = battleSceneDebugGetStatusValue(target, 'dmgReducUp') + battleSceneDebugGetStatusValue(target, 'bondReducUp') + battleSceneDebugGetStatusValue(target, 'moranReducUp');
 
       const dodgeChance = Math.max(0, (target.dodgeRate || 0) + dodgeUp - (attacker.effectHit || 0) * 0.5);
       if (dodgeChance > 0 && Math.random() * 100 < dodgeChance) return { immune: false, dodged: true, crit: false, block: false, damage: 0 };
@@ -4348,22 +4689,39 @@
       const atk = Math.max(1, (attacker.attack || 1) * (1 + atkUp / 100));
       const base = opts.rawOverride != null ? opts.rawOverride : (atk * mult);
       const raw = base * (0.9 + Math.random() * 0.2) * (1 + dmgUp / 100);
+      const limitField = battleSceneDebugGetStatusValue(target, 'limitField');
       const ignoreDef = Math.max(
         typeof opts.ignoreDef === 'number' ? opts.ignoreDef : 0,
         passive && typeof passive.ignoreDef === 'number' ? passive.ignoreDef : 0
       );
+      const penIgnore = passive && typeof passive.penIgnorePct === 'number' ? passive.penIgnorePct : 0;
       const pen = Math.max(0, Math.min(200, (attacker.penetration || 0) + ignoreDef * 2));
-      const def = Math.max(0, (target.defense || 0) * (1 - defDown / 100) * (1 - pen / 200));
+      const def = Math.max(0, (target.defense || 0) * (1 - defDown / 100) * (1 - pen / 200) * (1 - Math.min(80, penIgnore) / 100));
       let dmg = Math.max(1, Math.floor(raw * (100 / (100 + def))));
 
-      const crit = (Math.random() * 100) < Math.max(0, attacker.critRate || 0);
+      const critResist = attacker && !attacker.isEnemy ? battleSceneDebugAffixValue('critResist') : 0;
+      const critRate = Math.max(0, (attacker.critRate || 0) - critResist);
+      const forceCrit = !!battleSceneDebugGetStatus(attacker, 'nextCrit');
+      const crit = forceCrit || ((Math.random() * 100) < critRate);
       if (crit) dmg = Math.max(1, Math.floor(dmg * (Math.max(150, attacker.critDmg || 150) / 100)));
+      if (crit && passive && typeof passive.critBonusPct === 'number' && passive.critBonusPct > 0) {
+        dmg = Math.max(1, Math.floor(dmg * (1 + passive.critBonusPct / 100)));
+      }
+      if (!crit) {
+        const nonCritReduc = battleSceneDebugGetStatusValue(target, 'nonCritReduc');
+        if (nonCritReduc > 0) dmg = Math.max(1, Math.floor(dmg * (1 - Math.min(80, nonCritReduc) / 100)));
+      }
 
       const block = (Math.random() * 100) < Math.max(0, target.blockRate || 0);
       if (block) dmg = Math.max(1, Math.floor(dmg * 0.5));
 
       const reduc = Math.min(80, (target.dmgReduc || 0) + dmgReducUp);
       if (reduc > 0) dmg = Math.max(1, Math.floor(dmg * (1 - reduc / 100)));
+      if (limitField > 0) dmg = Math.max(1, Math.floor(dmg * (1 + limitField / 100)));
+
+      if (target && !target.isEnemy && battleSceneDebugAffixValue('dmgTakenUp') > 0) {
+        dmg = Math.floor(dmg * (1 + battleSceneDebugAffixValue('dmgTakenUp') / 100));
+      }
 
       return { immune: false, dodged: false, crit, block, damage: dmg };
     }
@@ -4390,6 +4748,8 @@
 
       const runtime = {
         atkPercent: getNum(/攻击力提升(\d+)%/),
+        hpPercent: getNum(/生命值提升(\d+)%/),
+        defPercent: getNum(/防御力提升(\d+)%/),
         critRate: getNum(/暴击率提升(\d+)%/),
         critDmg: getNum(/暴击伤害提升(\d+)%/),
         effectHit: getNum(/效果命中提升(\d+)%/),
@@ -4398,9 +4758,20 @@
         speed: getNum(/速度提升(\d+)%/),
         dmgReduc: getNum(/免伤提升(\d+)%/),
         ignoreDef: getNum(/无视目标(\d+)%防御/),
+        penIgnorePct: getNum(/无视目标(\d+)%防御/),
+        critBonusPct: getNum(/暴击时伤害额外增加(\d+)%/),
+        firstHitImmuneChance: getNum(/每回合有(\d+)%几率免疫受到的第一次伤害/),
+        firstHitUsed: false,
         bonusVs,
         onHitCc: null,
-        onHitMark: null
+        onHitMark: null,
+        followUpOnBasic: null,
+        counter: null,
+        onKillImmuneTurns: 0,
+        onEnemyDeathAtkUp: 0,
+        critDmgPerHit: 0,
+        critDmgStacks: 0,
+        skillAtkStack: null
       };
 
       const mCc = t.match(/攻击时有(\d+)%几率(魅惑|眩晕|沉默)目标(\d+)回合/);
@@ -4410,7 +4781,148 @@
       }
       const mShock = t.match(/攻击时有(\d+)%几率给目标添加“感电”标记/);
       if (mShock) runtime.onHitMark = { chance: parseInt(mShock[1], 10) || 0, type: 'shock', turns: 2 };
+
+      const mFollow = t.match(/普通攻击有(\d+)%几率触发追击，造成(\d+)%伤害/);
+      if (mFollow) runtime.followUpOnBasic = { chance: parseInt(mFollow[1], 10) || 0, scale: (parseInt(mFollow[2], 10) || 0) / 100 };
+
+      const mCounter = t.match(/受到攻击时有(\d+)%几率反击，造成(\d+)%伤害/);
+      if (mCounter) runtime.counter = { chance: parseInt(mCounter[1], 10) || 0, scale: (parseInt(mCounter[2], 10) || 0) / 100 };
+
+      if (/击杀目标后进入隐身状态一回合/.test(t)) runtime.onKillImmuneTurns = 1;
+
+      const mEnemyDeath = t.match(/敌方每死亡一人[^，。]*增加(\d+)%攻击力/);
+      if (mEnemyDeath) runtime.onEnemyDeathAtkUp = parseInt(mEnemyDeath[1], 10) || 0;
+
+      const mCritGrow = t.match(/每攻击一次，暴击伤害提升(\d+)%（无上限）/);
+      if (mCritGrow) runtime.critDmgPerHit = parseInt(mCritGrow[1], 10) || 0;
+
+      const mSkillStack = t.match(/每释放一次技能，攻击力永久增加(\d+)%（最高叠加(\d+)层）/);
+      if (mSkillStack) runtime.skillAtkStack = { value: parseInt(mSkillStack[1], 10) || 0, max: parseInt(mSkillStack[2], 10) || 0, stacks: 0 };
       return runtime;
+    }
+
+    function battleSceneDebugApplyHit(attacker, target, multiplier, label, opts = {}) {
+      if (!battleSceneDebugState || !attacker || !target || attacker.currentHp <= 0 || target.currentHp <= 0) return { damage: 0 };
+      const r = computeDebugDamage(attacker, target, multiplier, opts);
+      if (r.immune) {
+        pushBattleSceneDebugFeed(`${attacker.displayName || attacker.name} 的${label}被 ${target.displayName || target.name} 免疫`);
+        return { damage: 0 };
+      }
+      if (r.dodged) {
+        pushBattleSceneDebugFeed(`${attacker.displayName || attacker.name} 的${label}被 ${target.displayName || target.name} 闪避`);
+        if (!target.isEnemy && /成功闪避后下一次攻击必暴击/.test((target.passiveText || ''))) {
+          battleSceneDebugAddStatus(target, 'nextCrit', 1, 3);
+        }
+        const mHeal = String(target.passiveText || '').match(/闪避成功时回复(\d+)%最大生命值/);
+        if (mHeal) {
+          const pct = Math.max(0, Math.min(80, parseInt(mHeal[1], 10)));
+          const heal = Math.floor((target.maxHp || 0) * pct / 100);
+          const actual = battleSceneDebugApplyHeal(target, heal);
+          if (actual > 0) pushBattleSceneDebugFeed(`${target.displayName || target.name} 闪避回复 ${actual}`);
+        }
+        return { damage: 0 };
+      }
+
+      if (battleSceneDebugGetStatus(attacker, 'nextCrit')) {
+        const s = battleSceneDebugGetStatus(attacker, 'nextCrit');
+        if (s) s.turns = 0;
+        attacker.statuses = (attacker.statuses || []).filter(x => x && (x.turns || 0) > 0);
+      }
+
+      const { dealt } = battleSceneDebugApplyDamage(target, r.damage);
+      battleSceneDebugAfterHit(attacker, target, label === '普攻');
+      const p = attacker.passiveRuntime;
+      if (dealt > 0 && p && p.critDmgPerHit > 0) {
+        p.critDmgStacks = (p.critDmgStacks || 0) + 1;
+        attacker.critDmg = (attacker.critDmg || 150) + p.critDmgPerHit;
+      }
+
+      const drain = battleSceneDebugAffixValue('energyDrain');
+      const gain = (!attacker.isEnemy && drain > 0 && Math.random() * 100 < drain) ? 0 : 1;
+      if (!attacker.isEnemy && dealt > 0 && battleSceneDebugState) {
+        battleSceneDebugState.energy = (battleSceneDebugState.energy || 0) + gain;
+      }
+
+      const flags = [];
+      if (r.crit) flags.push('暴击');
+      if (r.block) flags.push('格挡');
+      const flagStr = flags.length ? `（${flags.join('/')}）` : '';
+      pushBattleSceneDebugFeed(`${attacker.displayName || attacker.name} 对 ${target.displayName || target.name} 使用${label}，造成 ${dealt}${flagStr}`);
+
+      const lifestealTotal = (attacker.lifesteal || 0) + battleSceneDebugGetStatusValue(attacker, 'lifestealUp');
+      if (lifestealTotal > 0 && dealt > 0) {
+        const heal = Math.floor(dealt * lifestealTotal / 100);
+        const actual = battleSceneDebugApplyHeal(attacker, heal);
+        if (actual > 0) pushBattleSceneDebugFeed(`${attacker.displayName || attacker.name} 吸血回复 ${actual}`);
+      }
+
+      if (target.currentHp <= 0) {
+        if (!target.isEnemy && battleSceneDebugTryPreventLifeLinkDeath(target)) {
+          return { damage: dealt };
+        }
+        const undying = battleSceneDebugGetStatus(target, 'nonCritUndying');
+        if (undying && !r.crit) {
+          const charges = undying.meta && typeof undying.meta.charges === 'number' ? undying.meta.charges : 1;
+          if (charges > 0) {
+            undying.meta = { ...(undying.meta || {}), charges: charges - 1 };
+            target.currentHp = 1;
+            pushBattleSceneDebugFeed(`不屈：${target.displayName || target.name} 在非暴击致命伤下存活`);
+            if (undying.meta.charges <= 0) undying.turns = 0;
+            target.statuses = (target.statuses || []).filter(x => x && (x.turns || 0) > 0);
+            return { damage: dealt };
+          }
+        }
+
+        const revive = battleSceneDebugGetStatus(target, 'revive');
+        if (revive && revive.meta && typeof revive.meta.charges === 'number' && revive.meta.charges > 0) {
+          revive.meta.charges -= 1;
+          const hpPct = revive.meta.hpPct || 0.3;
+          target.currentHp = Math.max(1, Math.floor((target.maxHp || 1) * hpPct));
+          target.statuses = (target.statuses || []).filter(s => s && ['revive'].includes(s.type));
+          pushBattleSceneDebugFeed(`复活：${target.displayName || target.name} 重新站起（剩余 ${revive.meta.charges}）`);
+          return { damage: dealt };
+        }
+
+        pushBattleSceneDebugFeed(`[${target.displayName || target.name}] 已倒下`);
+        if (!target.isEnemy && target.id === battleSceneDebugCatLinkState.catId) {
+          battleSceneDebugTransferLifeLink();
+        } else if (!target.isEnemy && battleSceneDebugGetStatus(target, 'lifeLink') && battleSceneDebugGetStatus(target, 'lifeLink').meta && battleSceneDebugGetStatus(target, 'lifeLink').meta.role === 'partner') {
+          battleSceneDebugTransferLifeLink();
+        }
+        if (target.isEnemy) {
+          battleSceneDebugState.player.forEach(u => {
+            if (!u || u.currentHp <= 0) return;
+            if (u.passiveRuntime && u.passiveRuntime.onEnemyDeathAtkUp) {
+              u.attack = Math.floor(u.attack * (1 + u.passiveRuntime.onEnemyDeathAtkUp / 100));
+            }
+          });
+          if (!attacker.isEnemy && attacker.passiveRuntime && attacker.passiveRuntime.onKillImmuneTurns) {
+            battleSceneDebugAddStatus(attacker, 'immune', 1, attacker.passiveRuntime.onKillImmuneTurns);
+          }
+        }
+      }
+
+      if (label === '普攻' && !opts.isFollowUp && p && p.followUpOnBasic && target.currentHp > 0) {
+        const f = p.followUpOnBasic;
+        if (Math.random() * 100 < (f.chance || 0)) {
+          battleSceneDebugApplyHit(attacker, target, f.scale || 0.8, '追击', { isFollowUp: true });
+        }
+      }
+
+      const tP = target.passiveRuntime;
+      if (tP && tP.reflectPct > 0 && dealt > 0 && attacker.currentHp > 0) {
+        const reflect = Math.max(1, Math.floor(dealt * tP.reflectPct / 100));
+        attacker.currentHp = Math.max(0, attacker.currentHp - reflect);
+        pushBattleSceneDebugFeed(`${target.displayName || target.name} 反弹伤害 ${reflect} 给 ${attacker.displayName || attacker.name}`);
+      }
+
+      if (!opts.isCounter && !target.isEnemy && target.currentHp > 0 && tP && tP.counter && attacker.currentHp > 0) {
+        if (Math.random() * 100 < (tP.counter.chance || 0)) {
+          battleSceneDebugApplyHit(target, attacker, tP.counter.scale || 1.0, '反击', { isCounter: true });
+        }
+      }
+
+      return { damage: dealt };
     }
 
     function battleSceneDebugAfterHit(attacker, target, isBasic) {
@@ -4422,6 +4934,7 @@
       }
       if (p.onHitCc && Math.random() * 100 < (p.onHitCc.chance || 0)) {
         if (!battleSceneDebugGetStatus(target, 'ccImmune')) {
+          if (!target.isEnemy && battleSceneDebugAffixValue('ccResist') > 0 && Math.random() * 100 < battleSceneDebugAffixValue('ccResist')) return;
           const resistChance = Math.max(0, (target.tenacity || 0) - (attacker.effectHit || 0) * 0.5);
           if (!(resistChance > 0 && Math.random() * 100 < resistChance)) {
             battleSceneDebugAddStatus(target, p.onHitCc.type, 1, p.onHitCc.turns || 1);
@@ -4447,9 +4960,12 @@
       const bleed = battleSceneDebugGetStatus(unit, 'bleed');
       const poison = battleSceneDebugGetStatus(unit, 'poison');
       let dot = 0;
-      if (burn) dot += burn.value || 0;
-      if (bleed) dot += bleed.value || 0;
-      if (poison) dot += poison.value || 0;
+      const burnResist = battleSceneDebugGetStatusValue(unit, 'burnResist');
+      const bleedResist = battleSceneDebugGetStatusValue(unit, 'bleedResist');
+      const poisonResist = battleSceneDebugGetStatusValue(unit, 'poisonResist');
+      if (burn) dot += (burn.value || 0) * (1 + battleSceneDebugAffixValue('burnAmp') / 100) * (1 - Math.min(85, burnResist) / 100);
+      if (bleed) dot += (bleed.value || 0) * (1 + battleSceneDebugAffixValue('dotUp') / 100) * (1 - Math.min(85, bleedResist) / 100);
+      if (poison) dot += (poison.value || 0) * (1 + battleSceneDebugAffixValue('dotUp') / 100) * (1 - Math.min(85, poisonResist) / 100);
       if (dot > 0) {
         const { dealt } = battleSceneDebugApplyDamage(unit, dot);
         if (dealt > 0) pushBattleSceneDebugFeed(`${unit.displayName || unit.name} 受到持续伤害 ${dealt}`);
@@ -4460,10 +4976,30 @@
       if (!target || target.currentHp <= 0) return { dealt: 0, shieldAbsorb: 0 };
       let left = Math.max(0, Math.floor(amount));
       let shieldAbsorb = 0;
+
+      if (!target.isEnemy && (target.enhancedHp || 0) > 0) {
+        const cap = (target.enhancedHp || 0) * 2;
+        const absorbRaw = Math.min(left, cap);
+        if (absorbRaw > 0) {
+          const spent = Math.ceil(absorbRaw / 2);
+          target.enhancedHp = Math.max(0, (target.enhancedHp || 0) - spent);
+          left -= absorbRaw;
+          if (battleSceneDebugCoreState.active) {
+            battleSceneDebugCoreState.spent += spent;
+            battleSceneDebugMaybeTriggerCore();
+          }
+        }
+      }
+
       if ((target.shield || 0) > 0 && left > 0) {
         shieldAbsorb = Math.min(target.shield, left);
         target.shield = Math.max(0, target.shield - shieldAbsorb);
         left -= shieldAbsorb;
+        const breakPct = battleSceneDebugAffixValue('shieldBreak');
+        if (breakPct > 0 && target.shield > 0) {
+          const extra = Math.floor(shieldAbsorb * breakPct / 100);
+          target.shield = Math.max(0, target.shield - extra);
+        }
       }
       const dealt = Math.min(target.currentHp, left);
       target.currentHp = Math.max(0, target.currentHp - dealt);
@@ -4510,6 +5046,7 @@
 
     function battleSceneDebugApplySkill(actor, actorSide, skillIndex, targetSide, targetIndex) {
       if (!battleSceneDebugState || !actor) return false;
+      if (battleSceneDebugGetStatus(actor, 'silence')) return false;
       const skills = Array.isArray(actor.skills) ? actor.skills : [];
       const skill = skills[skillIndex];
       if (!skill) return false;
@@ -4585,14 +5122,8 @@
                 scaleFrom === 'maxHp' ? Math.floor((actor.maxHp || 0) * scale + (effect.addFlat || 0)) :
                 scaleFrom === 'targetMaxHp' ? Math.floor((t.maxHp || 0) * scale + (effect.addFlat || 0)) :
                 null;
-              const r = computeDebugDamage(actor, t, scale, { rawOverride, ignoreDef });
-              if (r.immune) return;
-              if (r.dodged) return;
-              const { dealt } = battleSceneDebugApplyDamage(t, r.damage);
-              if (dealt > 0) {
-                setBattleSceneDebugHitFx(t.isEnemy ? 'enemy' : 'player', (t.isEnemy ? enemies : allies).indexOf(t));
-                battleSceneDebugAfterHit(actor, t, false);
-              }
+              const { damage } = battleSceneDebugApplyHit(actor, t, scale, '技能', { rawOverride, ignoreDef });
+              if (damage > 0) setBattleSceneDebugHitFx(t.isEnemy ? 'enemy' : 'player', (t.isEnemy ? enemies : allies).indexOf(t));
             });
           }
           return;
@@ -4695,6 +5226,15 @@
         }
       });
 
+      if (!actor.isEnemy && actor.id === battleSceneDebugCatLinkState.catId) battleSceneDebugTriggerStoredFollowUp();
+      if (actor.passiveRuntime && actor.passiveRuntime.skillAtkStack) {
+        const st = actor.passiveRuntime.skillAtkStack;
+        if (st && st.max > 0 && st.value > 0 && (st.stacks || 0) < st.max) {
+          st.stacks = (st.stacks || 0) + 1;
+          actor.attack = Math.floor((actor.attack || 0) * (1 + st.value / 100));
+          pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 叠加剑意（${st.stacks}/${st.max}）`);
+        }
+      }
       return true;
     }
 
@@ -4767,6 +5307,7 @@
       }
 
       if (battleSceneDebugState.turnCursor >= battleSceneDebugState.turnOrder.length) {
+        battleSceneDebugApplyRoundEndPassives();
         battleSceneDebugInitRound(false);
         return;
       }
@@ -4792,6 +5333,35 @@
         return;
       }
 
+      const stun = battleSceneDebugGetStatus(actor, 'stun');
+      if (stun) {
+        pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 被眩晕，无法行动`);
+        battleSceneDebugTickAfterAction(actor);
+        battleSceneDebugState.turnCursor += 1;
+        renderBattleSceneDebug();
+        return;
+      }
+
+      const charm = battleSceneDebugGetStatus(actor, 'charm');
+      if (charm) {
+        const allies = turn.side === 'enemy' ? battleSceneDebugState.enemies : battleSceneDebugState.player;
+        const candidates = allies.filter(u => u && u.currentHp > 0 && u !== actor);
+        const target = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+        if (!target) {
+          pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 被魅惑，但没有可攻击目标`);
+        } else {
+            battleSceneDebugApplyHit(actor, target, 1.0, '魅惑');
+            setBattleSceneDebugHitFx(turn.side, allies.indexOf(target));
+        }
+        battleSceneDebugTickAfterAction(actor);
+        battleSceneDebugState.turnCursor += 1;
+        renderBattleSceneDebug();
+        if (aliveCount(battleSceneDebugState.player) === 0 || aliveCount(battleSceneDebugState.enemies) === 0) {
+          battleSceneDebugFinish(aliveCount(battleSceneDebugState.player) > 0);
+        }
+        return;
+      }
+
       if (turn.side === 'player' && !battleSceneDebugState.auto) {
         const aliveEnemy = battleSceneDebugState.enemies.some(u => u && u.currentHp > 0);
         if (!aliveEnemy) return;
@@ -4806,13 +5376,9 @@
       if (turn.side === 'enemy') {
         const target = battleSceneDebugChooseTarget(actor, battleSceneDebugState.player);
         if (!target) return;
-        const r = computeDebugDamage(actor, target, 1.0);
-        if (!r.immune && !r.dodged) {
-          battleSceneDebugApplyDamage(target, r.damage);
-          battleSceneDebugAfterHit(actor, target, true);
-        }
+        battleSceneDebugApplyHit(actor, target, 1.0, '普攻');
         setBattleSceneDebugHitFx('player', battleSceneDebugState.player.indexOf(target));
-        pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 普攻 → ${target.displayName || target.name}${r.immune ? '（免疫）' : (r.dodged ? '（闪避）' : ` 造成 ${r.damage}${r.crit ? '（暴击）' : ''}${r.block ? '（格挡）' : ''}`)}`);
+        battleSceneDebugTickAfterAction(actor);
         battleSceneDebugState.turnCursor += 1;
         renderBattleSceneDebug();
         if (aliveCount(battleSceneDebugState.player) === 0 || aliveCount(battleSceneDebugState.enemies) === 0) {
@@ -4854,14 +5420,10 @@
           actor.class === 'archer' ? 1.0 :
           actor.class === 'mage' ? 1.0 :
           1.0;
-        const r = computeDebugDamage(actor, target, mult);
-        if (!r.immune && !r.dodged) {
-          battleSceneDebugApplyDamage(target, r.damage);
-          battleSceneDebugAfterHit(actor, target, true);
-        }
+        battleSceneDebugApplyHit(actor, target, mult, '普攻');
         setBattleSceneDebugHitFx('enemy', battleSceneDebugState.enemies.indexOf(target));
-        pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 普攻 → ${target.displayName || target.name}${r.immune ? '（免疫）' : (r.dodged ? '（闪避）' : ` 造成 ${r.damage}${r.crit ? '（暴击）' : ''}${r.block ? '（格挡）' : ''}`)}`);
       }
+      battleSceneDebugTickAfterAction(actor);
       battleSceneDebugState.turnCursor += 1;
       renderBattleSceneDebug();
       if (aliveCount(battleSceneDebugState.player) === 0 || aliveCount(battleSceneDebugState.enemies) === 0) {
@@ -4888,17 +5450,13 @@
           actor.class === 'archer' ? 1.0 :
           actor.class === 'mage' ? 1.0 :
           1.0;
-        const r = computeDebugDamage(actor, target, mult);
-        if (!r.immune && !r.dodged) {
-          battleSceneDebugApplyDamage(target, r.damage);
-          battleSceneDebugAfterHit(actor, target, true);
-        }
+        battleSceneDebugApplyHit(actor, target, mult, '普攻');
         setBattleSceneDebugHitFx('enemy', targetIndex);
-        pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 普攻 → ${target.displayName || target.name}${r.immune ? '（免疫）' : (r.dodged ? '（闪避）' : ` 造成 ${r.damage}${r.crit ? '（暴击）' : ''}${r.block ? '（格挡）' : ''}`)}`);
       } else if (pending.actionType === 'skill' && typeof pending.skillIndex === 'number') {
         const ok = battleSceneDebugApplySkill(actor, 'player', pending.skillIndex, targetSide, targetIndex);
         if (ok) setBattleSceneDebugHitFx(targetSide, targetIndex);
       }
+      battleSceneDebugTickAfterAction(actor);
       battleSceneDebugState.awaitingTarget = null;
       battleSceneDebugState.turnCursor += 1;
       renderBattleSceneDebug();
@@ -7034,8 +7592,15 @@
 
     // 计算总战斗力
     function calculateTotalPower() {
-      return gameData.characters.reduce((total, char) => {
-        return total + calculateCharacterPower(char);
+      return calculateFormationPower();
+    }
+
+    function calculateFormationPower() {
+      ensureFormation();
+      const ids = (gameData.formation || []).filter(Boolean);
+      return ids.reduce((sum, id) => {
+        const c = gameData.characters.find(ch => ch && ch.id === id);
+        return sum + (c ? calculateCharacterPower(c) : 0);
       }, 0);
     }
 
