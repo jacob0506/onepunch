@@ -654,6 +654,68 @@
           退出
         </button>
       </div>
+
+      <div id="battleSceneDebug" class="fixed inset-0 z-[130] hidden">
+        <div id="battleSceneDebugBg" class="absolute inset-0 bg-center bg-cover scale-110 blur-[10px] opacity-60"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/65 to-black/90"></div>
+        <div class="absolute inset-0 flex flex-col" style="padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);">
+          <div class="px-2 pt-2 pb-2 md:px-3 md:pt-3 md:pb-3 border-b border-gray-800 bg-black/35 backdrop-blur-md">
+            <div class="flex items-center justify-between gap-3">
+              <button class="px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-xs font-black" onclick="closeBattleSceneDebug()">返回</button>
+              <div class="flex-1">
+                <div id="battleSceneDebugStageName" class="text-sm font-black text-white truncate">---</div>
+                <div class="flex gap-3 text-[10px] text-gray-400 font-bold">
+                  <div>回合 <span id="battleSceneDebugRound">1</span></div>
+                  <div>能量 <span id="battleSceneDebugEnergy">6</span></div>
+                  <div class="ml-auto truncate">行动 <span id="battleSceneDebugActor" class="text-gray-200">---</span></div>
+                </div>
+              </div>
+              <button id="battleSceneDebugRunBtn" class="px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-xs font-black" onclick="toggleBattleSceneDebugRun()">开始</button>
+            </div>
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+              <button id="battleSceneDebugAutoBtn" class="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-700 text-[10px] font-black">手动</button>
+              <div class="flex items-center gap-2 text-[10px] text-gray-400 font-bold">
+                <span>速度</span>
+                <select id="battleSceneDebugSpeed" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-[10px] font-black text-white">
+                  <option value="1">x1</option>
+                  <option value="2" selected>x2</option>
+                  <option value="4">x4</option>
+                </select>
+              </div>
+              <button class="ml-auto px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-700 text-[10px] font-black" onclick="battleSceneDebugStep()">推进</button>
+            </div>
+            <div id="battleSceneDebugTurnBar" class="mt-2 flex gap-2 overflow-x-auto overflow-y-hidden pb-1 custom-scrollbar"></div>
+          </div>
+
+          <div class="px-2 pt-2 md:px-3 md:pt-3">
+            <div id="battleSceneDebugFeed" class="bg-black/50 border border-gray-800 rounded-lg p-2 h-16 md:h-20 overflow-y-auto text-[10px] font-mono custom-scrollbar backdrop-blur-md"></div>
+          </div>
+
+          <div class="flex-1 min-h-0 px-2 pb-3 pt-2 md:px-3 md:pb-4 md:pt-3">
+            <div class="h-full grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="bg-black/35 border border-gray-800 rounded-xl p-3 flex flex-col min-h-0 backdrop-blur-md">
+                <div class="text-[10px] text-gray-400 font-black mb-2">我方阵容</div>
+                <div id="battleSceneDebugPlayerGrid" class="grid grid-cols-3 grid-rows-2 gap-2 place-items-center flex-1 min-h-0"></div>
+              </div>
+              <div class="bg-black/35 border border-gray-800 rounded-xl p-3 flex flex-col min-h-0 backdrop-blur-md">
+                <div class="text-[10px] text-gray-400 font-black mb-2 text-right">敌方阵容</div>
+                <div id="battleSceneDebugEnemyGrid" class="grid grid-cols-3 grid-rows-2 gap-2 place-items-center flex-1 min-h-0"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="battleSceneDebugActionBar" class="hidden px-2 pb-2 md:px-3 md:pb-3">
+            <div class="bg-black/50 border border-gray-800 rounded-xl p-3 backdrop-blur-md">
+              <div id="battleSceneDebugActionHint" class="text-[10px] text-gray-300 font-black mb-2 truncate">---</div>
+              <div class="flex gap-2">
+                <button id="battleSceneDebugActionBasic" class="flex-1 py-2 rounded-lg bg-gray-900 border border-gray-700 text-xs font-black">普攻</button>
+                <button id="battleSceneDebugActionSkill" class="flex-1 py-2 rounded-lg bg-gray-900 border border-gray-700 text-xs font-black">技能（-2）</button>
+                <button id="battleSceneDebugActionCancel" class="px-4 py-2 rounded-lg bg-gray-900 border border-gray-700 text-xs font-black">取消</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 底部导航栏 -->
@@ -849,6 +911,10 @@
       },
       maxLevel: 150,
       maxStars: 8
+    };
+
+    const BATTLE_SCENE_CONFIG = {
+      backgroundImageUrl: './assets/backgrounds/battle_scene_bg.jpg'
     };
 
     const AWAKEN_PROFILES = {
@@ -3706,9 +3772,14 @@
           </div>
           
           <div class="text-center">
-            <button class="btn-primary ${!isUnlocked ? 'opacity-50 cursor-not-allowed' : ''}" ${!isUnlocked ? 'disabled' : ''} data-stage="${stage.id}">
-              ${isUnlocked ? (isCleared ? '再次挑战' : '挑战') : '通关上一关解锁'}
-            </button>
+            <div class="flex justify-center gap-2">
+              <button class="btn-primary ${!isUnlocked ? 'opacity-50 cursor-not-allowed' : ''}" ${!isUnlocked ? 'disabled' : ''} data-stage="${stage.id}">
+                ${isUnlocked ? (isCleared ? '再次挑战' : '挑战') : '通关上一关解锁'}
+              </button>
+              <button class="px-4 py-2 rounded-lg text-xs font-black bg-gray-900 border border-gray-700 hover:bg-gray-800 ${!isUnlocked ? 'opacity-50 cursor-not-allowed' : ''}" ${!isUnlocked ? 'disabled' : ''} data-stage-debug="${stage.id}">
+                场景调试
+              </button>
+            </div>
           </div>
         `;
         
@@ -3719,6 +3790,11 @@
             startBattle(stage.id);
           }
         });
+
+        const debugBtn = cardElement.querySelector('[data-stage-debug]');
+        debugBtn.addEventListener('click', () => {
+          if (isUnlocked) openBattleSceneDebug(stage.id);
+        });
         
         stagesList.appendChild(cardElement);
       });
@@ -3726,6 +3802,510 @@
 
     // 开始战斗
     let battleRuntime = { speed: 2, skip: false, running: false, foldLogs: true };
+
+    let battleSceneDebugState = null;
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function openBattleSceneDebug(stageId) {
+      const stage = stagesData.find(s => s && s.id === stageId);
+      if (!stage) return;
+      const bg = document.getElementById('battleSceneDebugBg');
+      if (bg) {
+        bg.style.backgroundImage = BATTLE_SCENE_CONFIG.backgroundImageUrl ? `url('${BATTLE_SCENE_CONFIG.backgroundImageUrl}')` : '';
+      }
+      const debugMenu = document.getElementById('debugMenu');
+      if (debugMenu) debugMenu.classList.add('hidden');
+      ensureFormation();
+      const ids = gameData.formation.filter(Boolean);
+      const picked = ids.map(id => gameData.characters.find(c => c.id === id)).filter(Boolean).slice(0, 6);
+      const player = [];
+      for (let i = 0; i < 6; i++) {
+        const c = picked[i];
+        if (!c) {
+          player.push(null);
+          continue;
+        }
+        const stats = calculateTotalStats(c);
+        player.push({
+          id: c.id,
+          name: c.name,
+          displayName: c.name,
+          imageUrl: c.imageUrl,
+          rarity: c.rarity,
+          class: c.class,
+          maxHp: Math.floor(stats.health || 1),
+          currentHp: Math.floor(stats.health || 1),
+          attack: Math.floor(stats.attack || 0),
+          defense: Math.floor(stats.defense || 0),
+          speed: Math.floor(stats.speed || 0),
+          isEnemy: false
+        });
+      }
+
+      const enemies = [];
+      const enemyList = Array.isArray(stage.enemies) ? stage.enemies : [];
+      for (let i = 0; i < 6; i++) {
+        const e = enemyList[i];
+        if (!e) {
+          enemies.push(null);
+          continue;
+        }
+        enemies.push({
+          id: e.id || `enemy_${i + 1}`,
+          name: e.name || `敌人${i + 1}`,
+          imageUrl: '',
+          maxHp: typeof e.health === 'number' ? e.health : 1000,
+          currentHp: typeof e.health === 'number' ? e.health : 1000,
+          attack: typeof e.attack === 'number' ? e.attack : 100,
+          defense: typeof e.defense === 'number' ? e.defense : 50,
+          speed: typeof e.speed === 'number' ? e.speed : 100,
+          isEnemy: true
+        });
+      }
+
+      const ensureUniqueNames = (left, right) => {
+        const used = new Map();
+        const apply = (unit, suffix) => {
+          if (!unit) return;
+          let base = String(unit.name || '单位');
+          if (!used.has(base)) {
+            used.set(base, 1);
+            unit.displayName = base;
+            return;
+          }
+          const n = used.get(base) + 1;
+          used.set(base, n);
+          unit.displayName = `${base}${suffix}${n}`;
+        };
+        left.forEach(u => apply(u, '·我'));
+        right.forEach(u => apply(u, '·敌'));
+      };
+
+      ensureUniqueNames(player.filter(Boolean), enemies.filter(Boolean));
+
+      battleSceneDebugState = {
+        stageId,
+        stageName: stage.name,
+        round: 1,
+        auto: false,
+        speed: 2,
+        energy: 6,
+        player,
+        enemies,
+        feed: [],
+        running: false,
+        awaitingTarget: null,
+        turnOrder: [],
+        turnCursor: 0
+      };
+
+      document.getElementById('battleSceneDebugStageName').textContent = stage.name;
+      document.getElementById('battleSceneDebug').classList.remove('hidden');
+      renderBattleSceneDebug();
+      pushBattleSceneDebugFeed(`进入战斗场景调试：${stage.name}`);
+      battleSceneDebugSyncControls();
+      battleSceneDebugInitRound(true);
+
+      const btn = document.getElementById('battleSceneDebugAutoBtn');
+      if (btn) {
+        btn.onclick = () => {
+          if (!battleSceneDebugState) return;
+          battleSceneDebugState.auto = !battleSceneDebugState.auto;
+          pushBattleSceneDebugFeed(`切换模式：${battleSceneDebugState.auto ? '自动' : '手动'}`);
+          battleSceneDebugSyncControls();
+        };
+      }
+      const sel = document.getElementById('battleSceneDebugSpeed');
+      if (sel) {
+        sel.onchange = () => {
+          if (!battleSceneDebugState) return;
+          battleSceneDebugState.speed = parseInt(sel.value, 10) || 2;
+          pushBattleSceneDebugFeed(`切换速度：x${battleSceneDebugState.speed}`);
+          battleSceneDebugSyncControls();
+        };
+      }
+    }
+
+    function closeBattleSceneDebug() {
+      const runBtn = document.getElementById('battleSceneDebugRunBtn');
+      if (runBtn) runBtn.textContent = '开始';
+      const debugMenu = document.getElementById('debugMenu');
+      if (debugMenu) debugMenu.classList.remove('hidden');
+      document.getElementById('battleSceneDebug').classList.add('hidden');
+      battleSceneDebugState = null;
+    }
+
+    function battleSceneDebugSyncControls() {
+      const btn = document.getElementById('battleSceneDebugAutoBtn');
+      const sel = document.getElementById('battleSceneDebugSpeed');
+      const runBtn = document.getElementById('battleSceneDebugRunBtn');
+      if (btn && battleSceneDebugState) {
+        btn.textContent = battleSceneDebugState.auto ? '自动' : '手动';
+        btn.className = `px-3 py-1.5 rounded-lg border text-[10px] font-black ${battleSceneDebugState.auto ? 'bg-green-900 border-green-700 text-green-200' : 'bg-gray-900 border-gray-700 text-white'}`;
+      }
+      if (sel && battleSceneDebugState) sel.value = String(battleSceneDebugState.speed || 2);
+      if (runBtn && battleSceneDebugState) {
+        runBtn.textContent = battleSceneDebugState.running ? '暂停' : '开始';
+        runBtn.className = `px-3 py-2 rounded-lg border text-xs font-black ${battleSceneDebugState.running ? 'bg-red-900 border-red-700 text-red-200' : 'bg-gray-900 border-gray-700 text-white'}`;
+      }
+    }
+
+    function pushBattleSceneDebugFeed(text) {
+      if (!battleSceneDebugState) return;
+      const line = `[${String(new Date().toLocaleTimeString())}] ${text}`;
+      battleSceneDebugState.feed.push(line);
+      const feed = document.getElementById('battleSceneDebugFeed');
+      if (feed) {
+        feed.innerHTML = battleSceneDebugState.feed.slice(-60).map(t => `<div>${escapeHtml(t)}</div>`).join('');
+        feed.scrollTop = feed.scrollHeight;
+      }
+    }
+
+    function renderBattleSceneDebug() {
+      if (!battleSceneDebugState) return;
+      const roundEl = document.getElementById('battleSceneDebugRound');
+      const energyEl = document.getElementById('battleSceneDebugEnergy');
+      const actorEl = document.getElementById('battleSceneDebugActor');
+      if (roundEl) roundEl.textContent = String(battleSceneDebugState.round || 1);
+      if (energyEl) energyEl.textContent = String(battleSceneDebugState.energy || 0);
+      if (actorEl) {
+        const turn = battleSceneDebugState.turnOrder && battleSceneDebugState.turnOrder[battleSceneDebugState.turnCursor];
+        if (!turn) actorEl.textContent = '-';
+        else {
+          const list = turn.side === 'enemy' ? battleSceneDebugState.enemies : battleSceneDebugState.player;
+          const u = list[turn.index];
+          actorEl.textContent = u ? (u.displayName || u.name || '-') : '-';
+        }
+      }
+
+      const shortName = (name) => {
+        const t = String(name || '');
+        if (t.length <= 6) return t;
+        return `${t.slice(0, 5)}…`;
+      };
+
+      const bar = document.getElementById('battleSceneDebugTurnBar');
+      if (bar) {
+        const items = [];
+        const order = Array.isArray(battleSceneDebugState.turnOrder) ? battleSceneDebugState.turnOrder : [];
+        const cursor = battleSceneDebugState.turnCursor || 0;
+        const view = order.slice(cursor, cursor + 12);
+        view.forEach((t, idx) => {
+          const list = t.side === 'enemy' ? battleSceneDebugState.enemies : battleSceneDebugState.player;
+          const u = list[t.index];
+          if (!u) return;
+          const isFirst = idx === 0;
+          const cls = t.side === 'enemy' ? 'border-red-700 bg-red-900/25 text-red-200' : 'border-blue-700 bg-blue-900/25 text-blue-200';
+          const pick = isFirst ? 'ring-2 ring-yellow-400' : 'ring-1 ring-white/10';
+          items.push(`<div class="flex-shrink-0 px-2 py-0.5 rounded-lg border ${cls} ${pick} text-[9px] font-black">${escapeHtml(shortName(u.displayName || u.name))}</div>`);
+        });
+        bar.innerHTML = items.join('');
+      }
+
+      const renderGrid = (containerId, units, side) => {
+        const root = document.getElementById(containerId);
+        if (!root) return;
+        root.innerHTML = '';
+        for (let i = 0; i < 6; i++) {
+          const unit = units[i];
+          const cell = document.createElement('div');
+          cell.className = 'w-full min-w-0';
+          if (!unit) {
+            cell.innerHTML = `<div class="w-full aspect-square rounded-xl border border-gray-800 bg-black/25"></div>`;
+            root.appendChild(cell);
+            continue;
+          }
+          const name = unit.displayName || unit.name || '单位';
+          const label = shortName(name);
+          const img = unit.imageUrl
+            ? `<img src="${unit.imageUrl}" class="w-[92%] h-[92%] md:w-[94%] md:h-[94%] object-contain">`
+            : `<div class="w-[78%] h-[78%] rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-2xl font-black text-white">${escapeHtml(label.slice(0, 1))}</div>`;
+          const dead = unit.currentHp <= 0;
+          const deadOverlay = dead ? `<div class="absolute inset-0 rounded-xl bg-black/60 flex items-center justify-center text-[10px] font-black text-red-300">已倒下</div>` : '';
+          const hpPct = unit.maxHp > 0 ? Math.max(0, Math.min(100, Math.floor(unit.currentHp / unit.maxHp * 100))) : 0;
+          const outline = 'ring-1 ring-white/10';
+          const selecting = !!battleSceneDebugState.awaitingTarget;
+          const targetable = selecting && side === 'enemy' && !dead;
+          const focus = targetable ? 'ring-2 ring-yellow-400' : outline;
+          const dim = selecting && side !== 'enemy' ? 'opacity-60' : '';
+          const fx = battleSceneDebugState.hitFx && battleSceneDebugState.hitFx.side === side && battleSceneDebugState.hitFx.index === i && battleSceneDebugState.hitFx.until > Date.now();
+          const fxOverlay = fx ? `<div class="absolute inset-0 bg-white/10 animate-pulse"></div>` : '';
+          cell.innerHTML = `
+            <div class="relative overflow-hidden w-full aspect-square rounded-xl ${focus} ${dim} bg-black/20 border border-gray-800 flex items-center justify-center">
+              ${fxOverlay}
+              <div class="w-full h-full flex items-center justify-center">
+                <div class="w-[92%] h-[92%] md:w-[94%] md:h-[94%] flex items-center justify-center shadow-[0_10px_18px_rgba(0,0,0,0.75)]">
+                  ${img}
+                </div>
+              </div>
+              <div class="absolute left-2 right-2 bottom-1">
+                <div class="text-[9px] leading-tight font-black text-white text-center truncate w-full">${escapeHtml(label)}</div>
+                <div class="mt-0.5 w-full h-1 rounded-full bg-gray-800 overflow-hidden border border-gray-700">
+                  <div class="h-full bg-gradient-to-r from-green-500 to-emerald-300" style="width:${hpPct}%"></div>
+                </div>
+              </div>
+              ${deadOverlay}
+            </div>
+          `;
+          cell.classList.add('cursor-pointer');
+          cell.onclick = () => onBattleSceneDebugUnitClick(side, i);
+          root.appendChild(cell);
+        }
+      };
+
+      renderGrid('battleSceneDebugPlayerGrid', battleSceneDebugState.player, 'player');
+      renderGrid('battleSceneDebugEnemyGrid', battleSceneDebugState.enemies, 'enemy');
+
+      const actionBar = document.getElementById('battleSceneDebugActionBar');
+      if (actionBar) actionBar.classList.toggle('hidden', !battleSceneDebugState.awaitingTarget);
+      if (battleSceneDebugState.awaitingTarget) {
+        const actor = battleSceneDebugState.player[battleSceneDebugState.awaitingTarget.actorIndex];
+        const hint = document.getElementById('battleSceneDebugActionHint');
+        const basicBtn = document.getElementById('battleSceneDebugActionBasic');
+        const skillBtn = document.getElementById('battleSceneDebugActionSkill');
+        const cancelBtn = document.getElementById('battleSceneDebugActionCancel');
+        const canSkill = (battleSceneDebugState.energy || 0) >= 2;
+        const skillName = actor && actor.skills && actor.skills[0] && actor.skills[0].name ? actor.skills[0].name : '技能';
+        if (hint) hint.textContent = actor ? `操作：${actor.displayName || actor.name}，选择行动并点选敌方目标` : '请选择目标';
+        if (basicBtn) {
+          basicBtn.disabled = false;
+          basicBtn.className = `flex-1 py-2 rounded-lg border text-xs font-black ${battleSceneDebugState.awaitingTarget.action === 'basic' ? 'bg-yellow-900 border-yellow-700 text-yellow-200' : 'bg-gray-900 border-gray-700 text-white'}`;
+          basicBtn.onclick = () => {
+            if (!battleSceneDebugState || !battleSceneDebugState.awaitingTarget) return;
+            battleSceneDebugState.awaitingTarget.action = 'basic';
+            renderBattleSceneDebug();
+          };
+        }
+        if (skillBtn) {
+          skillBtn.disabled = !canSkill;
+          skillBtn.textContent = `${skillName}（-2）`;
+          skillBtn.className = `flex-1 py-2 rounded-lg border text-xs font-black ${!canSkill ? 'opacity-50 cursor-not-allowed bg-gray-900 border-gray-700 text-gray-500' : (battleSceneDebugState.awaitingTarget.action === 'skill' ? 'bg-yellow-900 border-yellow-700 text-yellow-200' : 'bg-gray-900 border-gray-700 text-white')}`;
+          skillBtn.onclick = () => {
+            if (!battleSceneDebugState || !battleSceneDebugState.awaitingTarget) return;
+            if ((battleSceneDebugState.energy || 0) < 2) return;
+            battleSceneDebugState.awaitingTarget.action = 'skill';
+            renderBattleSceneDebug();
+          };
+        }
+        if (cancelBtn) {
+          cancelBtn.onclick = () => {
+            if (!battleSceneDebugState) return;
+            battleSceneDebugState.awaitingTarget = null;
+            renderBattleSceneDebug();
+          };
+        }
+      }
+    }
+
+    function aliveCount(list) {
+      return list.filter(u => u && u.currentHp > 0).length;
+    }
+
+    function battleSceneDebugInitRound(isFirst) {
+      if (!battleSceneDebugState) return;
+      const dead = battleSceneDebugState.player.filter(u => u && u.currentHp <= 0).length;
+      const gain = Math.max(0, 6 - 2 * dead);
+      if (!isFirst) battleSceneDebugState.round += 1;
+      battleSceneDebugState.energy = isFirst ? 6 : ((battleSceneDebugState.energy || 0) + gain);
+      battleSceneDebugState.turnOrder = buildBattleSceneDebugTurnOrder();
+      battleSceneDebugState.turnCursor = 0;
+      battleSceneDebugState.awaitingTarget = null;
+      if (isFirst) pushBattleSceneDebugFeed(`战斗开始：初始能量 6`);
+      else pushBattleSceneDebugFeed(`回合开始：死亡${dead}人，获得能量 +${gain}（公式 6-2*死亡数）`);
+      renderBattleSceneDebug();
+    }
+
+    function buildBattleSceneDebugTurnOrder() {
+      if (!battleSceneDebugState) return [];
+      const order = [];
+      battleSceneDebugState.player.forEach((u, idx) => {
+        if (!u || u.currentHp <= 0) return;
+        order.push({ side: 'player', index: idx, speed: u.speed || 0 });
+      });
+      battleSceneDebugState.enemies.forEach((u, idx) => {
+        if (!u || u.currentHp <= 0) return;
+        order.push({ side: 'enemy', index: idx, speed: u.speed || 0 });
+      });
+      order.sort((a, b) => (b.speed || 0) - (a.speed || 0));
+      return order;
+    }
+
+    function onBattleSceneDebugUnitClick(side, index) {
+      if (!battleSceneDebugState) return;
+      const list = side === 'enemy' ? battleSceneDebugState.enemies : battleSceneDebugState.player;
+      const unit = list[index];
+      if (!unit) return;
+
+      if (battleSceneDebugState.awaitingTarget) {
+        if (side === 'enemy') resolveBattleSceneDebugPlayerAction(index);
+        return;
+      }
+
+      if (side === 'player') {
+        if (unit.currentHp > 0) unit.currentHp = 0;
+        else unit.currentHp = Math.max(1, unit.maxHp || 1);
+        pushBattleSceneDebugFeed(`${unit.displayName || unit.name} 状态切换：${unit.currentHp > 0 ? '存活' : '阵亡'}`);
+        renderBattleSceneDebug();
+      }
+    }
+
+    function pickRandomAlive(list) {
+      const alive = list.filter(u => u && u.currentHp > 0);
+      if (alive.length === 0) return null;
+      return alive[Math.floor(Math.random() * alive.length)];
+    }
+
+    function computeDebugDamage(attacker, target, mult) {
+      const atk = Math.max(1, attacker.attack || 1);
+      const def = Math.max(0, target.defense || 0);
+      const base = atk * mult * (0.9 + Math.random() * 0.2);
+      return Math.max(1, Math.floor(base * (100 / (100 + def))));
+    }
+
+    function setBattleSceneDebugHitFx(side, index) {
+      if (!battleSceneDebugState) return;
+      battleSceneDebugState.hitFx = { side, index, until: Date.now() + 240 };
+      renderBattleSceneDebug();
+      setTimeout(() => {
+        if (!battleSceneDebugState) return;
+        if (battleSceneDebugState.hitFx && battleSceneDebugState.hitFx.side === side && battleSceneDebugState.hitFx.index === index) {
+          battleSceneDebugState.hitFx = null;
+          renderBattleSceneDebug();
+        }
+      }, 260);
+    }
+
+    function battleSceneDebugStep() {
+      if (!battleSceneDebugState) return;
+      if (battleSceneDebugState.awaitingTarget) return;
+      if (aliveCount(battleSceneDebugState.player) === 0 || aliveCount(battleSceneDebugState.enemies) === 0) {
+        pushBattleSceneDebugFeed(`战斗结束：${aliveCount(battleSceneDebugState.player) > 0 ? '胜利' : '失败'}`);
+        battleSceneDebugState.running = false;
+        battleSceneDebugSyncControls();
+        return;
+      }
+
+      if (battleSceneDebugState.turnCursor >= battleSceneDebugState.turnOrder.length) {
+        battleSceneDebugInitRound(false);
+        return;
+      }
+
+      const turn = battleSceneDebugState.turnOrder[battleSceneDebugState.turnCursor];
+      if (!turn) {
+        battleSceneDebugState.turnCursor += 1;
+        return;
+      }
+
+      const actorList = turn.side === 'enemy' ? battleSceneDebugState.enemies : battleSceneDebugState.player;
+      const actor = actorList[turn.index];
+      if (!actor || actor.currentHp <= 0) {
+        battleSceneDebugState.turnCursor += 1;
+        return;
+      }
+
+      if (turn.side === 'player' && !battleSceneDebugState.auto) {
+        const aliveEnemy = battleSceneDebugState.enemies.some(u => u && u.currentHp > 0);
+        if (!aliveEnemy) return;
+        battleSceneDebugState.awaitingTarget = { actorIndex: turn.index, action: 'basic' };
+        pushBattleSceneDebugFeed(`等待操作：${actor.displayName || actor.name} 请选择行动与目标`);
+        renderBattleSceneDebug();
+        battleSceneDebugState.running = false;
+        battleSceneDebugSyncControls();
+        return;
+      }
+
+      if (turn.side === 'enemy') {
+        const target = pickRandomAlive(battleSceneDebugState.player);
+        if (!target) return;
+        const dmg = computeDebugDamage(actor, target, 1.0);
+        target.currentHp = Math.max(0, target.currentHp - dmg);
+        setBattleSceneDebugHitFx('player', battleSceneDebugState.player.indexOf(target));
+        pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 普攻 → ${target.displayName || target.name} 造成 ${dmg}`);
+        battleSceneDebugState.turnCursor += 1;
+        renderBattleSceneDebug();
+        return;
+      }
+
+      const target = pickRandomAlive(battleSceneDebugState.enemies);
+      if (!target) return;
+      const isHealer = actor.class === 'healer';
+      if (isHealer && (battleSceneDebugState.energy || 0) >= 2) {
+        battleSceneDebugState.energy -= 2;
+        const allies = battleSceneDebugState.player.filter(u => u && u.currentHp > 0);
+        const lowest = allies.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
+        if (lowest) {
+          const amount = Math.max(1, Math.floor((actor.attack || 1) * 2.4));
+          const actual = Math.min(lowest.maxHp - lowest.currentHp, amount);
+          lowest.currentHp += actual;
+          pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 施放治疗 → ${lowest.displayName || lowest.name} 回复 ${actual}（能量-2）`);
+        }
+      } else {
+        const useSkill = (battleSceneDebugState.energy || 0) >= 2;
+        if (useSkill) battleSceneDebugState.energy -= 2;
+        const mult =
+          actor.class === 'assassin' ? (useSkill ? 2.8 : 1.1) :
+          actor.class === 'warrior' ? (useSkill ? 2.6 : 1.0) :
+          actor.class === 'archer' ? (useSkill ? 2.4 : 1.0) :
+          actor.class === 'mage' ? (useSkill ? 2.2 : 1.0) :
+          (useSkill ? 2.2 : 1.0);
+        const dmg = computeDebugDamage(actor, target, mult);
+        target.currentHp = Math.max(0, target.currentHp - dmg);
+        setBattleSceneDebugHitFx('enemy', battleSceneDebugState.enemies.indexOf(target));
+        pushBattleSceneDebugFeed(`${actor.displayName || actor.name} ${useSkill ? '技能' : '普攻'} → ${target.displayName || target.name} 造成 ${dmg}${useSkill ? '（能量-2）' : ''}`);
+      }
+      battleSceneDebugState.turnCursor += 1;
+      renderBattleSceneDebug();
+    }
+
+    function resolveBattleSceneDebugPlayerAction(enemyIndex) {
+      if (!battleSceneDebugState || !battleSceneDebugState.awaitingTarget) return;
+      const pending = battleSceneDebugState.awaitingTarget;
+      const actor = battleSceneDebugState.player[pending.actorIndex];
+      const target = battleSceneDebugState.enemies[enemyIndex];
+      if (!actor || actor.currentHp <= 0 || !target || target.currentHp <= 0) {
+        battleSceneDebugState.awaitingTarget = null;
+        renderBattleSceneDebug();
+        return;
+      }
+      const wantSkill = pending.action === 'skill';
+      const useSkill = wantSkill && (battleSceneDebugState.energy || 0) >= 2;
+      if (useSkill) battleSceneDebugState.energy -= 2;
+      const mult = actor.class === 'archer' ? (useSkill ? 2.5 : 1.0) : (useSkill ? 2.3 : 1.0);
+      const dmg = computeDebugDamage(actor, target, mult);
+      target.currentHp = Math.max(0, target.currentHp - dmg);
+      setBattleSceneDebugHitFx('enemy', enemyIndex);
+      pushBattleSceneDebugFeed(`${actor.displayName || actor.name} ${useSkill ? '技能' : '普攻'} → ${target.displayName || target.name} 造成 ${dmg}${useSkill ? '（能量-2）' : ''}`);
+      battleSceneDebugState.awaitingTarget = null;
+      battleSceneDebugState.turnCursor += 1;
+      renderBattleSceneDebug();
+    }
+
+    function toggleBattleSceneDebugRun() {
+      if (!battleSceneDebugState) return;
+      battleSceneDebugState.running = !battleSceneDebugState.running;
+      battleSceneDebugSyncControls();
+      if (!battleSceneDebugState.running) return;
+      runBattleSceneDebugLoop();
+    }
+
+    function runBattleSceneDebugLoop() {
+      if (!battleSceneDebugState || !battleSceneDebugState.running) return;
+      if (battleSceneDebugState.awaitingTarget) {
+        battleSceneDebugState.running = false;
+        battleSceneDebugSyncControls();
+        return;
+      }
+      battleSceneDebugStep();
+      const delay = Math.max(80, Math.floor(420 / (battleSceneDebugState.speed || 2)));
+      setTimeout(() => runBattleSceneDebugLoop(), delay);
+    }
 
     function setBattleSpeed(multiplier) {
       battleRuntime.speed = multiplier;
