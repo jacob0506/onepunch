@@ -42,6 +42,186 @@
         "effect": "暴击伤害提升50%"
       },
       "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/fab318e245d0416f9382c1b885491bd8~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928671&x-signature=n9IWpQW2IsBIVsX5AcaECRTuUwk%3D"
+    },
+    {
+      "id": "ins_004",
+      "name": "追猎铭文",
+      "type": "speed",
+      "rarity": "SSR",
+      "attributes": {
+        "speed": 20,
+        "critRate": 6
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "普通攻击有20%几率触发追击，造成80%伤害"
+      },
+      "imageUrl": "./assets/inscriptions/追猎铭文.png"
+    },
+    {
+      "id": "ins_005",
+      "name": "破军铭文",
+      "type": "penetration",
+      "rarity": "UR",
+      "attributes": {
+        "atkPercent": 8,
+        "penetration": 12
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "无视防御+15%"
+      },
+      "imageUrl": "./assets/inscriptions/破军铭文.png"
+    },
+    {
+      "id": "ins_006",
+      "name": "玄甲铭文",
+      "type": "defense",
+      "rarity": "UR",
+      "attributes": {
+        "defPercent": 8,
+        "dmgReduc": 6
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "免伤+10%"
+      },
+      "imageUrl": "./assets/inscriptions/玄甲铭文.png"
+    },
+    {
+      "id": "ins_007",
+      "name": "镇魂铭文",
+      "type": "tenacity",
+      "rarity": "SSR",
+      "attributes": {
+        "hpPercent": 6,
+        "tenacity": 12
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "效果抵抗+15%"
+      },
+      "imageUrl": "./assets/inscriptions/镇魂铭文.png"
+    },
+    {
+      "id": "ins_008",
+      "name": "灵魄铭文",
+      "type": "effectHit",
+      "rarity": "SSR",
+      "attributes": {
+        "effectHit": 12,
+        "atkPercent": 6
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "效果命中+12%"
+      },
+      "imageUrl": "./assets/inscriptions/灵魄铭文.png"
+    },
+    {
+      "id": "ins_009",
+      "name": "猩红铭文",
+      "type": "lifesteal",
+      "rarity": "UR",
+      "attributes": {
+        "lifesteal": 8,
+        "attack": 60
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "吸血率额外提升8%"
+      },
+      "imageUrl": "./assets/inscriptions/猩红铭文.png"
+    },
+    {
+      "id": "ins_010",
+      "name": "不屈铭文",
+      "type": "defense",
+      "rarity": "UR",
+      "attributes": {
+        "health": 500,
+        "dmgReduc": 6
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "非暴击不死"
+      },
+      "imageUrl": "./assets/inscriptions/不屈铭文.png"
+    },
+    {
+      "id": "ins_011",
+      "name": "复苏铭文",
+      "type": "health",
+      "rarity": "SUR",
+      "attributes": {
+        "hpPercent": 10,
+        "tenacity": 10
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "复活1次，每次复活恢复30%生命"
+      },
+      "imageUrl": "./assets/inscriptions/复苏铭文.png"
+    },
+    {
+      "id": "ins_012",
+      "name": "反击铭文",
+      "type": "block",
+      "rarity": "SSR",
+      "attributes": {
+        "blockRate": 10,
+        "defPercent": 6
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "受到攻击时有30%几率反击，造成100%攻击伤害"
+      },
+      "imageUrl": "./assets/inscriptions/反击铭文.png"
+    },
+    {
+      "id": "ins_013",
+      "name": "魅惑铭文",
+      "type": "effectHit",
+      "rarity": "UR",
+      "attributes": {
+        "effectHit": 14,
+        "speed": 10
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "攻击时有20%几率魅惑目标1回合"
+      },
+      "imageUrl": "./assets/inscriptions/魅惑铭文.png"
+    },
+    {
+      "id": "ins_014",
+      "name": "雷鸣铭文",
+      "type": "effectHit",
+      "rarity": "SSR",
+      "attributes": {
+        "effectHit": 10,
+        "critRate": 6
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "攻击时有30%几率给目标添加“感电”标记"
+      },
+      "imageUrl": "./assets/inscriptions/雷鸣铭文.png"
+    },
+    {
+      "id": "ins_015",
+      "name": "坚毅铭文",
+      "type": "defense",
+      "rarity": "SSR",
+      "attributes": {
+        "defPercent": 8,
+        "health": 400
+      },
+      "setEffect": {
+        "pieces": 2,
+        "effect": "生命+10%"
+      },
+      "imageUrl": "./assets/inscriptions/坚毅铭文.png"
     }
   ]
 }

@@ -70,6 +70,339 @@
         "speed": 20
       },
       "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/4312afe72d2d41c2be2ed5f36061af5e~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928672&x-signature=nXCZm0703pzNfDQg%2BJE6m%2FXZIsg%3D"
+    },
+    {
+      "id": "eq_007",
+      "name": "猎魂匕首",
+      "type": "weapon",
+      "rarity": "SR",
+      "attributes": {
+        "attack": 90,
+        "critRate": 4,
+        "penetration": 6
+      },
+      "imageUrl": "./assets/items/猎魂匕首.png"
+    },
+    {
+      "id": "eq_008",
+      "name": "疾影披风",
+      "type": "armor",
+      "rarity": "SR",
+      "attributes": {
+        "defense": 55,
+        "hpPercent": 5,
+        "dodgeRate": 5
+      },
+      "imageUrl": "./assets/items/疾影披风.png"
+    },
+    {
+      "id": "eq_009",
+      "name": "银纹头盔",
+      "type": "helmet",
+      "rarity": "SR",
+      "attributes": {
+        "health": 420,
+        "tenacity": 6,
+        "defPercent": 3
+      },
+      "imageUrl": "./assets/items/银纹头盔.png"
+    },
+    {
+      "id": "eq_010",
+      "name": "踏风轻履",
+      "type": "shoes",
+      "rarity": "SR",
+      "attributes": {
+        "speed": 32,
+        "dodgeRate": 4,
+        "effectHit": 4
+      },
+      "imageUrl": "./assets/items/踏风轻履.png"
+    },
+    {
+      "id": "eq_011",
+      "name": "治愈坠饰",
+      "type": "accessory",
+      "rarity": "SR",
+      "attributes": {
+        "health": 300,
+        "lifesteal": 4,
+        "hpPercent": 4
+      },
+      "imageUrl": "./assets/items/治愈坠饰.png"
+    },
+    {
+      "id": "eq_012",
+      "name": "屠戮长刃",
+      "type": "weapon",
+      "rarity": "SSR",
+      "attributes": {
+        "attack": 170,
+        "atkPercent": 10,
+        "critRate": 8,
+        "critDmg": 20
+      },
+      "imageUrl": "./assets/items/屠戮长刃.png"
+    },
+    {
+      "id": "eq_013",
+      "name": "虚空法杖",
+      "type": "weapon",
+      "rarity": "UR",
+      "attributes": {
+        "attack": 230,
+        "atkPercent": 18,
+        "effectHit": 14,
+        "penetration": 12
+      },
+      "imageUrl": "./assets/items/虚空法杖.png"
+    },
+    {
+      "id": "eq_014",
+      "name": "终焉之刃",
+      "type": "weapon",
+      "rarity": "SUR",
+      "attributes": {
+        "attack": 280,
+        "atkPercent": 22,
+        "critRate": 12,
+        "critDmg": 30,
+        "penetration": 18
+      },
+      "imageUrl": "./assets/items/终焉之刃.png"
+    },
+    {
+      "id": "eq_015",
+      "name": "龙骨重铠",
+      "type": "armor",
+      "rarity": "SSR",
+      "attributes": {
+        "defense": 130,
+        "hpPercent": 8,
+        "blockRate": 10,
+        "dmgReduc": 6
+      },
+      "imageUrl": "./assets/items/龙骨重铠.png"
+    },
+    {
+      "id": "eq_016",
+      "name": "影舞披风",
+      "type": "armor",
+      "rarity": "UR",
+      "attributes": {
+        "defense": 95,
+        "hpPercent": 6,
+        "dodgeRate": 12,
+        "dmgReduc": 5
+      },
+      "imageUrl": "./assets/items/影舞披风.png"
+    },
+    {
+      "id": "eq_017",
+      "name": "虚空护心镜",
+      "type": "armor",
+      "rarity": "SUR",
+      "attributes": {
+        "defense": 190,
+        "health": 1200,
+        "dmgReduc": 12,
+        "tenacity": 12
+      },
+      "imageUrl": "./assets/items/虚空护心镜.png"
+    },
+    {
+      "id": "eq_018",
+      "name": "冠冕·日曜",
+      "type": "helmet",
+      "rarity": "UR",
+      "attributes": {
+        "health": 980,
+        "tenacity": 14,
+        "effectHit": 8,
+        "hpPercent": 4
+      },
+      "imageUrl": "./assets/items/冠冕·日曜.png"
+    },
+    {
+      "id": "eq_019",
+      "name": "诡术面具",
+      "type": "helmet",
+      "rarity": "SSR",
+      "attributes": {
+        "health": 720,
+        "critRate": 8,
+        "dodgeRate": 6,
+        "atkPercent": 4
+      },
+      "imageUrl": "./assets/items/诡术面具.png"
+    },
+    {
+      "id": "eq_020",
+      "name": "命运王冠",
+      "type": "helmet",
+      "rarity": "SUR",
+      "attributes": {
+        "health": 1400,
+        "critRate": 10,
+        "critDmg": 35,
+        "effectHit": 12
+      },
+      "imageUrl": "./assets/items/命运王冠.png"
+    },
+    {
+      "id": "eq_021",
+      "name": "时之靴",
+      "type": "shoes",
+      "rarity": "UR",
+      "attributes": {
+        "speed": 56,
+        "tenacity": 10,
+        "dodgeRate": 8
+      },
+      "imageUrl": "./assets/items/时之靴.png"
+    },
+    {
+      "id": "eq_022",
+      "name": "相位战靴",
+      "type": "shoes",
+      "rarity": "SUR",
+      "attributes": {
+        "speed": 72,
+        "dodgeRate": 12,
+        "effectHit": 10,
+        "tenacity": 10
+      },
+      "imageUrl": "./assets/items/相位战靴.png"
+    },
+    {
+      "id": "eq_023",
+      "name": "星辉吊坠",
+      "type": "accessory",
+      "rarity": "SSR",
+      "attributes": {
+        "atkPercent": 12,
+        "hpPercent": 6,
+        "critDmg": 20
+      },
+      "imageUrl": "./assets/items/星辉吊坠.png"
+    },
+    {
+      "id": "eq_024",
+      "name": "深渊徽记",
+      "type": "accessory",
+      "rarity": "UR",
+      "attributes": {
+        "atkPercent": 15,
+        "effectHit": 15,
+        "tenacity": 10,
+        "penetration": 10
+      },
+      "imageUrl": "./assets/items/深渊徽记.png"
+    },
+    {
+      "id": "eq_025",
+      "name": "核心调谐器",
+      "type": "accessory",
+      "rarity": "SUR",
+      "attributes": {
+        "atkPercent": 20,
+        "effectHit": 20,
+        "penetration": 15,
+        "speed": 24
+      },
+      "imageUrl": "./assets/items/核心调谐器.png"
+    },
+    {
+      "id": "eq_026",
+      "name": "血誓护符",
+      "type": "accessory",
+      "rarity": "UR",
+      "attributes": {
+        "health": 650,
+        "lifesteal": 10,
+        "dmgReduc": 4
+      },
+      "imageUrl": "./assets/items/血誓护符.png",
+      "passiveEffect": "生命低于30%时，获得免疫1回合"
+    },
+    {
+      "id": "eq_027",
+      "name": "审判徽章",
+      "type": "accessory",
+      "rarity": "SSR",
+      "attributes": {
+        "attack": 110,
+        "critRate": 8,
+        "effectHit": 6
+      },
+      "imageUrl": "./assets/items/审判徽章.png",
+      "passiveEffect": "攻击时有15%几率魅惑目标1回合"
+    },
+    {
+      "id": "eq_028",
+      "name": "裂界长弓",
+      "type": "weapon",
+      "rarity": "UR",
+      "attributes": {
+        "attack": 210,
+        "critRate": 10,
+        "speed": 18,
+        "penetration": 12
+      },
+      "imageUrl": "./assets/items/裂界长弓.png",
+      "passiveEffect": "普通攻击有15%几率触发追击，造成80%伤害"
+    },
+    {
+      "id": "eq_029",
+      "name": "反伤肩甲",
+      "type": "armor",
+      "rarity": "UR",
+      "attributes": {
+        "defense": 120,
+        "health": 900,
+        "dmgReduc": 6
+      },
+      "imageUrl": "./assets/items/反伤肩甲.png",
+      "passiveEffect": "反弹12%伤害"
+    },
+    {
+      "id": "eq_030",
+      "name": "不屈战盔",
+      "type": "helmet",
+      "rarity": "UR",
+      "attributes": {
+        "health": 800,
+        "tenacity": 18,
+        "dmgReduc": 4
+      },
+      "imageUrl": "./assets/items/不屈战盔.png",
+      "passiveEffect": "非暴击不死"
+    },
+    {
+      "id": "eq_031",
+      "name": "暗影之刃",
+      "type": "weapon",
+      "rarity": "SSR",
+      "attributes": {
+        "attack": 160,
+        "critRate": 9,
+        "penetration": 10
+      },
+      "imageUrl": "./assets/items/暗影之刃.png",
+      "passiveEffect": "击杀目标后进入隐身状态一回合"
+    },
+    {
+      "id": "eq_032",
+      "name": "复生胸针",
+      "type": "accessory",
+      "rarity": "SUR",
+      "attributes": {
+        "hpPercent": 12,
+        "tenacity": 12,
+        "dmgReduc": 6
+      },
+      "imageUrl": "./assets/items/复生胸针.png",
+      "passiveEffect": "复活1次，每次复活恢复30%生命"
+    }
     }
   ]
-}

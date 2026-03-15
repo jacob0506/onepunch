@@ -1421,7 +1421,7 @@
           effects.push({ type: 'energySteal', target, amount: Math.max(1, Math.floor(energySteal / 10) || 1) });
         }
         if (executePct !== null) {
-          effects.push({ type: 'execute', target, threshold: executePct / 100 });
+          effects.push({ type: 'execute', target, threshold: Math.min(25, Math.max(5, executePct)) / 100 });
         }
         return effects;
       }
@@ -1490,18 +1490,49 @@
           drops.push({ id: 'eq_001', quantity: 1, dropRate: 0.55 });
           drops.push({ id: 'eq_002', quantity: 1, dropRate: 0.35 });
           drops.push({ id: 'ins_001', quantity: 1, dropRate: 0.25 });
+          drops.push({ id: 'eq_007', quantity: 1, dropRate: 0.18 });
+          drops.push({ id: 'eq_010', quantity: 1, dropRate: 0.15 });
+          drops.push({ id: 'ins_004', quantity: 1, dropRate: 0.12 });
         } else if (i <= 25) {
           drops.push({ id: 'eq_005', quantity: 1, dropRate: 0.30 });
           drops.push({ id: 'ins_002', quantity: 1, dropRate: 0.22 });
           drops.push({ id: 'ins_001', quantity: 1, dropRate: 0.18 });
+          drops.push({ id: 'eq_012', quantity: 1, dropRate: 0.14 });
+          drops.push({ id: 'eq_015', quantity: 1, dropRate: 0.10 });
+          drops.push({ id: 'eq_019', quantity: 1, dropRate: 0.10 });
+          drops.push({ id: 'ins_007', quantity: 1, dropRate: 0.10 });
+          drops.push({ id: 'ins_008', quantity: 1, dropRate: 0.10 });
+          drops.push({ id: 'ins_012', quantity: 1, dropRate: 0.09 });
+          drops.push({ id: 'ins_014', quantity: 1, dropRate: 0.09 });
         } else if (i <= 40) {
           drops.push({ id: 'eq_003', quantity: 1, dropRate: 0.16 });
           drops.push({ id: 'ins_003', quantity: 1, dropRate: 0.14 });
           drops.push({ id: 'eq_005', quantity: 1, dropRate: 0.12 });
+          drops.push({ id: 'eq_016', quantity: 1, dropRate: 0.10 });
+          drops.push({ id: 'eq_018', quantity: 1, dropRate: 0.08 });
+          drops.push({ id: 'eq_021', quantity: 1, dropRate: 0.10 });
+          drops.push({ id: 'eq_023', quantity: 1, dropRate: 0.10 });
+          drops.push({ id: 'eq_028', quantity: 1, dropRate: 0.08 });
+          drops.push({ id: 'eq_029', quantity: 1, dropRate: 0.08 });
+          drops.push({ id: 'ins_005', quantity: 1, dropRate: 0.09 });
+          drops.push({ id: 'ins_006', quantity: 1, dropRate: 0.09 });
+          drops.push({ id: 'ins_009', quantity: 1, dropRate: 0.08 });
+          drops.push({ id: 'ins_010', quantity: 1, dropRate: 0.08 });
         } else {
           drops.push({ id: 'eq_004', quantity: 1, dropRate: 0.10 });
           drops.push({ id: 'eq_006', quantity: 1, dropRate: 0.06 });
           drops.push({ id: 'ins_003', quantity: 1, dropRate: 0.10 });
+          drops.push({ id: 'eq_013', quantity: 1, dropRate: 0.08 });
+          drops.push({ id: 'eq_014', quantity: 1, dropRate: 0.05 });
+          drops.push({ id: 'eq_017', quantity: 1, dropRate: 0.07 });
+          drops.push({ id: 'eq_020', quantity: 1, dropRate: 0.05 });
+          drops.push({ id: 'eq_022', quantity: 1, dropRate: 0.06 });
+          drops.push({ id: 'eq_024', quantity: 1, dropRate: 0.06 });
+          drops.push({ id: 'eq_025', quantity: 1, dropRate: 0.05 });
+          drops.push({ id: 'eq_032', quantity: 1, dropRate: 0.04 });
+          drops.push({ id: 'ins_011', quantity: 1, dropRate: 0.04 });
+          drops.push({ id: 'ins_013', quantity: 1, dropRate: 0.05 });
+          drops.push({ id: 'ins_015', quantity: 1, dropRate: 0.06 });
         }
         if (i % 10 === 0) {
           drops.push({ id: 'eq_006', quantity: 1, dropRate: 0.08 });
@@ -3703,8 +3734,8 @@
         return stats;
       };
 
-      const buildPassiveRuntime = (char, stats) => {
-        const text = char.passive || '';
+      const buildPassiveRuntime = (char, stats, passiveTextOverride) => {
+        const text = passiveTextOverride != null ? String(passiveTextOverride || '') : (char.passive || '');
         const runtime = {
           id: char.id,
           text,
@@ -3763,10 +3794,12 @@
         const mShock = text.match(/攻击时有(\d+)%几率给目标添加“感电”标记/);
         if (mShock) runtime.onHitMark = { type: 'shock', chance: parseInt(mShock[1], 10), turns: 2 };
 
-        const mCc = text.match(/攻击时有(\d+)%几率.*(麻痹|冻结|眩晕).*?(\d+)?回合?/);
+        const mCc = text.match(/攻击时有(\d+)%几率[^，。]*?(麻痹|冻结|眩晕|魅惑|沉默)[^，。]*?(\d+)?回合?/);
         if (mCc) {
-          const t = mCc[2] || '1';
-          runtime.onHitCc = { type: 'stun', chance: parseInt(mCc[1], 10), turns: parseInt(t, 10) || 1 };
+          const turns = mCc[3] || '1';
+          const tag = mCc[2];
+          const type = tag === '魅惑' ? 'charm' : (tag === '沉默' ? 'silence' : 'stun');
+          runtime.onHitCc = { type, chance: parseInt(mCc[1], 10), turns: parseInt(turns, 10) || 1 };
         }
 
         const bonusMatchers = [
@@ -3782,8 +3815,38 @@
         return runtime;
       };
 
+      const getLoadoutPassiveText = (char) => {
+        const parts = [];
+        if (char.passive) parts.push(String(char.passive));
+
+        const equipments = char.equipments || {};
+        Object.values(equipments).forEach(item => {
+          if (item && item.passiveEffect) parts.push(String(item.passiveEffect));
+        });
+
+        const inscriptions = Array.isArray(char.inscriptions) ? char.inscriptions : [];
+        const setCounts = {};
+        inscriptions.forEach(ins => {
+          if (!ins) return;
+          if (ins.passiveEffect) parts.push(String(ins.passiveEffect));
+          if (ins.setEffect) {
+            const setName = ins.name.split('铭文')[0];
+            setCounts[setName] = (setCounts[setName] || 0) + 1;
+          }
+        });
+        for (const [name, count] of Object.entries(setCounts)) {
+          const insData = inscriptionsData.find(i => i && i.name && i.name.startsWith(name));
+          if (insData && insData.setEffect && count >= insData.setEffect.pieces) {
+            if (insData.setEffect.effect) parts.push(String(insData.setEffect.effect));
+          }
+        }
+
+        return parts.filter(Boolean).join('；');
+      };
+
       const buildPlayerUnit = (char) => {
-        const stats = applyPassiveStats(calculateTotalStats(char), char.passive);
+        const passiveText = getLoadoutPassiveText(char);
+        const stats = applyPassiveStats(calculateTotalStats(char), passiveText);
         return {
           id: char.id,
           name: char.name,
@@ -3813,7 +3876,7 @@
           skillCd: 0,
           energy: 0,
           maxEnergy: 4,
-          passive: buildPassiveRuntime(char, stats)
+          passive: buildPassiveRuntime(char, stats, passiveText)
         };
       };
 
@@ -4080,6 +4143,19 @@
           if (u.currentHp <= 0) return;
           const text = (u.passive && u.passive.text) || '';
 
+          const mLowImmune = text.match(/生命低于(\d+)%时，获得免疫(\d+)回合/);
+          if (mLowImmune) {
+            const pct = Math.max(1, Math.min(90, parseInt(mLowImmune[1], 10)));
+            const turns = Math.max(1, parseInt(mLowImmune[2], 10));
+            const rate = u.maxHp > 0 ? (u.currentHp / u.maxHp) : 1;
+            if (rate * 100 <= pct && !getStatus(u, 'lowHpImmuneLock')) {
+              addStatus(u, 'immune', 1, turns);
+              addStatus(u, 'lowHpImmuneLock', 1, 999);
+              appendBattleLog(logs, roundContainer, `<div class="text-purple-300 font-bold">${u.name} 触发低血免疫</div>`);
+              markKey();
+            }
+          }
+
           if (/每回合开始时[^。]*护盾/.test(text)) {
             const m = text.match(/生命上限(\d+)%/);
             const pct = m ? parseInt(m[1], 10) : 10;
@@ -4271,6 +4347,26 @@
           if (target.isPlayer && target.passive && /成功闪避后下一次攻击必暴击/.test(target.passive.text || '')) {
             addStatus(target, 'nextCrit', 1, 3);
           }
+          if (target.isPlayer && target.passive && target.passive.text) {
+            const text = target.passive.text;
+            const mEnergy = text.match(/闪避成功后回复(\d+)点能量/);
+            if (mEnergy) {
+              const gain = Math.max(0, parseInt(mEnergy[1], 10));
+              if (gain > 0) target.energy = Math.min(target.maxEnergy || 4, (target.energy || 0) + gain);
+            }
+            const mHeal = text.match(/闪避成功时回复(\d+)%最大生命值/);
+            if (mHeal) {
+              const pct = Math.max(0, Math.min(80, parseInt(mHeal[1], 10)));
+              const heal = Math.floor(target.maxHp * pct / 100);
+              const actual = Math.min(target.maxHp - target.currentHp, heal);
+              if (actual > 0) {
+                target.currentHp += actual;
+                totalHealing += actual;
+                appendBattleLog(logs, roundContainer, `<div><span class="text-green-400">${target.name}</span> 闪避回复 <span class="text-green-400 font-bold">${actual}</span></div>`);
+                markKey();
+              }
+            }
+          }
           return { damage: 0 };
         }
 
@@ -4299,7 +4395,18 @@
         }
         if (r.damage > 0 && attacker.passive && attacker.passive.onHitCc && target.currentHp > 0) {
           const cc = attacker.passive.onHitCc;
-          if (!getStatus(target, 'ccImmune') && Math.random() * 100 < (cc.chance || 0)) addStatus(target, cc.type, 1, cc.turns || 1);
+          if (!getStatus(target, 'ccImmune') && Math.random() * 100 < (cc.chance || 0)) {
+            let blocked = false;
+            if (target.isPlayer) {
+              const ccResist = affixValue('ccResist');
+              if (ccResist > 0 && Math.random() * 100 < ccResist) blocked = true;
+              const ten = target.tenacity || 0;
+              const hit = attacker.effectHit || 0;
+              const resistChance = Math.max(0, ten - hit * 0.5);
+              if (resistChance > 0 && Math.random() * 100 < resistChance) blocked = true;
+            }
+            if (!blocked) addStatus(target, cc.type, 1, cc.turns || 1);
+          }
         }
 
         let parts = [];
@@ -4498,7 +4605,8 @@
             }
 
             if (effect.type === 'execute') {
-              const threshold = typeof effect.threshold === 'number' ? effect.threshold : 0.2;
+              const thresholdRaw = typeof effect.threshold === 'number' ? effect.threshold : 0.2;
+              const threshold = Math.min(0.25, Math.max(0.05, thresholdRaw));
               pickTargets(targetType).forEach(t => {
                 if (!t || t.currentHp <= 0) return;
                 if (t.currentHp / t.maxHp <= threshold) {
@@ -5456,14 +5564,16 @@
     }
     function calculateTotalStats(char) {
       // 1. 基础属性 (含等级和星级成长)
-      const levelFactor = 1 + (char.level - 1) * 0.1;
-      const starFactor = 1 + (char.stars - 1) * 0.2;
+      const level = Math.max(1, typeof char.level === 'number' ? char.level : 1);
+      const stars = Math.max(1, typeof char.stars === 'number' ? char.stars : 1);
+      const levelFactor = 1 + (level - 1) * 0.1;
+      const starFactor = 1 + (stars - 1) * 0.16;
       
       let stats = {
         attack: char.baseAttributes.attack * levelFactor * starFactor,
         defense: char.baseAttributes.defense * levelFactor * starFactor,
         health: char.baseAttributes.health * levelFactor * starFactor,
-        speed: (char.baseAttributes.speed || 100) * (1 + (char.level - 1) * 0.05) * (1 + (char.stars - 1) * 0.1),
+        speed: (char.baseAttributes.speed || 100) * (1 + (level - 1) * 0.05) * (1 + (stars - 1) * 0.06),
         // 二级属性 (百分比)
         atkPercent: 0,
         defPercent: 0,
@@ -5478,6 +5588,16 @@
         penetration: 0,
         tenacity: 0
       };
+
+      const starSteps = Math.max(0, stars - 1);
+      stats.critRate += starSteps * 1.5;
+      stats.effectHit += starSteps * 1.0;
+      stats.tenacity += starSteps * 1.0;
+      if (stars >= 3) stats.penetration += 6;
+      if (stars >= 5) stats.dmgReduc += 4;
+      if (stars >= 6) stats.lifesteal += 4;
+      if (stars >= 7) stats.critDmg += 12;
+      if (stars >= 8) stats.speed += 8;
 
       // 2. 整合装备属性 (槽位制)
       const equipments = char.equipments || {};
@@ -5545,19 +5665,50 @@
       stats.defense *= (1 + stats.defPercent / 100);
       stats.health *= (1 + stats.hpPercent / 100);
       
+      const applySetEffect = (effect) => {
+        if (!effect) return;
+        let m;
+        if (effect.includes('全属性+20%')) {
+          stats.attack *= 1.2;
+          stats.defense *= 1.2;
+          stats.health *= 1.2;
+        }
+        m = effect.match(/攻击\+(\d+)%/);
+        if (m) stats.attack *= (1 + parseInt(m[1], 10) / 100);
+        m = effect.match(/防御\+(\d+)%/);
+        if (m) stats.defense *= (1 + parseInt(m[1], 10) / 100);
+        m = effect.match(/生命\+(\d+)%/);
+        if (m) stats.health *= (1 + parseInt(m[1], 10) / 100);
+        m = effect.match(/速度\+(\d+)%/);
+        if (m) stats.speed *= (1 + parseInt(m[1], 10) / 100);
+
+        m = effect.match(/暴击率\+(\d+)%/);
+        if (m) stats.critRate += parseInt(m[1], 10);
+        m = effect.match(/暴击伤害(提升|增加)(\d+)%/);
+        if (m) stats.critDmg += parseInt(m[2], 10);
+        m = effect.match(/闪避率\+(\d+)%/);
+        if (m) stats.dodgeRate += parseInt(m[1], 10);
+        m = effect.match(/格挡率\+(\d+)%/);
+        if (m) stats.blockRate += parseInt(m[1], 10);
+        m = effect.match(/免伤\+(\d+)%/);
+        if (m) stats.dmgReduc += parseInt(m[1], 10);
+        m = effect.match(/吸血率额外提升(\d+)%/);
+        if (m) stats.lifesteal += parseInt(m[1], 10);
+        m = effect.match(/效果命中\+(\d+)%/);
+        if (m) stats.effectHit += parseInt(m[1], 10);
+        m = effect.match(/效果抵抗\+(\d+)%/);
+        if (m) stats.tenacity += parseInt(m[1], 10);
+        m = effect.match(/无视防御\+(\d+)%/);
+        if (m) stats.penetration += parseInt(m[1], 10);
+        m = effect.match(/无视目标(\d+)%防御/);
+        if (m) stats.penetration += parseInt(m[1], 10);
+      };
+
       // 遍历套装
       for (const [name, count] of Object.entries(setCounts)) {
         const insData = inscriptionsData.find(i => i.name.startsWith(name));
         if (insData && insData.setEffect && count >= insData.setEffect.pieces) {
-          const effect = insData.setEffect.effect;
-          if (effect.includes('攻击+')) stats.attack *= 1.05;
-          if (effect.includes('防御+')) stats.defense *= 1.05;
-          if (effect.includes('生命+')) stats.health *= 1.05;
-          if (effect.includes('全属性+20%')) {
-            stats.attack *= 1.2;
-            stats.defense *= 1.2;
-            stats.health *= 1.2;
-          }
+          applySetEffect(insData.setEffect.effect);
         }
       }
 
