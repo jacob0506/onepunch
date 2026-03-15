@@ -510,12 +510,12 @@
 
         <!-- 冒险挑战页面 -->
         <section id="stages" class="page hidden h-[calc(100vh-160px)] md:h-[calc(100vh-220px)] overflow-hidden">
-          <div class="flex flex-col h-full">
+          <div class="flex flex-col h-full min-h-0">
             <div class="mb-3 px-4">
               <h2 class="text-2xl font-black mb-1">冒险挑战</h2>
               <p class="text-gray-400 text-sm">通关上一关解锁下一关，已解锁关卡可随时重复挑战</p>
             </div>
-            <div id="stagesList" class="flex-1 overflow-y-auto space-y-4 px-4 pb-8 custom-scrollbar"></div>
+            <div id="stagesList" class="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y space-y-4 px-4 pb-8 custom-scrollbar" style="-webkit-overflow-scrolling: touch;"></div>
           </div>
           <button id="lastBattleReportBtn" class="hidden fixed bottom-28 right-3 z-[90] md:right-6 glass-panel border border-gray-800 rounded-full px-4 py-3 text-[12px] font-black hover:bg-gray-800">
             上次战报
