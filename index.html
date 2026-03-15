@@ -4000,7 +4000,9 @@
           running: false,
           awaitingTarget: null,
           turnOrder: [],
-          turnCursor: 0
+          turnCursor: 0,
+          maxDamage: 0,
+          totalHealing: 0
         };
 
         battleSceneDebugApplyShellUI();
@@ -4465,6 +4467,9 @@
       }
       const dealt = Math.min(target.currentHp, left);
       target.currentHp = Math.max(0, target.currentHp - dealt);
+      if (battleSceneDebugState) {
+        battleSceneDebugState.maxDamage = Math.max(battleSceneDebugState.maxDamage || 0, dealt || 0);
+      }
       return { dealt, shieldAbsorb };
     }
 
@@ -4473,6 +4478,9 @@
       const heal = Math.max(0, Math.floor(amount));
       const actual = Math.min(target.maxHp - target.currentHp, heal);
       target.currentHp += actual;
+      if (battleSceneDebugState) {
+        battleSceneDebugState.totalHealing = (battleSceneDebugState.totalHealing || 0) + (actual || 0);
+      }
       return actual;
     }
 
@@ -4703,13 +4711,58 @@
       }, 260);
     }
 
+    function battleSceneDebugRollRewards(stage, isWin) {
+      const rewards = { exp: (stage && stage.rewards && stage.rewards.exp) || 0, gold: (stage && stage.rewards && stage.rewards.gold) || 0, items: [] };
+      if (!isWin || !stage || !stage.rewards || !Array.isArray(stage.rewards.items)) return rewards;
+      stage.rewards.items.forEach(item => {
+        if (Math.random() < (item.dropRate || 0)) {
+          const itemData = equipmentData.find(i => i.id === item.id) || inscriptionsData.find(i => i.id === item.id);
+          if (itemData) {
+            const instance = { ...JSON.parse(JSON.stringify(itemData)), instanceId: Date.now() + Math.random() };
+            if (equipmentData.some(e => e.id === itemData.id)) {
+              instance.level = 1;
+              instance.refine = 0;
+            } else {
+              instance.level = 1;
+              instance.exp = 0;
+            }
+            rewards.items.push(instance);
+          }
+        }
+      });
+      return rewards;
+    }
+
+    function battleSceneDebugToResult(stage, isWin) {
+      const logs = (battleSceneDebugState && Array.isArray(battleSceneDebugState.feed) ? battleSceneDebugState.feed : [])
+        .slice(-260)
+        .map(t => `<div class="text-gray-200 text-xs font-mono">${escapeHtml(t)}</div>`);
+      logs.push(`<div class="mt-2 font-bold ${isWin ? 'text-green-400' : 'text-red-400'}">--- 战斗结束: ${isWin ? '胜利' : '失败'} ---</div>`);
+      return {
+        isWin,
+        rounds: Math.max(1, battleSceneDebugState ? battleSceneDebugState.round : 1),
+        maxDamage: Math.max(0, battleSceneDebugState ? (battleSceneDebugState.maxDamage || 0) : 0),
+        healing: Math.max(0, battleSceneDebugState ? (battleSceneDebugState.totalHealing || 0) : 0),
+        logs,
+        rewards: battleSceneDebugRollRewards(stage, isWin)
+      };
+    }
+
+    function battleSceneDebugFinish(isWin) {
+      if (!battleSceneDebugState) return;
+      battleSceneDebugState.running = false;
+      battleSceneDebugSyncControls();
+      const stage = stagesData.find(s => s && s.id === battleSceneDebugState.stageId);
+      const result = battleSceneDebugToResult(stage, isWin);
+      closeBattleSceneDebug();
+      if (stage) showBattleResult(stage, result, false);
+    }
+
     function battleSceneDebugStep() {
       if (!battleSceneDebugState) return;
       if (battleSceneDebugState.awaitingTarget) return;
       if (aliveCount(battleSceneDebugState.player) === 0 || aliveCount(battleSceneDebugState.enemies) === 0) {
-        pushBattleSceneDebugFeed(`战斗结束：${aliveCount(battleSceneDebugState.player) > 0 ? '胜利' : '失败'}`);
-        battleSceneDebugState.running = false;
-        battleSceneDebugSyncControls();
+        battleSceneDebugFinish(aliveCount(battleSceneDebugState.player) > 0);
         return;
       }
 
@@ -4762,6 +4815,9 @@
         pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 普攻 → ${target.displayName || target.name}${r.immune ? '（免疫）' : (r.dodged ? '（闪避）' : ` 造成 ${r.damage}${r.crit ? '（暴击）' : ''}${r.block ? '（格挡）' : ''}`)}`);
         battleSceneDebugState.turnCursor += 1;
         renderBattleSceneDebug();
+        if (aliveCount(battleSceneDebugState.player) === 0 || aliveCount(battleSceneDebugState.enemies) === 0) {
+          battleSceneDebugFinish(aliveCount(battleSceneDebugState.player) > 0);
+        }
         return;
       }
 
@@ -4808,6 +4864,9 @@
       }
       battleSceneDebugState.turnCursor += 1;
       renderBattleSceneDebug();
+      if (aliveCount(battleSceneDebugState.player) === 0 || aliveCount(battleSceneDebugState.enemies) === 0) {
+        battleSceneDebugFinish(aliveCount(battleSceneDebugState.player) > 0);
+      }
     }
 
     function resolveBattleSceneDebugPlayerAction(targetSide, targetIndex) {
@@ -4843,6 +4902,9 @@
       battleSceneDebugState.awaitingTarget = null;
       battleSceneDebugState.turnCursor += 1;
       renderBattleSceneDebug();
+      if (aliveCount(battleSceneDebugState.player) === 0 || aliveCount(battleSceneDebugState.enemies) === 0) {
+        battleSceneDebugFinish(aliveCount(battleSceneDebugState.player) > 0);
+      }
     }
 
     function toggleBattleSceneDebugRun() {
