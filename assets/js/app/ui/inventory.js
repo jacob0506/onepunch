@@ -7,6 +7,8 @@
       if (!gameData.player.materials) gameData.player.materials = {};
       if (typeof gameData.player.materials.enhanceStone !== 'number') gameData.player.materials.enhanceStone = 0;
       if (typeof gameData.player.materials.inscriptionDust !== 'number') gameData.player.materials.inscriptionDust = 0;
+      if (typeof gameData.player.materials.reforgeDust !== 'number') gameData.player.materials.reforgeDust = 0;
+      if (typeof gameData.player.materials.lockCrystal !== 'number') gameData.player.materials.lockCrystal = 0;
     }
   }
 

@@ -166,6 +166,127 @@
     return v[key] || 0;
   }
 
+  function getEquipmentSetTag(name) {
+    const n = String(name || '');
+    if (!n) return '';
+    const rules = [
+      { tag: 'wind', re: /(疾风|踏风|风行|迅捷)/ },
+      { tag: 'shadow', re: /(影|暗|夜|疾影|影舞)/ },
+      { tag: 'dragon', re: /(龙|龙骨|古龙|龙纹)/ },
+      { tag: 'void', re: /(虚空|深渊|终焉|黑曜)/ },
+      { tag: 'slaughter', re: /(屠戮|破军|狂战|裁决)/ },
+      { tag: 'sanctuary', re: /(圣|神谕|守护|誓约)/ }
+    ];
+    const hit = rules.find(r => r.re.test(n));
+    return hit ? hit.tag : '';
+  }
+
+  function uniqueStrings(list) {
+    const out = [];
+    const set = new Set();
+    (Array.isArray(list) ? list : []).forEach(v => {
+      if (typeof v !== 'string') return;
+      if (!v) return;
+      if (set.has(v)) return;
+      set.add(v);
+      out.push(v);
+    });
+    return out;
+  }
+
+  function getMaxReforgeLockCount(rarity, affixCount) {
+    const r = String(rarity || 'R');
+    const baseCap = r === 'SUR' ? 3 : (r === 'UR' ? 2 : (r === 'SSR' ? 2 : (r === 'SR' ? 1 : 0)));
+    const n = Math.max(0, parseInt(affixCount, 10) || 0);
+    if (n <= 0) return 0;
+    return Math.max(0, Math.min(baseCap, Math.max(0, n - 1)));
+  }
+
+  function getReforgeCost(rarity, lockedCount, affixCount) {
+    const r = rarity || 'R';
+    const baseDust = { R: 4, SR: 8, SSR: 14, UR: 22, SUR: 34 };
+    const baseGold = { R: 480, SR: 900, SSR: 1500, UR: 2600, SUR: 4200 };
+    const n = Math.max(1, parseInt(affixCount, 10) || 1);
+    const locks = Math.max(0, parseInt(lockedCount, 10) || 0);
+    const dust = Math.floor((baseDust[r] || 6) * (1 + (n - 1) * 0.4) * (1 + locks * 0.95));
+    const gold = Math.floor((baseGold[r] || 900) * (1 + (n - 1) * 0.35) * (1 + locks * 1.25));
+    const lockCrystalPer = (r === 'SSR' ? 1 : (r === 'UR' ? 2 : (r === 'SUR' ? 3 : 0)));
+    const lockCrystal = locks > 0 ? Math.max(1, locks * lockCrystalPer) : 0;
+    return { gold, reforgeDust: Math.max(0, dust), lockCrystal: Math.max(0, lockCrystal) };
+  }
+
+  function reforgeEquipmentAffixes(instance, lockKeys) {
+    if (!instance) return null;
+    const templates = getEquipmentTemplates();
+    const template = templates.find(t => t && t.id === instance.id);
+    if (!template) return null;
+    normalizeEquipmentInstance(instance, template);
+
+    const baseKeys = new Set(Object.keys(instance.baseAttributes || {}));
+    const pool = getEquipmentAffixPool(instance.type).filter(k => !baseKeys.has(k));
+    const [minN, maxN] = getAffixCountRangeByRarity(instance.rarity);
+    const targetN = clampInt(Array.isArray(instance.extraKeys) ? instance.extraKeys.length : randomInt(minN, maxN), minN, maxN);
+
+    const currentKeys = uniqueStrings(instance.extraKeys);
+    const locked = uniqueStrings(lockKeys).filter(k => pool.includes(k) && currentKeys.includes(k));
+    const available = pool.filter(k => !locked.includes(k));
+    const need = Math.max(0, targetN - locked.length);
+    const rolled = pickN(available, need);
+    const extraKeys = [...locked, ...rolled];
+    const extraAttributes = {};
+    extraKeys.forEach(k => {
+      const val = getAffixValue(k, instance.rarity);
+      if (val) extraAttributes[k] = val;
+    });
+    instance.extraKeys = extraKeys;
+    instance.extraAttributes = extraAttributes;
+    instance.lockedKeys = locked;
+    instance.attributes = { ...(instance.baseAttributes || {}), ...(instance.extraAttributes || {}) };
+    return instance;
+  }
+
+  function reforgeInscriptionAffixes(instance, lockKeys) {
+    if (!instance) return null;
+    const templates = getInscriptionTemplates();
+    const template = templates.find(t => t && t.id === instance.id);
+    if (!template) return null;
+    normalizeInscriptionInstance(instance, template);
+
+    const baseKeys = new Set(Object.keys(instance.baseAttributes || {}));
+    const pool = [
+      'attack', 'defense', 'health', 'speed',
+      'atkPercent', 'defPercent', 'hpPercent',
+      'critRate', 'critDmg', 'dodgeRate', 'blockRate',
+      'dmgReduc', 'lifesteal', 'effectHit',
+      'penetration', 'tenacity'
+    ].filter(k => !baseKeys.has(k));
+    const [minN, maxN] = getAffixCountRangeByRarity(instance.rarity);
+    const targetN = clampInt(Array.isArray(instance.extraKeys) ? instance.extraKeys.length : randomInt(minN, maxN), minN, maxN);
+
+    const currentKeys = uniqueStrings(instance.extraKeys);
+    const locked = uniqueStrings(lockKeys).filter(k => pool.includes(k) && currentKeys.includes(k));
+    const available = pool.filter(k => !locked.includes(k));
+    const need = Math.max(0, targetN - locked.length);
+    const rolled = pickN(available, need);
+    const extraKeys = [...locked, ...rolled];
+    const extraAttributes = {};
+    extraKeys.forEach(k => {
+      const val = getAffixValue(k, instance.rarity);
+      if (val) extraAttributes[k] = val;
+    });
+    instance.extraKeys = extraKeys;
+    instance.extraAttributes = extraAttributes;
+    instance.lockedKeys = locked;
+    instance.attributes = { ...(instance.baseAttributes || {}), ...(instance.extraAttributes || {}) };
+    return instance;
+  }
+
+  function clampInt(v, a, b) {
+    const n = parseInt(v, 10);
+    if (!Number.isFinite(n)) return a;
+    return Math.max(a, Math.min(b, n));
+  }
+
   function normalizeEquipmentInstance(instance, template) {
     if (!instance || !template) return instance;
     if (!instance.instanceId) instance.instanceId = Date.now() + Math.random();
@@ -175,6 +296,7 @@
     if (!instance.imageUrl) instance.imageUrl = template.imageUrl;
     if (!instance.level) instance.level = 1;
     if (typeof instance.exp !== 'number') instance.exp = 0;
+    if (typeof instance.setTag !== 'string') instance.setTag = template.setTag || getEquipmentSetTag(instance.name);
 
     const baseAttributes = normalizeNumericAttributes(template.attributes || {});
     instance.baseAttributes = { ...baseAttributes };
@@ -202,6 +324,8 @@
     });
     instance.extraKeys = extraKeys;
     instance.extraAttributes = extraAttributes;
+    if (!Array.isArray(instance.lockedKeys)) instance.lockedKeys = [];
+    instance.lockedKeys = uniqueStrings(instance.lockedKeys).filter(k => instance.extraKeys.includes(k));
 
     instance.attributes = { ...instance.baseAttributes, ...instance.extraAttributes };
     return instance;
@@ -251,6 +375,8 @@
     });
     instance.extraKeys = extraKeys;
     instance.extraAttributes = extraAttributes;
+    if (!Array.isArray(instance.lockedKeys)) instance.lockedKeys = [];
+    instance.lockedKeys = uniqueStrings(instance.lockedKeys).filter(k => instance.extraKeys.includes(k));
     instance.attributes = { ...instance.baseAttributes, ...instance.extraAttributes };
     return instance;
   }
@@ -290,6 +416,11 @@
     getEquipmentExpToNextLevel,
     getEquipmentFeedExp,
     getInscriptionFeedExp,
+    getEquipmentSetTag,
+    getMaxReforgeLockCount,
+    getReforgeCost,
+    reforgeEquipmentAffixes,
+    reforgeInscriptionAffixes,
     ensureEquipmentInstance,
     ensureInscriptionInstance,
     createEquipmentInstance,

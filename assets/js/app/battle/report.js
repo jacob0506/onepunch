@@ -1,4 +1,19 @@
 (() => {
+  function ensureBattleStyles() {
+    if (document.getElementById('battleReportStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'battleReportStyles';
+    style.textContent = `
+      @keyframes battlePulseCrit { 0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(248,113,113,0)); } 45% { transform: scale(1.08); filter: drop-shadow(0 0 10px rgba(248,113,113,0.55)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(248,113,113,0)); } }
+      @keyframes battlePulseGood { 0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(52,211,153,0)); } 45% { transform: scale(1.06); filter: drop-shadow(0 0 10px rgba(52,211,153,0.45)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(52,211,153,0)); } }
+      @keyframes battleScreenShake { 0% { transform: translate3d(0,0,0); } 15% { transform: translate3d(-1px, 1px, 0); } 30% { transform: translate3d(2px, -1px, 0); } 45% { transform: translate3d(-2px, 0, 0); } 60% { transform: translate3d(2px, 1px, 0); } 75% { transform: translate3d(-1px, -1px, 0); } 100% { transform: translate3d(0,0,0); } }
+      .battle-crit { display:inline-block; animation: battlePulseCrit 520ms ease-out 1; }
+      .battle-good { display:inline-block; animation: battlePulseGood 520ms ease-out 1; }
+      body.battle-shake { animation: battleScreenShake 260ms ease-out 1; }
+    `;
+    document.head.appendChild(style);
+  }
+
   function getEscapeHtml() {
     if (typeof escapeHtml === 'function') return escapeHtml;
     if (window.Game && window.Game.core && window.Game.core.format && typeof window.Game.core.format.escapeHtml === 'function') {
@@ -18,6 +33,7 @@
   }
 
   function buildBattleLogs(params) {
+    ensureBattleStyles();
     const escapeHtmlFn = getEscapeHtml();
     const rawFeed = Array.isArray(params && params.feed) ? params.feed : [];
     const players = Array.isArray(params && params.players) ? params.players : [];
@@ -42,13 +58,13 @@
       html = html
         .replace(/(造成)\s+(\d+)/g, `$1 <span class="text-red-400 font-black">$2</span>`)
         .replace(/(持续伤害)\s+(\d+)/g, `$1 <span class="text-red-400 font-black">$2</span>`)
-        .replace(/(回复)\s+(\d+)/g, `$1 <span class="text-green-400 font-black">$2</span>`)
-        .replace(/(治疗)\s+(\d+)/g, `$1 <span class="text-green-400 font-black">$2</span>`)
+        .replace(/(回复)\s+(\d+)/g, `$1 <span class="battle-good text-green-400 font-black">$2</span>`)
+        .replace(/(治疗)\s+(\d+)/g, `$1 <span class="battle-good text-green-400 font-black">$2</span>`)
         .replace(/(护盾)\s+(\d+)/g, `$1 <span class="text-purple-300 font-black">$2</span>`)
         .replace(/(能量)([+-])(\d+)/g, `$1$2<span class="text-blue-200 font-black">$3</span>`)
         .replace(/(免疫)/g, `<span class="text-purple-300 font-black">$1</span>`)
         .replace(/(闪避)/g, `<span class="text-yellow-400 font-black">$1</span>`)
-        .replace(/(暴击)/g, `<span class="text-red-300 font-black">$1</span>`)
+        .replace(/(暴击)/g, `<span class="battle-crit text-red-300 font-black">$1</span>`)
         .replace(/(格挡)/g, `<span class="text-amber-300 font-black">$1</span>`)
         .replace(/(复活)/g, `<span class="text-green-300 font-black">$1</span>`)
         .replace(/(不屈)/g, `<span class="text-yellow-300 font-black">$1</span>`)
@@ -59,6 +75,13 @@
     const isKey = (line) => /(已倒下|复活|不屈|极限力场|生命链接|雨花共鸣|蓦然回首|斩杀|免疫|闪避)/.test(line);
     const header = `<div class="text-primary font-bold">--- 战斗开始: ${escapeHtmlFn(stageName)} ---</div>`;
     const footer = `<div class="mt-2 font-bold ${isWin ? 'text-green-400' : 'text-red-400'}">--- 战斗结束: ${isWin ? '胜利' : '失败'} ---</div>`;
+
+    if (rawFeed.some(l => typeof l === 'string' && l.includes('暴击'))) {
+      document.body.classList.remove('battle-shake');
+      void document.body.offsetWidth;
+      document.body.classList.add('battle-shake');
+      setTimeout(() => document.body.classList.remove('battle-shake'), 320);
+    }
 
     const stripFeedPrefix = (line) => String(line || '').replace(/^\[[^\]]+\]\s*/, '');
     const roundMarker = (line) => typeof line === 'string' && /^回合开始/.test(stripFeedPrefix(line));

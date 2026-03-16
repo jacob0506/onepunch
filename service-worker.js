@@ -1,4 +1,4 @@
-const CACHE_NAME = 'card-game-v4';
+const CACHE_NAME = 'card-game-v8';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -28,12 +28,16 @@ const ASSETS_TO_CACHE = [
   './assets/js/app/domain/inventory.js',
   './assets/js/app/domain/progression.js',
   './assets/js/app/battle/report.js',
+  './assets/js/app/battle/vfx.js',
+  './assets/js/app/battle/boss_scripts.js',
   './assets/js/app/battle/rewards.js',
   './assets/js/app/battle/scene.js',
   './assets/sprites/虚空主宰·卡修斯.png',
   './assets/sprites/星海歌姬·莉莉丝.png',
   './assets/items/material_enhance_stone.svg',
   './assets/items/material_inscription_dust.svg',
+  './assets/items/material_reforge_dust.svg',
+  './assets/items/material_lock_crystal.svg',
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'
 ];
@@ -97,7 +101,7 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch(() => cachedResponse);
-      return cachedResponse || fetchPromise;
+      return fetchPromise || cachedResponse;
     })
   );
 });

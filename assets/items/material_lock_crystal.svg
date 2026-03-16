@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fef08a"/>
+      <stop offset="0.55" stop-color="#f97316"/>
+      <stop offset="1" stop-color="#7c2d12"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#e9d5ff"/>
+      <stop offset="1" stop-color="#60a5fa"/>
+    </linearGradient>
+    <filter id="s" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <rect x="10" y="10" width="108" height="108" rx="22" fill="#0b1220" stroke="#334155" stroke-width="4"/>
+  <g filter="url(#s)">
+    <path d="M64 18 L94 44 L94 84 L64 110 L34 84 L34 44 Z" fill="url(#g1)" stroke="#fde68a" stroke-width="3"/>
+    <path d="M64 30 L84 48 L84 80 L64 98 L44 80 L44 48 Z" fill="url(#g2)" opacity="0.75"/>
+    <path d="M52 64 C52 56, 58 50, 66 50 C74 50, 80 56, 80 64 L80 78 C80 86, 74 92, 66 92 C58 92, 52 86, 52 78 Z" fill="#0b1220" opacity="0.55"/>
+    <path d="M58 64 C58 60, 61 57, 65 57 C69 57, 72 60, 72 64 L72 80 C72 84, 69 87, 65 87 C61 87, 58 84, 58 80 Z" fill="#0b1220" opacity="0.75"/>
+    <circle cx="65" cy="73" r="3" fill="#fde68a"/>
+  </g>
+  <path d="M26 96 C40 84, 52 84, 64 96 C76 108, 88 108, 102 96" fill="none" stroke="#1e293b" stroke-width="4" opacity="0.65"/>
+</svg>
+

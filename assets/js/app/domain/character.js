@@ -50,10 +50,15 @@
     }
 
     const equipments = char.equipments || {};
+    const eqTags = {};
     Object.values(equipments).forEach(item => {
       if (!item) return;
       const attrs = item.attributes || {};
       const levelBonus = 1 + (item.level - 1) * 0.1;
+      const tag = (typeof item.setTag === 'string' && item.setTag)
+        ? item.setTag
+        : (window.__inventory && typeof window.__inventory.getEquipmentSetTag === 'function' ? window.__inventory.getEquipmentSetTag(item.name) : '');
+      if (tag) eqTags[tag] = (eqTags[tag] || 0) + 1;
 
       if (attrs.attack) stats.attack += attrs.attack * levelBonus;
       if (attrs.defense) stats.defense += attrs.defense * levelBonus;
@@ -73,6 +78,66 @@
       if (attrs.penetration) stats.penetration += attrs.penetration;
       if (attrs.tenacity) stats.tenacity += attrs.tenacity;
     });
+
+    const applyEquipmentResonance = (tag, count) => {
+      if (!tag || count < 2) return;
+      if (tag === 'wind') {
+        stats.speed += 12;
+        stats.dodgeRate += 4;
+        if (count >= 4) {
+          stats.speed += 18;
+          stats.dodgeRate += 6;
+        }
+        return;
+      }
+      if (tag === 'shadow') {
+        stats.critRate += 6;
+        stats.penetration += 6;
+        if (count >= 4) {
+          stats.critRate += 8;
+          stats.penetration += 10;
+        }
+        return;
+      }
+      if (tag === 'dragon') {
+        stats.hpPercent += 10;
+        stats.dmgReduc += 4;
+        if (count >= 4) {
+          stats.hpPercent += 12;
+          stats.dmgReduc += 6;
+        }
+        return;
+      }
+      if (tag === 'void') {
+        stats.atkPercent += 8;
+        stats.effectHit += 8;
+        if (count >= 4) {
+          stats.atkPercent += 10;
+          stats.effectHit += 12;
+        }
+        return;
+      }
+      if (tag === 'slaughter') {
+        stats.atkPercent += 10;
+        stats.critDmg += 18;
+        if (count >= 4) {
+          stats.atkPercent += 12;
+          stats.critDmg += 26;
+        }
+        return;
+      }
+      if (tag === 'sanctuary') {
+        stats.defPercent += 8;
+        stats.hpPercent += 8;
+        stats.tenacity += 8;
+        if (count >= 4) {
+          stats.defPercent += 10;
+          stats.hpPercent += 10;
+          stats.tenacity += 12;
+        }
+      }
+    };
+    Object.entries(eqTags).forEach(([tag, count]) => applyEquipmentResonance(tag, count));
 
     const inscriptions = char.inscriptions || [];
     const setCounts = {};
@@ -148,14 +213,37 @@
       if (m) stats.penetration += parseInt(m[1], 10);
     };
 
-    const inscriptionsData = window.inscriptionsData;
-    if (Array.isArray(inscriptionsData)) {
+    const insTemplates = (typeof inscriptionsData !== 'undefined' && Array.isArray(inscriptionsData))
+      ? inscriptionsData
+      : (Array.isArray(window.inscriptionsData) ? window.inscriptionsData : []);
+    if (Array.isArray(insTemplates) && insTemplates.length > 0) {
       for (const [name, count] of Object.entries(setCounts)) {
-        const insData = inscriptionsData.find(i => i && i.name && i.name.startsWith(name));
+        const insData = insTemplates.find(i => i && i.name && i.name.startsWith(name));
         if (insData && insData.setEffect && count >= insData.setEffect.pieces) {
           applySetEffect(insData.setEffect.effect);
         }
       }
+    }
+
+    const bm = window.__battleModifiers;
+    if (bm && typeof bm === 'object') {
+      const mul = (k, m) => { if (typeof m === 'number' && Number.isFinite(m) && m !== 1) stats[k] *= m; };
+      const add = (k, v) => { if (typeof v === 'number' && Number.isFinite(v) && v !== 0) stats[k] += v; };
+      mul('attack', bm.atkMul);
+      mul('defense', bm.defMul);
+      mul('health', bm.hpMul);
+      add('speed', bm.speedAdd);
+      add('critRate', bm.critRateAdd);
+      add('critDmg', bm.critDmgAdd);
+      add('dmgReduc', bm.dmgReducAdd);
+      add('lifesteal', bm.lifestealAdd);
+      add('effectHit', bm.effectHitAdd);
+      add('tenacity', bm.tenacityAdd);
+      add('penetration', bm.penetrationAdd);
+      stats.critRate = Math.max(0, Math.min(100, stats.critRate || 0));
+      stats.dodgeRate = Math.max(0, Math.min(100, stats.dodgeRate || 0));
+      stats.blockRate = Math.max(0, Math.min(100, stats.blockRate || 0));
+      stats.dmgReduc = Math.max(0, Math.min(80, stats.dmgReduc || 0));
     }
 
     return {
@@ -198,4 +286,3 @@
   if (window.Game && window.Game.domain) window.Game.domain.character = api;
   window.__character = api;
 })();
-

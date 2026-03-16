@@ -139,6 +139,8 @@
       if (!gameData.player.materials) gameData.player.materials = {};
       if (typeof gameData.player.materials.enhanceStone !== 'number') gameData.player.materials.enhanceStone = 0;
       if (typeof gameData.player.materials.inscriptionDust !== 'number') gameData.player.materials.inscriptionDust = 0;
+      if (typeof gameData.player.materials.reforgeDust !== 'number') gameData.player.materials.reforgeDust = 0;
+      if (typeof gameData.player.materials.lockCrystal !== 'number') gameData.player.materials.lockCrystal = 0;
     }
   }
 
@@ -393,12 +395,15 @@
     const meta = document.createElement('div');
     meta.className = 'min-w-0 flex-1';
     const subtitle = kind === 'equipment' ? `${getEquipmentTypeName(item.type)} · Lv.${item.level || 1}` : `${getInscriptionTypeName(item.type)} · Lv.${item.level || 1}`;
+    const setTag = kind === 'equipment' ? (item.setTag || '') : '';
+    const setName = setTag === 'wind' ? '疾风' : (setTag === 'shadow' ? '暗影' : (setTag === 'dragon' ? '龙裔' : (setTag === 'void' ? '虚空' : (setTag === 'slaughter' ? '屠戮' : (setTag === 'sanctuary' ? '圣域' : '')))));
     meta.innerHTML = `
       <div class="flex items-center justify-between gap-2">
         <div class="font-black text-lg truncate ${getRarityClass(item.rarity)}">${item.name || (kind === 'equipment' ? '装备' : '铭文')}</div>
         <div class="text-[10px] px-2 py-1 rounded-full bg-black/40 border border-gray-700 text-gray-300">${item.rarity || ''}</div>
       </div>
       <div class="text-xs text-gray-400 mt-1">${subtitle}</div>
+      ${setName ? `<div class="text-[10px] text-gray-500 mt-1">套装：<span class="text-gray-300 font-black">${setName}</span>（2/4件共鸣）</div>` : ''}
     `;
 
     const headRow = document.createElement('div');
@@ -441,6 +446,8 @@
     matsBar.className = 'mt-3 grid grid-cols-2 gap-2';
     const m1 = getMaterialMeta('enhanceStone');
     const m2 = getMaterialMeta('inscriptionDust');
+    const m3 = getMaterialMeta('reforgeDust');
+    const m4 = getMaterialMeta('lockCrystal');
     const card = (meta, count) => {
       const wrap = document.createElement('div');
       wrap.className = 'flex items-center gap-2 bg-black/20 border border-gray-800 rounded-xl px-3 py-2';
@@ -461,6 +468,8 @@
     };
     matsBar.appendChild(card(m1, gameData.player.materials.enhanceStone || 0));
     matsBar.appendChild(card(m2, gameData.player.materials.inscriptionDust || 0));
+    matsBar.appendChild(card(m3, gameData.player.materials.reforgeDust || 0));
+    matsBar.appendChild(card(m4, gameData.player.materials.lockCrystal || 0));
     els.detail.appendChild(matsBar);
 
     const attrsBox = document.createElement('div');
@@ -481,7 +490,9 @@
       });
       if (!extra || Object.keys(extra).length === 0) extra = derivedExtra;
     }
-    const leveledBonus = kind === 'inscription' ? (1 + ((item.level || 1) - 1) * 0.2) : null;
+    const leveledBonus = kind === 'inscription'
+      ? (1 + ((item.level || 1) - 1) * 0.2)
+      : (1 + ((item.level || 1) - 1) * 0.1);
 
     const toNum = (v) => {
       if (typeof v === 'number') return v;
@@ -512,6 +523,103 @@
       <div class="space-y-0">${extraRows || `<div class="text-gray-500 text-xs">无</div>`}</div>
     `;
     els.detail.appendChild(attrsBox);
+
+    const reforgeBox = document.createElement('div');
+    reforgeBox.className = 'mt-3 bg-black/20 border border-gray-800 rounded-xl p-4';
+    const keys = Array.isArray(item.extraKeys) ? item.extraKeys.filter(k => typeof k === 'string') : [];
+    if (!Array.isArray(item.lockedKeys)) item.lockedKeys = [];
+    item.lockedKeys = item.lockedKeys.filter(k => keys.includes(k));
+
+    const rarity = String(item.rarity || 'R');
+    const lockCap = (window.__inventory && typeof window.__inventory.getMaxReforgeLockCount === 'function')
+      ? window.__inventory.getMaxReforgeLockCount(rarity, keys.length)
+      : Math.max(0, Math.min(rarity === 'SUR' ? 3 : (rarity === 'UR' ? 2 : (rarity === 'SSR' ? 2 : (rarity === 'SR' ? 1 : 0))), Math.max(0, keys.length - 1)));
+    const maxLocked = Math.min(lockCap, keys.length);
+    if (item.lockedKeys.length > maxLocked) item.lockedKeys = item.lockedKeys.slice(0, maxLocked);
+    const cost = (window.__inventory && typeof window.__inventory.getReforgeCost === 'function')
+      ? window.__inventory.getReforgeCost(item.rarity, item.lockedKeys.length, keys.length)
+      : { gold: 0, reforgeDust: 0, lockCrystal: 0 };
+    const dustMeta = getMaterialMeta('reforgeDust');
+    const lockMeta = getMaterialMeta('lockCrystal');
+    reforgeBox.innerHTML = `
+      <div class="flex items-center justify-between">
+        <div class="text-[10px] text-gray-500 font-black uppercase">词条重铸</div>
+        <div class="text-[10px] text-gray-400">可锁定 ${maxLocked} 条</div>
+      </div>
+      <div class="mt-2 flex flex-wrap gap-2" id="reforgeChips"></div>
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <button id="reforgeBtn" class="py-2 rounded-lg font-black text-xs bg-gray-900 border border-gray-700 hover:bg-gray-800 disabled:opacity-50">重铸</button>
+        <button id="clearLockBtn" class="py-2 rounded-lg font-black text-xs bg-gray-900 border border-gray-700 hover:bg-gray-800 disabled:opacity-50">清空锁定</button>
+      </div>
+      <div class="mt-2 text-[10px] text-gray-500">消耗：💰${cost.gold} · ${dustMeta.name} ${cost.reforgeDust}${cost.lockCrystal > 0 ? ` · ${lockMeta.name} ${cost.lockCrystal}` : ''}</div>
+    `;
+    const chipsWrap = reforgeBox.querySelector('#reforgeChips');
+    if (!chipsWrap || keys.length === 0) {
+      reforgeBox.querySelector('#reforgeBtn').disabled = true;
+      reforgeBox.querySelector('#clearLockBtn').disabled = true;
+      if (chipsWrap) chipsWrap.innerHTML = `<div class="text-gray-500 text-xs">该物品没有随机词条</div>`;
+    } else {
+      const renderChips = () => {
+        chipsWrap.innerHTML = '';
+        keys.forEach(k => {
+          const locked = item.lockedKeys.includes(k);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `px-3 py-1.5 rounded-full border text-xs font-black ${locked ? 'bg-amber-900/30 border-amber-600 text-amber-200' : 'bg-black/20 border-gray-700 text-gray-200 hover:bg-black/35'}`;
+          btn.textContent = `${locked ? '锁定' : '可锁'} ${getStatNameSafe(k)}`;
+          btn.onclick = () => {
+            if (locked) {
+              item.lockedKeys = item.lockedKeys.filter(x => x !== k);
+            } else {
+              if (item.lockedKeys.length >= maxLocked) return;
+              item.lockedKeys = [...item.lockedKeys, k];
+            }
+            if (typeof saveGameProgress === 'function') saveGameProgress();
+            render();
+          };
+          chipsWrap.appendChild(btn);
+        });
+      };
+      renderChips();
+
+      const clearBtn = reforgeBox.querySelector('#clearLockBtn');
+      clearBtn.onclick = () => {
+        item.lockedKeys = [];
+        if (typeof saveGameProgress === 'function') saveGameProgress();
+        render();
+      };
+
+      const reforgeBtn = reforgeBox.querySelector('#reforgeBtn');
+      reforgeBtn.onclick = () => {
+        ensureMaterials();
+        const costNow = (window.__inventory && typeof window.__inventory.getReforgeCost === 'function')
+          ? window.__inventory.getReforgeCost(item.rarity, item.lockedKeys.length, keys.length)
+          : { gold: 0, reforgeDust: 0, lockCrystal: 0 };
+        const mats = gameData.player.materials || {};
+        if ((gameData.player.gold || 0) < costNow.gold) return alert('金币不足');
+        if ((mats.reforgeDust || 0) < costNow.reforgeDust) return alert('重铸粉尘不足');
+        if ((mats.lockCrystal || 0) < costNow.lockCrystal) return alert('锁定核心不足');
+        const ok = confirm(`确认重铸随机词条？\n锁定：${item.lockedKeys.length}/${maxLocked}\n消耗：💰${costNow.gold} · ${dustMeta.name} ${costNow.reforgeDust}${costNow.lockCrystal > 0 ? ` · ${lockMeta.name} ${costNow.lockCrystal}` : ''}`);
+        if (!ok) return;
+        gameData.player.gold -= costNow.gold;
+        gameData.player.materials.reforgeDust -= costNow.reforgeDust;
+        if (costNow.lockCrystal > 0) gameData.player.materials.lockCrystal -= costNow.lockCrystal;
+        if (kind === 'equipment') {
+          if (window.__inventory && typeof window.__inventory.reforgeEquipmentAffixes === 'function') {
+            window.__inventory.reforgeEquipmentAffixes(item, item.lockedKeys);
+          }
+        } else {
+          if (window.__inventory && typeof window.__inventory.reforgeInscriptionAffixes === 'function') {
+            window.__inventory.reforgeInscriptionAffixes(item, item.lockedKeys);
+          }
+        }
+        if (typeof saveGameProgress === 'function') saveGameProgress();
+        if (typeof updateUI === 'function') updateUI();
+        if (hasSelectedChar && typeof selectCharacterToCultivate === 'function') selectCharacterToCultivate(selectedCharacter);
+        render();
+      };
+    }
+    els.detail.appendChild(reforgeBox);
 
     const actionBox = document.createElement('div');
     actionBox.className = 'mt-3 bg-black/20 border border-gray-800 rounded-xl p-4';

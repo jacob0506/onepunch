@@ -863,6 +863,8 @@
   <script src="./assets/js/app/domain/inventory.js"></script>
   <script src="./assets/js/app/domain/progression.js"></script>
   <script src="./assets/js/app/battle/report.js"></script>
+  <script src="./assets/js/app/battle/vfx.js"></script>
+  <script src="./assets/js/app/battle/boss_scripts.js"></script>
   <script src="./assets/js/app/battle/rewards.js"></script>
   <script src="./assets/js/app/battle/scene.js"></script>
   <script src="./assets/js/app/ui/item_picker.js"></script>
@@ -880,8 +882,9 @@
         gold: 5000,
         gems: 1000,
         lastLogin: new Date().getTime(),
-        materials: { enhanceStone: 0, inscriptionDust: 0 }
+        materials: { enhanceStone: 0, inscriptionDust: 0, reforgeDust: 0, lockCrystal: 0 }
       },
+      tower: { floor: 1, bestFloor: 0 },
       characters: [],
       fragments: {}, // 角色碎片存储: { "char_001": 10 }
       equipment: [],
@@ -1567,19 +1570,56 @@
 
       if (/恢复/.test(desc)) {
         const scale = percent || 1.0;
+        const healTarget = targetAllAllies ? 'allAllies' : (targetLowest ? 'allyLowest' : 'ally');
         effects.push({
           type: 'heal',
-          target: targetAllAllies ? 'allAllies' : (targetLowest ? 'allyLowest' : 'ally'),
+          target: healTarget,
           scale
         });
         const atkBuff = desc.match(/增加其(\d+)\s*%攻击力/);
         if (atkBuff) {
           effects.push({
             type: 'buff',
-            target: targetAllAllies ? 'allAllies' : 'ally',
+            target: healTarget === 'allAllies' ? 'allAllies' : 'ally',
             stat: 'atkUp',
             value: parseInt(atkBuff[1], 10),
             turns
+          });
+        }
+        const spdBuff = desc.match(/增加其(\d+)\s*%速度/);
+        if (spdBuff) {
+          effects.push({
+            type: 'buff',
+            target: healTarget === 'allAllies' ? 'allAllies' : 'ally',
+            stat: 'spdUp',
+            value: parseInt(spdBuff[1], 10),
+            turns
+          });
+        }
+        if (/清除负面状态|解除负面状态|净化/.test(desc)) {
+          effects.push({
+            type: 'dispel',
+            target: healTarget === 'allAllies' ? 'allAllies' : 'allyLowest',
+            statuses: ['burn', 'bleed', 'poison', 'shock', 'stun', 'silence', 'charm', 'spdDown', 'spdFlatDown', 'defDown', 'healDownDebuff']
+          });
+        }
+        const shield = desc.match(/护盾[^0-9]*(\d+)\s*%攻击力/);
+        if (shield) {
+          effects.push({
+            type: 'shield',
+            target: healTarget === 'allAllies' ? 'allAllies' : (healTarget === 'allyLowest' ? 'allyLowest' : 'ally'),
+            scale: parseInt(shield[1], 10) / 100,
+            turns
+          });
+        }
+        const ccImmuneTurns = desc.match(/免疫控制(\d+)回合/);
+        if (ccImmuneTurns) {
+          effects.push({
+            type: 'buff',
+            target: healTarget === 'allAllies' ? 'allAllies' : 'ally',
+            stat: 'ccImmune',
+            value: 1,
+            turns: parseInt(ccImmuneTurns[1], 10)
           });
         }
         return effects;
@@ -1630,11 +1670,62 @@
         if (atkDownPct !== null) {
           effects.push({ type: 'debuff', target, stat: 'atkUp', value: -atkDownPct, turns });
         }
+        const defDownPct = (() => {
+          const m = desc.match(/降低其(\d+)\s*%防御/);
+          return m ? parseInt(m[1], 10) : null;
+        })();
+        if (defDownPct !== null) {
+          effects.push({ type: 'debuff', target, stat: 'defDown', value: defDownPct, turns });
+        }
+        const dodgeDownPct = (() => {
+          const m = desc.match(/降低其(\d+)\s*%闪避/);
+          return m ? parseInt(m[1], 10) : null;
+        })();
+        if (dodgeDownPct !== null) {
+          effects.push({ type: 'debuff', target, stat: 'dodgeUp', value: -dodgeDownPct, turns });
+        }
+        const healDownPct = (() => {
+          const m = desc.match(/治疗效果降低(\d+)\s*%/);
+          return m ? parseInt(m[1], 10) : null;
+        })();
+        if (healDownPct !== null) {
+          effects.push({ type: 'debuff', target, stat: 'healDownDebuff', value: healDownPct, turns });
+        }
+        const selfDodgeUp = (() => {
+          const m = desc.match(/增加自身(\d+)\s*%闪避/);
+          return m ? parseInt(m[1], 10) : null;
+        })();
+        if (selfDodgeUp !== null) {
+          effects.push({ type: 'buff', target: 'ally', stat: 'dodgeUp', value: selfDodgeUp, turns });
+        }
         if (energySteal !== null) {
           effects.push({ type: 'energySteal', target, amount: Math.max(1, Math.floor(energySteal / 10) || 1) });
         }
         if (executePct !== null) {
           effects.push({ type: 'execute', target, threshold: Math.min(25, Math.max(5, executePct)) / 100 });
+        }
+        if (/嘲讽/.test(desc)) {
+          effects.push({ type: 'taunt', turns });
+        }
+        const dmgReduc = desc.match(/获得(\d+)\s*%减伤/);
+        if (dmgReduc) {
+          effects.push({ type: 'buff', target: 'ally', stat: 'dmgReducUp', value: parseInt(dmgReduc[1], 10), turns });
+        }
+        const shield = desc.match(/护盾[^0-9]*(\d+)\s*%攻击力/);
+        if (shield) {
+          effects.push({
+            type: 'shield',
+            target: targetAllAllies ? 'allAllies' : 'ally',
+            scale: parseInt(shield[1], 10) / 100,
+            turns
+          });
+        }
+        const ccImmuneTurns = desc.match(/免疫控制(\d+)回合/);
+        if (ccImmuneTurns) {
+          effects.push({ type: 'buff', target: targetAllAllies ? 'allAllies' : 'ally', stat: 'ccImmune', value: 1, turns: parseInt(ccImmuneTurns[1], 10) });
+        }
+        if (/解除敌方全体免疫|清除敌方全体免疫|解除敌方免疫/.test(desc)) {
+          effects.push({ type: 'dispel', target: 'allEnemies', statuses: ['immune'] });
         }
         return effects;
       }
@@ -1655,12 +1746,12 @@
     }
 
     function expandStagesTo50(existingStages) {
-      const stageCount = 50;
+      const stageCount = 120;
       const map = new Map((existingStages || []).map(s => [s.id, s]));
       const difficultyFor = (i) => {
         if (i <= 10) return 'normal';
-        if (i <= 25) return 'hard';
-        if (i <= 40) return 'nightmare';
+        if (i <= 30) return 'hard';
+        if (i <= 60) return 'nightmare';
         return 'abyss';
       };
       const chapterFor = (i) =>
@@ -1668,7 +1759,14 @@
         i <= 20 ? '第二章：深渊入侵' :
         i <= 30 ? '第三章：远古龙庭' :
         i <= 40 ? '第四章：机械纪元' :
-        '第五章：虚空终章';
+        i <= 50 ? '第五章：虚空终章' :
+        i <= 60 ? '第六章：天穹裂隙' :
+        i <= 70 ? '第七章：星界回廊' :
+        i <= 80 ? '第八章：深海遗迹' :
+        i <= 90 ? '第九章：熔火战境' :
+        i <= 100 ? '第十章：虚空裂谷' :
+        i <= 110 ? '第十一章：终焉圣域' :
+        '第十二章：神域回响';
 
       const enemyPools = {
         normal: [
@@ -1699,6 +1797,12 @@
 
       const dropTable = (i) => {
         const drops = [];
+        const stoneQty = 1 + Math.floor(i / 4);
+        const dustQty = 1 + Math.floor(i / 6);
+        drops.push({ id: 'item_001', quantity: stoneQty, dropRate: 1 });
+        drops.push({ id: 'item_002', quantity: dustQty, dropRate: 1 });
+        if (i >= 18 && i % 3 === 0) drops.push({ id: 'item_003', quantity: 1 + Math.floor(i / 20), dropRate: 0.55 });
+        if (i % 10 === 0) drops.push({ id: 'item_004', quantity: 1, dropRate: 0.65 });
         if (i <= 10) {
           drops.push({ id: 'eq_001', quantity: 1, dropRate: 0.55 });
           drops.push({ id: 'eq_002', quantity: 1, dropRate: 0.35 });
@@ -1706,7 +1810,7 @@
           drops.push({ id: 'eq_007', quantity: 1, dropRate: 0.18 });
           drops.push({ id: 'eq_010', quantity: 1, dropRate: 0.15 });
           drops.push({ id: 'ins_004', quantity: 1, dropRate: 0.12 });
-        } else if (i <= 25) {
+        } else if (i <= 30) {
           drops.push({ id: 'eq_005', quantity: 1, dropRate: 0.30 });
           drops.push({ id: 'ins_002', quantity: 1, dropRate: 0.22 });
           drops.push({ id: 'ins_001', quantity: 1, dropRate: 0.18 });
@@ -1717,7 +1821,7 @@
           drops.push({ id: 'ins_008', quantity: 1, dropRate: 0.10 });
           drops.push({ id: 'ins_012', quantity: 1, dropRate: 0.09 });
           drops.push({ id: 'ins_014', quantity: 1, dropRate: 0.09 });
-        } else if (i <= 40) {
+        } else if (i <= 60) {
           drops.push({ id: 'eq_003', quantity: 1, dropRate: 0.16 });
           drops.push({ id: 'ins_003', quantity: 1, dropRate: 0.14 });
           drops.push({ id: 'eq_005', quantity: 1, dropRate: 0.12 });
@@ -1756,10 +1860,10 @@
       const buildEnemies = (i, difficulty) => {
         const isBoss = i % 5 === 0;
         const pool = enemyPools[difficulty] || enemyPools.normal;
-        const baseAtk = Math.floor(45 * Math.pow(1.12, i - 1));
-        const baseDef = Math.floor(18 * Math.pow(1.12, i - 1));
-        const baseHp = Math.floor(520 * Math.pow(1.16, i - 1));
-        const baseSpd = 80 + Math.floor(i * 0.8);
+        const baseAtk = Math.floor(45 * Math.pow(1.065, i - 1));
+        const baseDef = Math.floor(18 * Math.pow(1.06, i - 1));
+        const baseHp = Math.floor(620 * Math.pow(1.075, i - 1));
+        const baseSpd = 78 + Math.floor(i * 0.65);
         const count = i <= 10 ? 3 : (i <= 25 ? 4 : 5);
 
         const enemies = [];
@@ -1774,15 +1878,15 @@
             attack: Math.floor(baseAtk * t.atk * eliteBoost),
             defense: Math.floor(baseDef * t.def * eliteBoost),
             speed: Math.floor(baseSpd * t.spd),
-            critRate: Math.min(35, 5 + Math.floor(i * 0.4)),
-            critDmg: 150 + Math.min(80, Math.floor(i * 0.8)),
-            dodgeRate: Math.min(25, 2 + Math.floor(i * 0.25)),
-            blockRate: Math.min(25, 2 + Math.floor(i * 0.25)),
-            dmgReduc: Math.min(35, Math.floor(i * 0.35)),
-            lifesteal: Math.min(18, Math.floor(i * 0.18)),
-            effectHit: Math.min(25, Math.floor(i * 0.35)),
-            penetration: Math.min(30, Math.floor(i * 0.3)),
-            tenacity: Math.min(30, Math.floor(i * 0.3)),
+            critRate: Math.min(28, 4 + Math.floor(i * 0.28)),
+            critDmg: 150 + Math.min(55, Math.floor(i * 0.5)),
+            dodgeRate: Math.min(18, 2 + Math.floor(i * 0.18)),
+            blockRate: Math.min(18, 2 + Math.floor(i * 0.18)),
+            dmgReduc: Math.min(25, Math.floor(i * 0.22)),
+            lifesteal: Math.min(12, Math.floor(i * 0.12)),
+            effectHit: Math.min(20, Math.floor(i * 0.22)),
+            penetration: Math.min(24, Math.floor(i * 0.2)),
+            tenacity: Math.min(24, Math.floor(i * 0.2)),
             isBoss: false
           });
         }
@@ -1793,19 +1897,19 @@
             id: `boss_${String(i).padStart(3, '0')}`,
             name: `${bossTemplate.name}·首领`,
             class: bossTemplate.class,
-            health: Math.floor(baseHp * bossTemplate.hp * 4.5),
-            attack: Math.floor(baseAtk * bossTemplate.atk * 2.0),
-            defense: Math.floor(baseDef * bossTemplate.def * 2.2),
+            health: Math.floor(baseHp * bossTemplate.hp * (3.9 + Math.min(1.0, i / 120))),
+            attack: Math.floor(baseAtk * bossTemplate.atk * 1.95),
+            defense: Math.floor(baseDef * bossTemplate.def * 2.05),
             speed: Math.floor(baseSpd * 0.9),
-            critRate: Math.min(45, 10 + Math.floor(i * 0.6)),
-            critDmg: 170 + Math.min(110, Math.floor(i * 1.2)),
-            dodgeRate: Math.min(18, 2 + Math.floor(i * 0.15)),
-            blockRate: Math.min(30, 5 + Math.floor(i * 0.35)),
-            dmgReduc: Math.min(45, 8 + Math.floor(i * 0.45)),
-            lifesteal: Math.min(25, 3 + Math.floor(i * 0.25)),
-            effectHit: Math.min(35, 8 + Math.floor(i * 0.35)),
-            penetration: Math.min(40, 8 + Math.floor(i * 0.35)),
-            tenacity: Math.min(40, 8 + Math.floor(i * 0.35)),
+            critRate: Math.min(38, 8 + Math.floor(i * 0.35)),
+            critDmg: 165 + Math.min(85, Math.floor(i * 0.75)),
+            dodgeRate: Math.min(16, 2 + Math.floor(i * 0.12)),
+            blockRate: Math.min(26, 4 + Math.floor(i * 0.22)),
+            dmgReduc: Math.min(38, 6 + Math.floor(i * 0.32)),
+            lifesteal: Math.min(18, 2 + Math.floor(i * 0.16)),
+            effectHit: Math.min(28, 6 + Math.floor(i * 0.24)),
+            penetration: Math.min(32, 6 + Math.floor(i * 0.24)),
+            tenacity: Math.min(32, 6 + Math.floor(i * 0.24)),
             isBoss: true
           });
         }
@@ -1817,14 +1921,18 @@
       for (let i = 1; i <= stageCount; i++) {
         const id = `stage_${String(i).padStart(3, '0')}`;
         const difficulty = difficultyFor(i);
-        const rec = Math.floor(900 * Math.pow(1.13, i - 1) * (i % 5 === 0 ? 1.08 : 1));
+        const rec1 = 900 * Math.pow(1.14, Math.min(29, i - 1));
+        const rec2 = i > 30 ? Math.pow(1.08, Math.min(30, i - 30)) : 1;
+        const rec3 = i > 60 ? Math.pow(1.06, Math.min(30, i - 60)) : 1;
+        const rec4 = i > 90 ? Math.pow(1.05, i - 90) : 1;
+        const rec = Math.floor(rec1 * rec2 * rec3 * rec4 * (i % 5 === 0 ? 1.10 : 1));
         const existing = map.get(id);
         const chapter = chapterFor(i);
         const isBoss = i % 5 === 0;
 
         const affixes = [];
-        if (i >= 6 && i <= 50 && i % 3 === 0) affixes.push({ id: 'healDown', name: '治疗削弱', value: Math.min(45, 10 + Math.floor(i / 2)) });
-        if (i >= 11 && i % 4 === 0) affixes.push({ id: 'critResist', name: '暴击抵抗', value: Math.min(35, 8 + Math.floor(i * 0.35)) });
+        if (i >= 6 && i <= 50 && i % 3 === 0) affixes.push({ id: 'healDown', name: '治疗削弱', value: Math.min(35, 8 + Math.floor(i * 0.45)) });
+        if (i >= 11 && i % 4 === 0) affixes.push({ id: 'critResist', name: '暴击抵抗', value: Math.min(28, 6 + Math.floor(i * 0.22)) });
         if (chapter === '第一章：元素试炼') affixes.push({ id: 'burnAmp', name: '灼烧增幅', value: Math.min(60, 15 + Math.floor(i * 0.8)) });
         if (chapter === '第二章：深渊入侵' && i % 2 === 0) affixes.push({ id: 'dotUp', name: '流血/中毒增幅', value: Math.min(60, 12 + Math.floor(i * 0.6)) });
         if (chapter === '第二章：深渊入侵' && i % 3 === 1) affixes.push({ id: 'energyDrain', name: '能量干扰', value: Math.min(55, 20 + Math.floor(i * 0.6)) });
@@ -1834,6 +1942,8 @@
         if (chapter === '第五章：虚空终章') affixes.push({ id: 'dmgTakenUp', name: '虚空压制', value: Math.min(35, 10 + Math.floor(i * 0.4)) });
         if (chapter === '第五章：虚空终章') affixes.push({ id: 'antiHeal', name: '反治疗', value: Math.min(55, 18 + Math.floor(i * 0.45)) });
         if (chapter === '第五章：虚空终章' && i % 2 === 1) affixes.push({ id: 'summonBoost', name: '召唤强化', value: Math.min(60, 20 + Math.floor(i * 0.5)) });
+        if (i >= 55 && i % 4 === 1) affixes.push({ id: 'nonCritReduc', name: '非暴击减伤', value: Math.min(55, 18 + Math.floor(i * 0.35)) });
+        if (i >= 70 && i % 3 === 0) affixes.push({ id: 'bossShield', name: '首领护盾', value: Math.min(45, 18 + Math.floor(i * 0.25)) });
 
         const bossMechanics = isBoss ? {
           scriptId:
@@ -1841,7 +1951,14 @@
             chapter === '第二章：深渊入侵' ? 'abyss_sacrifice' :
             chapter === '第三章：远古龙庭' ? 'dragon_roar' :
             chapter === '第四章：机械纪元' ? 'machine_protocol' :
-            'void_phase',
+            chapter === '第五章：虚空终章' ? 'void_phase' :
+            chapter === '第六章：天穹裂隙' ? 'sky_rift' :
+            chapter === '第七章：星界回廊' ? 'astral_prism' :
+            chapter === '第八章：深海遗迹' ? 'tide_titan' :
+            chapter === '第九章：熔火战境' ? 'magma_overload' :
+            chapter === '第十章：虚空裂谷' ? 'void_phase' :
+            chapter === '第十一章：终焉圣域' ? 'sanctuary_judgement' :
+            'divine_echo',
           phaseThresholds: [0.7, 0.4],
           immuneTurns: 1,
           summonCount: chapter === '第五章：虚空终章' ? 3 : 2,
@@ -1870,8 +1987,8 @@
             bossMechanics
           },
           rewards: {
-            exp: Math.floor(80 * Math.pow(1.15, i - 1) * (i % 5 === 0 ? 1.5 : 1)),
-            gold: Math.floor(500 * Math.pow(1.18, i - 1) * (i % 5 === 0 ? 1.35 : 1)),
+            exp: Math.floor(90 * Math.pow(1.12, Math.min(29, i - 1)) * (i > 30 ? Math.pow(1.07, Math.min(30, i - 30)) : 1) * (i > 60 ? Math.pow(1.05, Math.min(30, i - 60)) : 1) * (i > 90 ? Math.pow(1.04, i - 90) : 1) * (i % 5 === 0 ? 1.45 : 1)),
+            gold: Math.floor(420 * Math.pow(1.13, Math.min(29, i - 1)) * (i > 30 ? Math.pow(1.08, Math.min(30, i - 30)) : 1) * (i > 60 ? Math.pow(1.05, Math.min(30, i - 60)) : 1) * (i > 90 ? Math.pow(1.04, i - 90) : 1) * (i % 5 === 0 ? 1.30 : 1)),
             items: dropTable(i)
           }
         };
@@ -4661,12 +4778,15 @@
     }
 
     function appendBattleLog(logs, container, html) {
-      logs.push(html);
+      const vfx = window.__battleVfx;
+      const decorated = vfx && typeof vfx.decorateLogHtml === 'function' ? vfx.decorateLogHtml(html) : html;
+      logs.push(decorated);
       if (container) {
-        container.insertAdjacentHTML('beforeend', html);
+        container.insertAdjacentHTML('beforeend', decorated);
         while (container.childNodes.length > 420) container.removeChild(container.firstChild);
         container.scrollTop = container.scrollHeight;
       }
+      if (vfx && typeof vfx.triggerFromLogHtml === 'function') vfx.triggerFromLogHtml(decorated);
     }
 
     function renderBattleHud(team, enemies, turnOrder, round, stage) {
@@ -6214,6 +6334,28 @@
           const scriptId = m.scriptId;
           if (!scriptId) return;
 
+          if (window.__bossScripts && typeof window.__bossScripts.run === 'function') {
+            const handled = window.__bossScripts.run({
+              boss,
+              m,
+              team,
+              enemies,
+              round,
+              logs,
+              roundContainer,
+              addStatus,
+              getStatus,
+              getStatusValue,
+              applyHit,
+              appendBattleLog,
+              markKey,
+              vfx: (type) => {
+                if (window.__battleVfx && typeof window.__battleVfx.play === 'function') window.__battleVfx.play(type);
+              }
+            });
+            if (handled) return;
+          }
+
           if (scriptId === 'element_trial') {
             const order = ['burn', 'poison', 'bleed'];
             const idx = ((boss.bossState && boss.bossState.elementIdx) || 0) % order.length;
@@ -6496,6 +6638,7 @@
       // 显示获得的物品
       const itemsContainer = document.getElementById('battleResultItems');
       itemsContainer.innerHTML = '';
+      const isTowerStage = stage && (stage.isTower || (typeof stage.id === 'string' && stage.id.startsWith('tower_')));
       
       if (result.isWin) {
         // 获得经验和金币
@@ -6565,14 +6708,27 @@
           itemsContainer.innerHTML = '<div class="text-gray-400">未获得物品</div>';
         }
         
-        const unlockedIndex = Math.max(0, stagesData.findIndex(s => s.id === gameData.currentStage));
-        const clearedIndex = stagesData.findIndex(s => s.id === stage.id);
-        if (clearedIndex >= 0) {
-          const nextIndex = Math.max(unlockedIndex, Math.min(stagesData.length - 1, clearedIndex + 1));
-          gameData.currentStage = stagesData[nextIndex].id;
+        if (isTowerStage) {
+          if (!gameData.tower || typeof gameData.tower !== 'object') gameData.tower = { floor: 1, bestFloor: 0 };
+          const floorNo = typeof stage.towerFloor === 'number'
+            ? stage.towerFloor
+            : (typeof stage.id === 'string' ? parseInt(stage.id.replace('tower_', ''), 10) : 1);
+          const f = Number.isFinite(floorNo) ? floorNo : 1;
+          gameData.tower.bestFloor = Math.max(gameData.tower.bestFloor || 0, f);
+          gameData.tower.floor = Math.max(gameData.tower.floor || 1, f + 1);
+          if (gameData.tower.floor > 200) gameData.tower.floor = 200;
+          window.__battleModifiers = null;
+        } else {
+          const unlockedIndex = Math.max(0, stagesData.findIndex(s => s.id === gameData.currentStage));
+          const clearedIndex = stagesData.findIndex(s => s.id === stage.id);
+          if (clearedIndex >= 0) {
+            const nextIndex = Math.max(unlockedIndex, Math.min(stagesData.length - 1, clearedIndex + 1));
+            gameData.currentStage = stagesData[nextIndex].id;
+          }
         }
       } else {
         itemsContainer.innerHTML = '<div class="text-gray-400">失败无奖励</div>';
+        if (isTowerStage) window.__battleModifiers = null;
       }
 
       lastBattleRecord = {

@@ -15,7 +15,22 @@
       "rarity": "R",
       "description": "用于铭文升级的基础材料。来源：关卡掉落、分解铭文。",
       "iconUrl": "./assets/items/material_inscription_dust.svg"
+    },
+    {
+      "id": "item_003",
+      "key": "reforgeDust",
+      "name": "重铸粉尘",
+      "rarity": "SR",
+      "description": "用于重铸装备/铭文随机词条的材料。来源：无尽之塔、精英关、分解高稀有度装备。",
+      "iconUrl": "./assets/items/material_reforge_dust.svg"
+    },
+    {
+      "id": "item_004",
+      "key": "lockCrystal",
+      "name": "锁定核心",
+      "rarity": "SSR",
+      "description": "用于锁定词条的高阶材料。来源：Boss关、无尽之塔Boss层。",
+      "iconUrl": "./assets/items/material_lock_crystal.svg"
     }
   ]
 }
-

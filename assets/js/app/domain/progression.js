@@ -57,6 +57,8 @@
     if (!gd.player.materials) gd.player.materials = {};
     if (typeof gd.player.materials.enhanceStone !== 'number') gd.player.materials.enhanceStone = 0;
     if (typeof gd.player.materials.inscriptionDust !== 'number') gd.player.materials.inscriptionDust = 0;
+    if (typeof gd.player.materials.reforgeDust !== 'number') gd.player.materials.reforgeDust = 0;
+    if (typeof gd.player.materials.lockCrystal !== 'number') gd.player.materials.lockCrystal = 0;
   }
 
   function applyMaterialsDelta(delta, gameData) {

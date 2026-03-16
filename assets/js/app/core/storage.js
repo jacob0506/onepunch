@@ -8,6 +8,11 @@
     if (!data.player.materials) data.player.materials = {};
     if (typeof data.player.materials.enhanceStone !== 'number') data.player.materials.enhanceStone = 0;
     if (typeof data.player.materials.inscriptionDust !== 'number') data.player.materials.inscriptionDust = 0;
+    if (typeof data.player.materials.reforgeDust !== 'number') data.player.materials.reforgeDust = 0;
+    if (typeof data.player.materials.lockCrystal !== 'number') data.player.materials.lockCrystal = 0;
+    if (!data.tower || typeof data.tower !== 'object') data.tower = {};
+    if (typeof data.tower.floor !== 'number') data.tower.floor = 1;
+    if (typeof data.tower.bestFloor !== 'number') data.tower.bestFloor = 0;
     if (!data.fragments) data.fragments = {};
     if (!Array.isArray(data.characters)) data.characters = [];
     if (!Array.isArray(data.equipment)) data.equipment = [];
