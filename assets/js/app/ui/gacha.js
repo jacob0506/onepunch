@@ -1,4 +1,18 @@
 (() => {
+  function portraitPlaceholder(char) {
+    const rarity = String((char && char.rarity) || 'R').toUpperCase();
+    const name = String((char && char.name) || '').slice(0, 6);
+    const bg = rarity === 'SUR' ? '#a855f7' : (rarity === 'UR' ? '#f59e0b' : (rarity === 'SSR' ? '#fb7185' : (rarity === 'SR' ? '#60a5fa' : '#94a3b8')));
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${bg}" stop-opacity="0.35"/><stop offset="1" stop-color="#0b1220"/></linearGradient></defs><rect width="512" height="512" fill="url(#g)"/><circle cx="256" cy="210" r="88" fill="${bg}" fill-opacity="0.28"/><text x="256" y="226" text-anchor="middle" font-family="system-ui,Segoe UI,Arial" font-size="56" fill="#e5e7eb" font-weight="800">${rarity}</text><text x="256" y="352" text-anchor="middle" font-family="system-ui,Segoe UI,Arial" font-size="28" fill="#cbd5e1" font-weight="700">${name || '未知'}</text><text x="256" y="392" text-anchor="middle" font-family="system-ui,Segoe UI,Arial" font-size="18" fill="#94a3b8">立绘缺失</text></svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  }
+
+  function getPortraitUrl(char) {
+    const url = char && char.imageUrl ? String(char.imageUrl) : '';
+    if (url && url.trim()) return url;
+    return portraitPlaceholder(char);
+  }
+
   function showGachaResults(results, gachaFragments = {}) {
     const gachaCardsContainer = document.getElementById('gachaCards');
     gachaCardsContainer.innerHTML = '';
@@ -7,11 +21,12 @@
       setTimeout(() => {
         const cardElement = document.createElement('div');
         const isFragment = gachaFragments[char.id] > 0;
+        const imgUrl = getPortraitUrl(char);
         cardElement.className = `animate-bounce-in rarity-border-${char.rarity.toLowerCase()} rarity-bg-${char.rarity.toLowerCase()} rounded-lg overflow-hidden card-shadow relative`;
 
         cardElement.innerHTML = `
           <div class="relative ${isFragment ? 'opacity-70 grayscale' : ''}">
-            <img src="${char.imageUrl}" alt="${char.name}" class="w-full aspect-square object-cover">
+            <img src="${imgUrl}" alt="${char.name}" class="w-full aspect-square object-cover">
             <div class="absolute top-2 left-2 bg-black bg-opacity-70 rounded-full px-2 py-1 text-xs">
               <span class="text-rarity-${char.rarity.toLowerCase()} font-bold">${char.rarity}</span>
             </div>
@@ -32,6 +47,13 @@
         `;
 
         gachaCardsContainer.appendChild(cardElement);
+        const img = cardElement.querySelector('img');
+        if (img) {
+          img.onerror = () => {
+            img.onerror = null;
+            img.src = portraitPlaceholder(char);
+          };
+        }
 
         if (index === results.length - 1) {
           document.getElementById('gachaResult').classList.remove('hidden');
@@ -139,4 +161,3 @@
   if (window.Game && window.Game.ui) window.Game.ui.gacha = api;
   window.__gachaUI = api;
 })();
-
