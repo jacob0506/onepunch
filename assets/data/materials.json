@@ -1,0 +1,21 @@
+{
+  "materials": [
+    {
+      "id": "item_001",
+      "key": "enhanceStone",
+      "name": "强化石",
+      "rarity": "R",
+      "description": "用于装备升级的基础材料。来源：关卡掉落、分解装备。",
+      "iconUrl": "./assets/items/material_enhance_stone.svg"
+    },
+    {
+      "id": "item_002",
+      "key": "inscriptionDust",
+      "name": "铭文粉尘",
+      "rarity": "R",
+      "description": "用于铭文升级的基础材料。来源：关卡掉落、分解铭文。",
+      "iconUrl": "./assets/items/material_inscription_dust.svg"
+    }
+  ]
+}
+
