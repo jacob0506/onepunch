@@ -30,6 +30,7 @@
       const item = document.createElement('div');
       const isActive = selectedCharacter && selectedCharacter.instanceId === char.instanceId;
       item.className = `flex-shrink-0 w-16 h-16 rounded-lg border-2 cursor-pointer transition-all snap-start overflow-hidden relative ${isActive ? 'border-primary scale-110 z-10' : 'border-gray-800 opacity-70 hover:opacity-100'}`;
+      item.setAttribute('data-instance-id', String(char.instanceId || ''));
       item.innerHTML = `
         <img src="${char.imageUrl}" class="w-full h-full object-cover">
         <div class="absolute top-1 right-1 bg-black bg-opacity-70 rounded-full px-1.5 py-0.5 text-[8px] font-black text-white">Lv.${char.level || 1}</div>
@@ -116,7 +117,7 @@
         const skillIcon = document.createElement('div');
         skillIcon.className = 'w-10 h-10 bg-gray-800 rounded border border-gray-700 flex items-center justify-center cursor-pointer hover:border-primary transition-all relative group';
         skillIcon.innerHTML = `
-          <i class="fa ${idx === 0 ? 'fa-bolt' : 'fa-shield'} text-gray-400 group-hover:text-primary"></i>
+          <img src="./assets/icon/sinusoidal-beam.svg" class="w-5 h-5 opacity-70 group-hover:opacity-100" alt="技能">
           <div class="absolute -top-1 -right-1 bg-primary text-[8px] px-1 rounded">Lv.${skill.level || 1}</div>
         `;
         skillIcon.onclick = () => showSkillPopup(skill);
@@ -127,7 +128,7 @@
       const hasPassive = !!(char.passive && String(char.passive).trim());
       passiveIcon.className = `w-10 h-10 bg-gray-800 rounded border border-gray-700 flex items-center justify-center transition-all relative group ${hasPassive ? 'cursor-pointer hover:border-purple-500' : 'opacity-50 cursor-not-allowed'}`;
       passiveIcon.innerHTML = `
-        <i class="fa fa-star text-gray-400 ${hasPassive ? 'group-hover:text-purple-300' : ''}"></i>
+        <img src="./assets/icon/rogue.svg" class="w-5 h-5 opacity-70 ${hasPassive ? 'group-hover:opacity-100' : ''}" alt="被动">
         <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-[8px] text-center font-black text-purple-300">被动</div>
       `;
       if (hasPassive) passiveIcon.onclick = () => showPassivePopup(getCharacterPassivePreviewText(char));
@@ -170,8 +171,8 @@
     });
 
     document.querySelectorAll('#characterSelectionBar > div').forEach(el => {
-      const img = el.querySelector('img');
-      const isThis = img && img.src === char.imageUrl;
+      const id = el.getAttribute('data-instance-id');
+      const isThis = selectedCharacter && String(selectedCharacter.instanceId || '') === String(id || '');
       if (isThis) {
         el.classList.add('border-primary', 'scale-110', 'z-10');
         el.classList.remove('border-gray-800', 'opacity-70');
@@ -299,4 +300,3 @@
   if (window.Game && window.Game.ui) window.Game.ui.cultivate = api;
   window.__cultivateUI = api;
 })();
-

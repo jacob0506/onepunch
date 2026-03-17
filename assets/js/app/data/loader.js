@@ -27,6 +27,9 @@
 
   async function loadAll() {
     const charactersJson = await fetchJson('assets/data/characters.json');
+    if (window.__sprites && typeof window.__sprites.applyToCharacters === 'function') {
+      window.__sprites.applyToCharacters(charactersJson && charactersJson.characters);
+    }
     const itemsJson = await fetchJson('assets/data/items.json');
     const inscriptionsJson = await fetchJson('assets/data/inscriptions.json');
     const stagesJson = await fetchJson('assets/data/stages.json');

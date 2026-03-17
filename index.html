@@ -865,7 +865,7 @@
   <script src="./assets/js/app/battle/report.js"></script>
   <script src="./assets/js/app/battle/vfx.js"></script>
   <script src="./assets/js/app/battle/boss_scripts.js"></script>
-  <script src="./assets/js/app/battle/rewards.js"></script>
+  <script src="./assets/js/app/battle/rewards.js?v=12"></script>
   <script src="./assets/js/app/battle/scene.js"></script>
   <script src="./assets/js/app/ui/item_picker.js"></script>
   <script src="./assets/js/app/ui/inventory.js"></script>
@@ -1865,15 +1865,20 @@
         const baseHp = Math.floor(620 * Math.pow(1.075, i - 1));
         const baseSpd = 78 + Math.floor(i * 0.65);
         const count = i <= 10 ? 3 : (i <= 25 ? 4 : 5);
+        const resolveImg = (name) => (window.__sprites && typeof window.__sprites.resolveSpriteUrlByName === 'function')
+          ? (window.__sprites.resolveSpriteUrlByName(name) || '')
+          : '';
 
         const enemies = [];
         for (let idx = 0; idx < count; idx++) {
           const t = pool[(i + idx) % pool.length];
           const eliteBoost = (i % 7 === 0 && idx === 0) ? 1.25 : 1.0;
+          const nm = `${t.name}${eliteBoost > 1 ? '·精英' : ''}`;
           enemies.push({
             id: `enemy_${String(i).padStart(3, '0')}_${idx + 1}`,
-            name: `${t.name}${eliteBoost > 1 ? '·精英' : ''}`,
+            name: nm,
             class: t.class,
+            imageUrl: resolveImg(nm) || resolveImg(t.name),
             health: Math.floor(baseHp * t.hp * eliteBoost),
             attack: Math.floor(baseAtk * t.atk * eliteBoost),
             defense: Math.floor(baseDef * t.def * eliteBoost),
@@ -1893,10 +1898,12 @@
 
         if (isBoss) {
           const bossTemplate = pool[(i + 2) % pool.length];
+          const bossName = `${bossTemplate.name}·首领`;
           enemies.push({
             id: `boss_${String(i).padStart(3, '0')}`,
-            name: `${bossTemplate.name}·首领`,
+            name: bossName,
             class: bossTemplate.class,
+            imageUrl: resolveImg(bossName) || resolveImg(bossTemplate.name),
             health: Math.floor(baseHp * bossTemplate.hp * (3.9 + Math.min(1.0, i / 120))),
             attack: Math.floor(baseAtk * bossTemplate.atk * 1.95),
             defense: Math.floor(baseDef * bossTemplate.def * 2.05),
@@ -3172,6 +3179,14 @@
             if (!battleSceneDebugState) return;
             battleSceneDebugState.auto = !battleSceneDebugState.auto;
             pushBattleSceneDebugFeed(`切换模式：${battleSceneDebugState.auto ? '自动' : '手动'}`);
+            if (battleSceneDebugState.auto) {
+              battleSceneDebugState.awaitingTarget = null;
+              battleSceneDebugState.running = true;
+              battleSceneDebugSyncControls();
+              renderBattleSceneDebug();
+              runBattleSceneDebugLoop();
+              return;
+            }
             battleSceneDebugSyncControls();
           };
         }
@@ -3377,7 +3392,7 @@
 
     function battleSceneDebugInitRound(isFirst) {
       if (!battleSceneDebugState) return;
-      const dead = battleSceneDebugState.player.filter(u => u && u.currentHp <= 0).length;
+      const dead = battleSceneDebugState.player.filter(u => u && !(u.currentHp > 0)).length;
       const gain = Math.max(0, 6 - 2 * dead);
       if (!isFirst) battleSceneDebugState.round += 1;
       if (!isFirst && (battleSceneDebugState.round || 1) > 30) {
@@ -3405,11 +3420,11 @@
         return base * (1 + up / 100) * (1 - down / 100);
       };
       battleSceneDebugState.player.forEach((u, idx) => {
-        if (!u || u.currentHp <= 0) return;
+        if (!u || !(u.currentHp > 0)) return;
         order.push({ side: 'player', index: idx, speed: effectiveSpeed(u) });
       });
       battleSceneDebugState.enemies.forEach((u, idx) => {
-        if (!u || u.currentHp <= 0) return;
+        if (!u || !(u.currentHp > 0)) return;
         order.push({ side: 'enemy', index: idx, speed: effectiveSpeed(u) });
       });
       order.sort((a, b) => (b.speed || 0) - (a.speed || 0));
@@ -3768,6 +3783,8 @@
     }
 
     function computeDebugDamage(attacker, target, mult, opts = {}) {
+      const m = Number(mult);
+      mult = Number.isFinite(m) ? m : 0;
       if (battleSceneDebugGetStatus(target, 'immune')) return { immune: true, dodged: false, crit: false, block: false, damage: 0 };
       const tPassive = target && target.passiveRuntime ? target.passiveRuntime : null;
       if (target && !target.isEnemy && tPassive && tPassive.firstHitImmuneChance > 0 && !tPassive.firstHitUsed) {
@@ -3794,8 +3811,8 @@
           if (battleSceneDebugGetStatus(target, k)) dmgUp += v;
         });
       }
-      const atk = Math.max(1, (attacker.attack || 1) * (1 + atkUp / 100));
-      const base = opts.rawOverride != null ? opts.rawOverride : (atk * mult);
+      const atk = Math.max(1, (Number(attacker.attack) || 1) * (1 + atkUp / 100));
+      const base = opts.rawOverride != null ? Number(opts.rawOverride) : (atk * mult);
       const raw = base * (0.9 + Math.random() * 0.2) * (1 + dmgUp / 100);
       const limitField = battleSceneDebugGetStatusValue(target, 'limitField');
       const ignoreDef = Math.max(
@@ -3806,6 +3823,7 @@
       const pen = Math.max(0, Math.min(200, (attacker.penetration || 0) + ignoreDef * 2));
       const def = Math.max(0, (target.defense || 0) * (1 - defDown / 100) * (1 - pen / 200) * (1 - Math.min(80, penIgnore) / 100));
       let dmg = Math.max(1, Math.floor(raw * (100 / (100 + def))));
+      if (!Number.isFinite(dmg)) dmg = 0;
 
       const critResist = attacker && !attacker.isEnemy ? battleSceneDebugAffixValue('critResist') : 0;
       const critRate = Math.max(0, (attacker.critRate || 0) - critResist);
@@ -3831,6 +3849,7 @@
         dmg = Math.floor(dmg * (1 + battleSceneDebugAffixValue('dmgTakenUp') / 100));
       }
 
+      if (!Number.isFinite(dmg)) dmg = 0;
       return { immune: false, dodged: false, crit, block, damage: dmg };
     }
 
@@ -3910,7 +3929,12 @@
     }
 
     function battleSceneDebugApplyHit(attacker, target, multiplier, label, opts = {}) {
-      if (!battleSceneDebugState || !attacker || !target || attacker.currentHp <= 0 || target.currentHp <= 0) return { damage: 0 };
+      if (!battleSceneDebugState || !attacker || !target) return { damage: 0 };
+      if (!Number.isFinite(attacker.currentHp)) attacker.currentHp = Math.max(0, Number(attacker.currentHp) || 0);
+      if (!Number.isFinite(attacker.maxHp)) attacker.maxHp = Math.max(1, Number(attacker.maxHp) || 1);
+      if (!Number.isFinite(target.currentHp)) target.currentHp = Math.max(0, Number(target.currentHp) || 0);
+      if (!Number.isFinite(target.maxHp)) target.maxHp = Math.max(1, Number(target.maxHp) || 1);
+      if (!(attacker.currentHp > 0) || !(target.currentHp > 0)) return { damage: 0 };
       const r = computeDebugDamage(attacker, target, multiplier, opts);
       if (r.immune) {
         pushBattleSceneDebugFeed(`${attacker.displayName || attacker.name} 的${label}被 ${target.displayName || target.name} 免疫`);
@@ -3964,7 +3988,7 @@
         if (actual > 0) pushBattleSceneDebugFeed(`${attacker.displayName || attacker.name} 吸血回复 ${actual}`);
       }
 
-      if (target.currentHp <= 0) {
+      if (!(target.currentHp > 0)) {
         if (!target.isEnemy && battleSceneDebugTryPreventLifeLinkDeath(target)) {
           return { damage: dealt };
         }
@@ -4063,7 +4087,10 @@
     }
 
     function battleSceneDebugTickTurnStart(unit) {
-      if (!unit || unit.currentHp <= 0) return;
+      if (!unit) return;
+      if (!Number.isFinite(unit.currentHp)) unit.currentHp = Math.max(0, Number(unit.currentHp) || 0);
+      if (!Number.isFinite(unit.maxHp)) unit.maxHp = Math.max(1, Number(unit.maxHp) || 1);
+      if (!(unit.currentHp > 0)) return;
       const burn = battleSceneDebugGetStatus(unit, 'burn');
       const bleed = battleSceneDebugGetStatus(unit, 'bleed');
       const poison = battleSceneDebugGetStatus(unit, 'poison');
@@ -4081,8 +4108,11 @@
     }
 
     function battleSceneDebugApplyDamage(target, amount) {
-      if (!target || target.currentHp <= 0) return { dealt: 0, shieldAbsorb: 0 };
-      let left = Math.max(0, Math.floor(amount));
+      if (!target) return { dealt: 0, shieldAbsorb: 0 };
+      if (!Number.isFinite(target.currentHp)) target.currentHp = Math.max(0, Number(target.currentHp) || 0);
+      if (!Number.isFinite(target.maxHp)) target.maxHp = Math.max(1, Number(target.maxHp) || 1);
+      if (!(target.currentHp > 0)) return { dealt: 0, shieldAbsorb: 0 };
+      let left = Math.max(0, Math.floor(Number(amount) || 0));
       let shieldAbsorb = 0;
 
       if (!target.isEnemy && (target.enhancedHp || 0) > 0) {
@@ -4111,6 +4141,7 @@
       }
       const dealt = Math.min(target.currentHp, left);
       target.currentHp = Math.max(0, target.currentHp - dealt);
+      if (!Number.isFinite(target.currentHp)) target.currentHp = 0;
       if (battleSceneDebugState) {
         battleSceneDebugState.maxDamage = Math.max(battleSceneDebugState.maxDamage || 0, dealt || 0);
       }
@@ -4118,10 +4149,14 @@
     }
 
     function battleSceneDebugApplyHeal(target, amount) {
-      if (!target || target.currentHp <= 0) return 0;
-      const heal = Math.max(0, Math.floor(amount));
+      if (!target) return 0;
+      if (!Number.isFinite(target.currentHp)) target.currentHp = Math.max(0, Number(target.currentHp) || 0);
+      if (!Number.isFinite(target.maxHp)) target.maxHp = Math.max(1, Number(target.maxHp) || 1);
+      if (!(target.currentHp > 0)) return 0;
+      const heal = Math.max(0, Math.floor(Number(amount) || 0));
       const actual = Math.min(target.maxHp - target.currentHp, heal);
       target.currentHp += actual;
+      if (!Number.isFinite(target.currentHp)) target.currentHp = 0;
       if (battleSceneDebugState) {
         battleSceneDebugState.totalHealing = (battleSceneDebugState.totalHealing || 0) + (actual || 0);
       }
@@ -4489,11 +4524,11 @@
 
     function battleSceneDebugStepOnce() {
       if (!battleSceneDebugState) return;
-      if (battleSceneDebugState.awaitingTarget) return;
       if (aliveCount(battleSceneDebugState.player) === 0 || aliveCount(battleSceneDebugState.enemies) === 0) {
         battleSceneDebugFinish(aliveCount(battleSceneDebugState.player) > 0);
         return;
       }
+      if (battleSceneDebugState.awaitingTarget) return;
 
       if (battleSceneDebugState.turnCursor >= battleSceneDebugState.turnOrder.length) {
         battleSceneDebugApplyRoundEndPassives();
@@ -4509,13 +4544,13 @@
 
       const actorList = turn.side === 'enemy' ? battleSceneDebugState.enemies : battleSceneDebugState.player;
       const actor = actorList[turn.index];
-      if (!actor || actor.currentHp <= 0) {
+      if (!actor || !(actor.currentHp > 0)) {
         battleSceneDebugState.turnCursor += 1;
         return;
       }
 
       battleSceneDebugTickTurnStart(actor);
-      if (actor.currentHp <= 0) {
+      if (!(actor.currentHp > 0)) {
         pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 已倒下`);
         battleSceneDebugState.turnCursor += 1;
         renderBattleSceneDebug();
@@ -5571,6 +5606,8 @@
       };
 
       const tickTurnStart = (unit) => {
+        if (!Number.isFinite(unit.currentHp)) unit.currentHp = Math.max(0, Number(unit.currentHp) || 0);
+        if (!Number.isFinite(unit.maxHp)) unit.maxHp = Math.max(1, Number(unit.maxHp) || 1);
         const burn = getStatus(unit, 'burn');
         const bleed = getStatus(unit, 'bleed');
         const poison = getStatus(unit, 'poison');
@@ -5600,6 +5637,8 @@
       };
 
       const computeDamage = (attacker, target, multiplier, rawOverride) => {
+        const mult = Number(multiplier);
+        multiplier = Number.isFinite(mult) ? mult : 0;
         if (getStatus(target, 'immune')) {
           return { immune: true, dodged: false, crit: false, block: false, damage: 0, shieldAbsorb: 0 };
         }
@@ -5683,14 +5722,20 @@
           }
         }
 
+        if (!Number.isFinite(dmg)) dmg = 0;
         dmg = Math.max(0, dmg);
         if (target.isPlayer && affixValue('dmgTakenUp') > 0) {
           dmg = Math.floor(dmg * (1 + affixValue('dmgTakenUp') / 100));
         }
+        if (!Number.isFinite(dmg)) dmg = 0;
+        if (!Number.isFinite(shieldAbsorb)) shieldAbsorb = 0;
         return { dodged: false, crit, block, damage: dmg, shieldAbsorb };
       };
 
       const applyHit = (attacker, target, multiplier, label, opts = {}) => {
+        if (!target || typeof target !== 'object') return { damage: 0 };
+        if (!Number.isFinite(target.currentHp)) target.currentHp = Math.max(0, Number(target.currentHp) || 0);
+        if (!Number.isFinite(target.maxHp)) target.maxHp = Math.max(1, Number(target.maxHp) || 1);
         const r = computeDamage(attacker, target, multiplier, opts.rawOverride);
         if (r.immune) {
           appendBattleLog(logs, roundContainer, `<div><span class="${attacker.isPlayer ? 'text-blue-400' : 'text-red-400'}">${attacker.name}</span> 的${label}被 <span class="${target.isPlayer ? 'text-blue-400' : 'text-red-400'}">${target.name}</span> <span class="text-purple-300 font-black">免疫</span></div>`);
@@ -5734,6 +5779,8 @@
 
         if (r.damage > 0) {
           target.currentHp -= r.damage;
+          if (!Number.isFinite(target.currentHp)) target.currentHp = 0;
+          if (target.currentHp < 0) target.currentHp = 0;
           maxSingleDamage = Math.max(maxSingleDamage, r.damage);
           const drain = affixValue('energyDrain');
           const gain = (attacker.isPlayer && drain > 0 && Math.random() * 100 < drain) ? 0 : 1;
@@ -5796,7 +5843,7 @@
           }
         }
 
-        if (target.currentHp <= 0) {
+        if (!(target.currentHp > 0)) {
           if (target.isPlayer && tryPreventLifeLinkDeath(target)) {
             return { damage: r.damage };
           }
@@ -6507,7 +6554,7 @@
 
         for (const unit of allUnits) {
           if (unit.currentHp <= 0) continue;
-          if (team.every(t => t.currentHp <= 0) || enemies.every(e => e.currentHp <= 0)) break;
+          if (team.every(t => !(t.currentHp > 0)) || enemies.every(e => !(e.currentHp > 0))) break;
 
           const drain = affixValue('energyDrain');
           const gain = (unit.isPlayer && drain > 0 && Math.random() * 100 < drain) ? 0 : 1;
@@ -6577,10 +6624,10 @@
         }
 
         applyRoundEndPassives();
-        if (team.every(t => t.currentHp <= 0) || enemies.every(e => e.currentHp <= 0)) break;
+        if (team.every(t => !(t.currentHp > 0)) || enemies.every(e => !(e.currentHp > 0))) break;
       }
 
-      const isWin = enemies.every(e => e.currentHp <= 0);
+      const isWin = enemies.every(e => !(e.currentHp > 0));
       appendBattleLog(logs, logsContainer, `<div class="mt-2 font-bold ${isWin ? 'text-green-400' : 'text-red-400'}">--- 战斗结束: ${isWin ? '胜利' : '失败'} ---</div>`);
 
       const rewards = { exp: stage.rewards.exp, gold: stage.rewards.gold, items: [] };
@@ -6994,8 +7041,28 @@
       // 注册 Service Worker 实现 PWA 离线功能
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('service-worker.js')
-            .then(reg => console.log('Service Worker: Registered'))
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
+          });
+
+          navigator.serviceWorker.register('service-worker.js?v=12')
+            .then(reg => {
+              console.log('Service Worker: Registered');
+              if (reg && typeof reg.update === 'function') reg.update();
+              if (reg && reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+              reg.addEventListener('updatefound', () => {
+                const nw = reg.installing;
+                if (!nw) return;
+                nw.addEventListener('statechange', () => {
+                  if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                    nw.postMessage({ type: 'SKIP_WAITING' });
+                  }
+                });
+              });
+            })
             .catch(err => console.log('Service Worker: Error', err));
         });
       }

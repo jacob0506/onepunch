@@ -1,7 +1,16 @@
 (() => {
+  function getItemTemplates() {
+    const equipTemplates = (typeof equipmentData !== 'undefined' && Array.isArray(equipmentData))
+      ? equipmentData
+      : (Array.isArray(window.equipmentData) ? window.equipmentData : []);
+    const insTemplates = (typeof inscriptionsData !== 'undefined' && Array.isArray(inscriptionsData))
+      ? inscriptionsData
+      : (Array.isArray(window.inscriptionsData) ? window.inscriptionsData : []);
+    return { equipTemplates, insTemplates };
+  }
+
   function createInstance(itemData) {
-    const equipTemplates = (typeof equipmentData !== 'undefined' && Array.isArray(equipmentData)) ? equipmentData : (Array.isArray(window.equipmentData) ? window.equipmentData : []);
-    const insTemplates = (typeof inscriptionsData !== 'undefined' && Array.isArray(inscriptionsData)) ? inscriptionsData : (Array.isArray(window.inscriptionsData) ? window.inscriptionsData : []);
+    const { equipTemplates } = getItemTemplates();
     const isEquip = Array.isArray(equipTemplates) && equipTemplates.some(e => e && e.id === itemData.id);
     if (isEquip && window.__inventory && typeof window.__inventory.createEquipmentInstance === 'function') {
       return window.__inventory.createEquipmentInstance(itemData);
@@ -24,6 +33,7 @@
 
   function rollRewards(stage, isWin) {
     const mats = (typeof materialsData !== 'undefined' && Array.isArray(materialsData)) ? materialsData : (Array.isArray(window.materialsData) ? window.materialsData : []);
+    const { equipTemplates, insTemplates } = getItemTemplates();
     const rewards = {
       exp: (stage && stage.rewards && stage.rewards.exp) || 0,
       gold: (stage && stage.rewards && stage.rewards.gold) || 0,

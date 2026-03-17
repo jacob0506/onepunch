@@ -12,6 +12,10 @@
       @keyframes battleSlam { 0% { transform: translate3d(0,0,0) scale(1); } 35% { transform: translate3d(0, 1px, 0) scale(1.01); } 100% { transform: translate3d(0,0,0) scale(1); } }
       .battle-crit { display:inline-block; animation: battlePulseCrit 520ms ease-out 1; }
       .battle-good { display:inline-block; animation: battlePulseGood 520ms ease-out 1; }
+      .battle-shake { animation: battleScreenShake 260ms ease-out 1; }
+      .battle-flash-red { animation: battleFlashRed 420ms ease-out 1; }
+      .battle-flash-purple { animation: battleFlashPurple 520ms ease-out 1; }
+      .battle-slam { animation: battleSlam 260ms ease-out 1; }
       body.battle-shake { animation: battleScreenShake 260ms ease-out 1; }
       body.battle-flash-red { animation: battleFlashRed 420ms ease-out 1; }
       body.battle-flash-purple { animation: battleFlashPurple 520ms ease-out 1; }
@@ -20,21 +24,23 @@
     document.head.appendChild(style);
   }
 
-  function retriggerBodyClass(cls, ms) {
-    if (!document || !document.body) return;
+  function retriggerFxClass(cls, ms) {
+    if (!document) return;
     ensureStyles();
-    document.body.classList.remove(cls);
-    void document.body.offsetWidth;
-    document.body.classList.add(cls);
-    setTimeout(() => document.body.classList.remove(cls), ms || 360);
+    const el = document.getElementById('battleResultModal') || document.body;
+    if (!el) return;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), ms || 360);
   }
 
   function play(type) {
     if (!type) return;
-    if (type === 'crit') return retriggerBodyClass('battle-shake', 320);
-    if (type === 'ultimate') return retriggerBodyClass('battle-flash-purple', 560);
-    if (type === 'slam') return retriggerBodyClass('battle-slam', 320);
-    if (type === 'danger') return retriggerBodyClass('battle-flash-red', 460);
+    if (type === 'crit') return retriggerFxClass('battle-shake', 320);
+    if (type === 'ultimate') return retriggerFxClass('battle-flash-purple', 560);
+    if (type === 'slam') return retriggerFxClass('battle-slam', 320);
+    if (type === 'danger') return retriggerFxClass('battle-flash-red', 460);
   }
 
   function decorateLogHtml(html) {
