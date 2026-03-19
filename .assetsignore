@@ -1,0 +1,4 @@
+.git/**
+wrangler.toml
+.github/**
+node_modules/**
