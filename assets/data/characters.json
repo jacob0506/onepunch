@@ -336,7 +336,7 @@
       "name": "真理之手·米迪尔",
       "rarity": "UR",
       "class": "assassin",
-      "baseAttributes": { "attack": 610, "defense": 110, "health": 2300, "speed": 140 },
+      "baseAttributes": { "attack": 610, "defense": 120, "health": 2300, "speed": 140 },
       "skills": [{
         "id": "skill_ur_012",
         "name": "幻影背刺",
