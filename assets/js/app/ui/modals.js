@@ -3,7 +3,11 @@
     document.getElementById('skillPopupName').textContent = skill.name;
     document.getElementById('skillPopupLevel').textContent = `等级: ${skill.level || 1}`;
     document.getElementById('skillPopupDesc').textContent = skill.description;
-    document.getElementById('skillPopupCD').textContent = (typeof skill.cost === 'number') ? String(skill.cost) : '2';
+    const desc = skill && typeof skill.description === 'string' ? skill.description : '';
+    const effects = skill && Array.isArray(skill.effects) ? skill.effects : [];
+    const isSpeedSkill = /速度/.test(desc) && /(增加|提升)/.test(desc) && !/降低/.test(desc);
+    const isSpeedEffect = effects.some(e => e && (e.stat === 'spdUp' || e.stat === 'spdFlatUp' || e.stat === 'speedUp'));
+    document.getElementById('skillPopupCD').textContent = (isSpeedSkill || isSpeedEffect) ? '0' : '2';
     document.getElementById('skillDetailModal').classList.remove('hidden');
   }
 

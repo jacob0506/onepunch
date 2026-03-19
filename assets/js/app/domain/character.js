@@ -21,7 +21,8 @@
       lifesteal: 0,
       effectHit: 0,
       penetration: 0,
-      tenacity: 0
+      tenacity: 0,
+      antiCrit: 0
     };
 
     const starSteps = Math.max(0, stars - 1);
@@ -77,6 +78,7 @@
       if (attrs.effectHit) stats.effectHit += attrs.effectHit;
       if (attrs.penetration) stats.penetration += attrs.penetration;
       if (attrs.tenacity) stats.tenacity += attrs.tenacity;
+      if (attrs.antiCrit) stats.antiCrit += attrs.antiCrit;
     });
 
     const applyEquipmentResonance = (tag, count) => {
@@ -163,6 +165,7 @@
       if (attrs.effectHit) stats.effectHit += attrs.effectHit;
       if (attrs.penetration) stats.penetration += attrs.penetration;
       if (attrs.tenacity) stats.tenacity += attrs.tenacity;
+      if (attrs.antiCrit) stats.antiCrit += attrs.antiCrit;
 
       if (ins.setEffect) {
         const setName = ins.name.split('铭文')[0];
@@ -211,6 +214,8 @@
       if (m) stats.penetration += parseInt(m[1], 10);
       m = effect.match(/无视目标(\d+)%防御/);
       if (m) stats.penetration += parseInt(m[1], 10);
+      m = effect.match(/抗暴\+(\d+)%/);
+      if (m) stats.antiCrit += parseInt(m[1], 10);
     };
 
     const insTemplates = (typeof inscriptionsData !== 'undefined' && Array.isArray(inscriptionsData))
@@ -241,6 +246,7 @@
       add('tenacity', bm.tenacityAdd);
       add('penetration', bm.penetrationAdd);
       stats.critRate = Math.max(0, Math.min(100, stats.critRate || 0));
+      stats.antiCrit = Math.max(0, Math.min(95, stats.antiCrit || 0));
       stats.dodgeRate = Math.max(0, Math.min(100, stats.dodgeRate || 0));
       stats.blockRate = Math.max(0, Math.min(100, stats.blockRate || 0));
       stats.dmgReduc = Math.max(0, Math.min(80, stats.dmgReduc || 0));

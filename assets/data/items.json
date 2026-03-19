@@ -91,9 +91,23 @@
       "attributes": {
         "defense": 55,
         "hpPercent": 5,
-        "dodgeRate": 5
+        "dodgeRate": 5,
+        "antiCrit": 6
       },
       "imageUrl": "./assets/items/疾影披风.png"
+    },
+    {
+      "id": "eq_anti_001",
+      "name": "镇心斗篷",
+      "type": "armor",
+      "rarity": "SSR",
+      "attributes": {
+        "defense": 120,
+        "health": 800,
+        "antiCrit": 18,
+        "dmgReduc": 4
+      },
+      "imageUrl": "./assets/items/影舞披风.png"
     },
     {
       "id": "eq_009",

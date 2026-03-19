@@ -2827,7 +2827,7 @@
       document.getElementById('detailCharacterSkill').innerHTML = `
         <div class="flex justify-between items-center">
           <h5 class="font-bold">${skill.name} <span class="text-primary text-xs ml-1">Lv.${skillLevel}</span></h5>
-          <span class="text-xs bg-gray-700 px-2 py-1 rounded">能量: ${(typeof skill.cost === 'number' ? skill.cost : 2)}</span>
+          <span class="text-xs bg-gray-700 px-2 py-1 rounded">能量: ${(/速度/.test(skill.description || '') && /(增加|提升)/.test(skill.description || '') && !/降低/.test(skill.description || '')) ? 0 : 2}</span>
         </div>
         <p class="text-sm text-gray-400 mt-1">${skill.description}</p>
       `;
@@ -3395,8 +3395,10 @@
     function battleSceneDebugInitRound(isFirst) {
       if (!battleSceneDebugState) return;
       const dead = battleSceneDebugState.player.filter(u => u && !(u.currentHp > 0)).length;
-      const coreAlive = battleSceneDebugState.player.filter(u => u && u.currentHp > 0 && u.isCore).length;
-      const gain = Math.max(0, (2 + 4 * coreAlive) - dead);
+      const cores = battleSceneDebugState.player.filter(u => u && u.currentHp > 0 && u.isCore);
+      const coreAlive = cores.length;
+      const coreGain = cores.reduce((sum, u) => sum + (u.id === 'char_sur_007' ? 6 : 4), 0);
+      const gain = Math.max(0, 2 + coreGain);
       if (!isFirst) battleSceneDebugState.round += 1;
       if (!isFirst && (battleSceneDebugState.round || 1) > 30) {
         pushBattleSceneDebugFeed(`回合上限：超过 30 回合仍未结束，判定失败`);
@@ -3407,7 +3409,7 @@
       battleSceneDebugState.turnOrder = buildBattleSceneDebugTurnOrder();
       battleSceneDebugState.turnCursor = 0;
       battleSceneDebugState.awaitingTarget = null;
-      if (isFirst) pushBattleSceneDebugFeed(`回合开始：第 ${battleSceneDebugState.round} 回合，初始能量 ${gain}（基础2 + 核心*4 - 死亡）`);
+      if (isFirst) pushBattleSceneDebugFeed(`回合开始：第 ${battleSceneDebugState.round} 回合，初始能量 ${gain}（基础2 + 核心能量${coreGain}）`);
       else pushBattleSceneDebugFeed(`回合开始：第 ${battleSceneDebugState.round} 回合，核心${coreAlive}人，死亡${dead}人，获得能量 +${gain}`);
       battleSceneDebugApplyRoundStartPassives();
       renderBattleSceneDebug();
@@ -3569,6 +3571,31 @@
       if (battleSceneDebugState.round === 1) {
         battleSceneDebugInitCoreIfNeeded();
         battleSceneDebugInitCatLinkIfNeeded();
+
+        const mech = battleSceneDebugState.player.find(u => u && u.currentHp > 0 && u.id === 'char_sur_007');
+        if (mech) {
+          battleSceneDebugState.enemies.forEach(e => {
+            if (!e || e.currentHp <= 0) return;
+            e.statuses = (e.statuses || []).filter(s => s && !['dmgUp', 'moranDmgUp', 'dmgReducUp', 'bondReducUp', 'moranReducUp'].includes(s.type));
+          });
+          battleSceneDebugState.player.forEach(u => {
+            if (!u || u.currentHp <= 0) return;
+            const shield = Math.floor((u.maxHp || 0) * 6.8 * 13);
+            if (shield > 0) u.shield = (u.shield || 0) + shield;
+            battleSceneDebugAddStatus(u, 'dmgUp', 20, 2);
+          });
+          pushBattleSceneDebugFeed('核心启动：特化强韧覆盖全队，敌方增伤/减伤被清除，我方两回合增伤+20%');
+        }
+
+        const urSpecial = battleSceneDebugState.player.find(u => u && u.currentHp > 0 && u.id === 'char_ur_010');
+        if (urSpecial) {
+          battleSceneDebugState.player.forEach(u => {
+            if (!u || u.currentHp <= 0) return;
+            const shield = Math.floor((u.maxHp || 0) * 7.0);
+            if (shield > 0) u.shield = (u.shield || 0) + shield;
+          });
+          pushBattleSceneDebugFeed('核心启动：特化生命覆盖全队（700%）');
+        }
       }
       battleSceneDebugUpdateRainFlowerBondState();
       battleSceneDebugGiveCoreEnergy();
@@ -3843,7 +3870,8 @@
       if (!Number.isFinite(dmg)) dmg = 0;
 
       const critResist = attacker && !attacker.isEnemy ? battleSceneDebugAffixValue('critResist') : 0;
-      const critRate = Math.max(0, (attacker.critRate || 0) - critResist);
+      const antiCrit = Math.max(0, target.antiCrit || 0);
+      const critRate = Math.max(0, (attacker.critRate || 0) - critResist - antiCrit);
       const forceCrit = !!battleSceneDebugGetStatus(attacker, 'nextCrit');
       const crit = forceCrit || ((Math.random() * 100) < critRate);
       if (crit) dmg = Math.max(1, Math.floor(dmg * (Math.max(150, attacker.critDmg || 150) / 100)));
@@ -4190,8 +4218,11 @@
 
     function battleSceneDebugGetSkillCost(skill) {
       if (!skill) return 2;
-      if (typeof skill.cost === 'number') return skill.cost;
-      return 2;
+      const desc = typeof skill.description === 'string' ? skill.description : '';
+      const effects = Array.isArray(skill.effects) ? skill.effects : [];
+      const isSpeedSkill = /速度/.test(desc) && /(增加|提升)/.test(desc) && !/降低/.test(desc);
+      const isSpeedEffect = effects.some(e => e && (e.stat === 'spdUp' || e.stat === 'spdFlatUp' || e.stat === 'speedUp'));
+      return (isSpeedSkill || isSpeedEffect) ? 0 : 2;
     }
 
     function battleSceneDebugGetSkillTargetSpec(skill) {
@@ -5590,6 +5621,33 @@
               addStatus(u, 'revive', 1, 999, { charges, hpPct });
             }
           });
+
+          const mech = team.find(u => u && u.currentHp > 0 && u.id === 'char_sur_007');
+          if (mech) {
+            enemies.forEach(e => {
+              if (!e || e.currentHp <= 0) return;
+              e.statuses = (e.statuses || []).filter(s => s && !['dmgUp', 'moranDmgUp', 'dmgReducUp', 'bondReducUp', 'moranReducUp'].includes(s.type));
+            });
+            team.forEach(u => {
+              if (!u || u.currentHp <= 0) return;
+              const shield = Math.floor((u.maxHp || 0) * 6.8 * 13);
+              if (shield > 0) u.shield = (u.shield || 0) + shield;
+              addStatus(u, 'dmgUp', 20, 2);
+            });
+            appendBattleLog(logs, roundContainer, `<div class="text-purple-300 font-black">核心启动：特化强韧覆盖全队，敌方增伤/减伤被清除，我方两回合增伤+20%</div>`);
+            markKey();
+          }
+
+          const urSpecial = team.find(u => u && u.currentHp > 0 && u.id === 'char_ur_010');
+          if (urSpecial) {
+            team.forEach(u => {
+              if (!u || u.currentHp <= 0) return;
+              const shield = Math.floor((u.maxHp || 0) * 7.0);
+              if (shield > 0) u.shield = (u.shield || 0) + shield;
+            });
+            appendBattleLog(logs, roundContainer, `<div class="text-purple-300 font-black">核心启动：特化生命覆盖全队（700%）</div>`);
+            markKey();
+          }
         }
         updateRainFlowerBondState();
         giveCoreEnergy();
@@ -5779,7 +5837,8 @@
 
         const critRoll = Math.random() * 100;
         const critResist = attacker.isPlayer ? affixValue('critResist') : 0;
-        const critRate = Math.max(0, (attacker.critRate || 0) - critResist);
+        const antiCrit = Math.max(0, target.antiCrit || 0);
+        const critRate = Math.max(0, (attacker.critRate || 0) - critResist - antiCrit);
         const forceCrit = !!getStatus(attacker, 'nextCrit');
         const crit = forceCrit || (critRoll < critRate);
         if (crit) dmg = Math.floor(dmg * (Math.max(150, attacker.critDmg) / 100));
@@ -6028,7 +6087,11 @@
         const skill = unit.skills[0];
         if (!skill) return false;
         if (!opts.bypassSilence && getStatus(unit, 'silence')) return false;
-        const cost = typeof skill.cost === 'number' ? skill.cost : (unit.isPlayer ? 2 : 0);
+        const desc = skill && typeof skill.description === 'string' ? skill.description : '';
+        const effects = skill && Array.isArray(skill.effects) ? skill.effects : [];
+        const isSpeedSkill = /速度/.test(desc) && /(增加|提升)/.test(desc) && !/降低/.test(desc);
+        const isSpeedEffect = effects.some(e => e && (e.stat === 'spdUp' || e.stat === 'spdFlatUp' || e.stat === 'speedUp'));
+        const cost = unit.isPlayer ? ((isSpeedSkill || isSpeedEffect) ? 0 : 2) : 0;
         if (!opts.bypassCost) {
           if (unit.isPlayer && cost > 0 && (unit.energy || 0) < cost) return false;
           if (unit.isPlayer && cost > 0) unit.energy = Math.max(0, (unit.energy || 0) - cost);
@@ -6672,7 +6735,7 @@
           if (team.every(t => !(t.currentHp > 0)) || enemies.every(e => !(e.currentHp > 0))) break;
 
           const drain = affixValue('energyDrain');
-          const baseGain = unit && unit.isCore ? 6 : 2;
+          const baseGain = unit && unit.isCore ? (unit.id === 'char_sur_007' ? 6 : 4) : 2;
           const gain = (unit.isPlayer && drain > 0 && Math.random() * 100 < drain) ? 0 : baseGain;
           unit.energy = Math.min(unit.maxEnergy || 4, (unit.energy || 0) + gain);
 

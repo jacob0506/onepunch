@@ -131,7 +131,7 @@
       'atkPercent', 'defPercent', 'hpPercent',
       'critRate', 'critDmg', 'dodgeRate', 'blockRate',
       'dmgReduc', 'lifesteal', 'effectHit',
-      'penetration', 'tenacity',
+      'penetration', 'tenacity', 'antiCrit',
       'speed'
     ];
     if (templateType === 'weapon') return [...common, 'attack'];
@@ -161,7 +161,8 @@
       lifesteal: 1 * rank,
       effectHit: 2 * rank,
       penetration: 2 * rank,
-      tenacity: 2 * rank
+      tenacity: 2 * rank,
+      antiCrit: 2 * rank
     };
     return v[key] || 0;
   }
