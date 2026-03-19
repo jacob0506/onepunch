@@ -156,8 +156,10 @@
         st.judgement.stacks = 0;
         append(`<div class="text-purple-300 font-black">圣域审判：净化与裁决降临！</div>`);
         vfx('ultimate');
-        alive(team).forEach(t => {
-          addStatus(t, 'silence', 1, 1);
+        const aliveTeam = alive(team);
+        const silenced = pick(aliveTeam);
+        if (silenced) addStatus(silenced, 'silence', 1, 1);
+        aliveTeam.forEach(t => {
           addStatus(t, 'atkUp', -18, 2);
           addStatus(t, 'defDown', 16, 2);
         });

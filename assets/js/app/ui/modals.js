@@ -3,7 +3,7 @@
     document.getElementById('skillPopupName').textContent = skill.name;
     document.getElementById('skillPopupLevel').textContent = `等级: ${skill.level || 1}`;
     document.getElementById('skillPopupDesc').textContent = skill.description;
-    document.getElementById('skillPopupCD').textContent = skill.cooldown;
+    document.getElementById('skillPopupCD').textContent = (typeof skill.cost === 'number') ? String(skill.cost) : '2';
     document.getElementById('skillDetailModal').classList.remove('hidden');
   }
 
@@ -145,4 +145,3 @@
   if (window.Game && window.Game.ui) window.Game.ui.modals = api;
   window.__modalsUI = api;
 })();
-

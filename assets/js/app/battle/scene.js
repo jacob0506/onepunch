@@ -28,13 +28,19 @@
     }
     if (pending.actionType === 'basic') {
       if (targetSide !== 'enemy') return;
+      const frontAlive = (battleSceneDebugState.enemies || []).filter(u => u && u.currentHp > 0 && (u.position || 'front') === 'front');
+      if (frontAlive.length > 0 && (target.position || 'front') !== 'front') {
+        if (typeof pushBattleSceneDebugFeed === 'function') pushBattleSceneDebugFeed('普攻只能攻击敌方前排');
+        renderBattleSceneDebug();
+        return;
+      }
       const mult =
         actor.class === 'assassin' ? 1.1 :
         actor.class === 'warrior' ? 1.0 :
         actor.class === 'archer' ? 1.0 :
         actor.class === 'mage' ? 1.0 :
         1.0;
-      battleSceneDebugApplyHit(actor, target, mult, '普攻');
+      battleSceneDebugApplyHit(actor, target, mult, '普攻', { ccOnce: { used: false } });
       setBattleSceneDebugHitFx('enemy', targetIndex);
     } else if (pending.actionType === 'skill' && typeof pending.skillIndex === 'number') {
       const ok = battleSceneDebugApplySkill(actor, 'player', pending.skillIndex, targetSide, targetIndex);
@@ -81,4 +87,3 @@
   if (window.Game && window.Game.battle) window.Game.battle.scene = api;
   window.__battleScene = api;
 })();
-

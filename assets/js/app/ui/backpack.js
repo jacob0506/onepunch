@@ -159,10 +159,12 @@
   }
 
   function applyEquipmentUpgrade(target, material) {
-    if (!target || !material) return false;
+    if (!target) return false;
     const maxLevel = (window.__inventory && window.__inventory.getMaxEquipmentLevel) ? window.__inventory.getMaxEquipmentLevel(target.rarity) : 20;
     if ((target.level || 1) >= maxLevel) return false;
-    const gain = (window.__inventory && window.__inventory.getEquipmentFeedExp) ? window.__inventory.getEquipmentFeedExp(material) : 40;
+    const gain = material
+      ? ((window.__inventory && window.__inventory.getEquipmentFeedExp) ? window.__inventory.getEquipmentFeedExp(material) : 40)
+      : 100;
     const goldCost = Math.max(0, Math.floor(gain * 2.2));
     const stoneCost = Math.max(1, Math.ceil(gain / 55) * getRarityCostMult(target.rarity));
     ensureMaterials();
@@ -188,9 +190,11 @@
   }
 
   function applyInscriptionUpgrade(target, material) {
-    if (!target || !material) return false;
+    if (!target) return false;
     if ((target.level || 1) >= 10) return false;
-    const gain = (window.__inventory && window.__inventory.getInscriptionFeedExp) ? window.__inventory.getInscriptionFeedExp(material) : 35;
+    const gain = material
+      ? ((window.__inventory && window.__inventory.getInscriptionFeedExp) ? window.__inventory.getInscriptionFeedExp(material) : 35)
+      : 45;
     const dustCost = Math.max(1, Math.ceil(gain / 45) * getRarityCostMult(target.rarity));
     ensureMaterials();
     if ((gameData.player.materials.inscriptionDust || 0) < dustCost) {
@@ -715,44 +719,41 @@
           return;
         }
         const material = findMaterialEquipment(item.instanceId);
-        if (!material) {
-          alert('没有可用于升级的材料装备（需未被任何角色装备）');
-          return;
-        }
-        const gain = (window.__inventory && window.__inventory.getEquipmentFeedExp) ? window.__inventory.getEquipmentFeedExp(material) : 0;
+        const gain = material ? ((window.__inventory && window.__inventory.getEquipmentFeedExp) ? window.__inventory.getEquipmentFeedExp(material) : 0) : 100;
         const goldCost = Math.max(0, Math.floor(gain * 2.2));
         const stoneCost = Math.max(1, Math.ceil(gain / 55) * getRarityCostMult(item.rarity));
         const mMeta = getMaterialMeta('enhanceStone');
         const ownedStone = gameData.player.materials.enhanceStone || 0;
-        const ok = confirm(`消耗装备作为材料并升级？\n材料：${material.name} Lv.${material.level || 1}（${material.rarity}）\n获得经验：+${gain}\n金币消耗：${goldCost}\n${mMeta.name}：${ownedStone}/${stoneCost}`);
+        const tip = material
+          ? `消耗装备作为材料并升级？\n材料：${material.name} Lv.${material.level || 1}（${material.rarity}）`
+          : `使用材料强化并升级？\n材料：${mMeta.name}`;
+        const ok = confirm(`${tip}\n获得经验：+${gain}\n金币消耗：${goldCost}\n${mMeta.name}：${ownedStone}/${stoneCost}`);
         if (!ok) return;
         const res = applyEquipmentUpgrade(item, material);
         if (!res) return;
-        gameData.equipment = gameData.equipment.filter(x => x && x.instanceId !== material.instanceId);
+        if (material) gameData.equipment = gameData.equipment.filter(x => x && x.instanceId !== material.instanceId);
       } else {
         if ((item.level || 1) >= 10) {
           alert('已达到最高等级');
           return;
         }
         const material = findMaterialInscription(item.instanceId);
-        if (!material) {
-          alert('没有可用于升级的材料铭文（需未被任何角色镶嵌）');
-          return;
-        }
-        const gain = (window.__inventory && window.__inventory.getInscriptionFeedExp) ? window.__inventory.getInscriptionFeedExp(material) : 0;
+        const gain = material ? ((window.__inventory && window.__inventory.getInscriptionFeedExp) ? window.__inventory.getInscriptionFeedExp(material) : 0) : 45;
         const dustCost = Math.max(1, Math.ceil(gain / 45) * getRarityCostMult(item.rarity));
         const mMeta = getMaterialMeta('inscriptionDust');
         const ownedDust = gameData.player.materials.inscriptionDust || 0;
-        const ok = confirm(`消耗铭文作为材料并升级？\n材料：${material.name} Lv.${material.level || 1}（${material.rarity}）\n获得经验：+${gain}\n${mMeta.name}：${ownedDust}/${dustCost}`);
+        const tip = material
+          ? `消耗铭文作为材料并升级？\n材料：${material.name} Lv.${material.level || 1}（${material.rarity}）`
+          : `使用材料升级？\n材料：${mMeta.name}`;
+        const ok = confirm(`${tip}\n获得经验：+${gain}\n${mMeta.name}：${ownedDust}/${dustCost}`);
         if (!ok) return;
         const res = applyInscriptionUpgrade(item, material);
         if (!res) return;
-        gameData.inscriptions = gameData.inscriptions.filter(x => x && x.instanceId !== material.instanceId);
+        if (material) gameData.inscriptions = gameData.inscriptions.filter(x => x && x.instanceId !== material.instanceId);
       }
 
       if (typeof saveGameProgress === 'function') saveGameProgress();
       if (typeof updateUI === 'function') updateUI();
-      if (hasSelectedChar && typeof selectCharacterToCultivate === 'function') selectCharacterToCultivate(selectedCharacter);
       render();
     };
 

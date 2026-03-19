@@ -1,13 +1,113 @@
 {
   "characters": [
     { "id": "char_001", "name": "剑心", "rarity": "R", "class": "warrior", "baseAttributes": { "attack": 100, "defense": 50, "health": 1000, "speed": 80 }, "skills": [{ "id": "skill_001", "name": "剑刃风暴", "description": "对敌方全体造成120%攻击力的伤害", "cooldown": 3 }], "position": "front", "faction": "knight", "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/3cf6c9fe60794fdea2505ec680b05dd5~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928650&x-signature=NFEoebpMo0LJ8Cw7kVA8ZvVr6WY%3D" },
-    { "id": "char_sur_001", "name": "虚空主宰·卡修斯", "rarity": "SUR", "class": "mage", "baseAttributes": { "attack": 850, "defense": 220, "health": 6500, "speed": 115 }, "skills": [{ "id": "skill_sur_001", "name": "虚空崩塌", "description": "对敌方全体造成400%攻击力的伤害，并吞噬目标15%当前生命值", "cooldown": 4 }], "passive": "虚空之躯：每回合开始时，获得自身生命上限10%的护盾", "position": "back", "faction": "void", "imageUrl": "./assets/sprites/虚空主宰·卡修斯.png" },
-    { "id": "char_sur_002", "name": "极意剑圣·御田", "rarity": "SUR", "class": "warrior", "baseAttributes": { "attack": 920, "defense": 200, "health": 5800, "speed": 145 }, "skills": [{ "id": "skill_sur_002", "name": "无二剑意", "description": "对敌方单体造成600%攻击力的伤害，无视目标50%防御", "cooldown": 3 }], "passive": "剑意觉醒：暴击率增加30%，暴击伤害增加50%", "position": "front", "faction": "knight", "imageUrl": "./assets/sprites/极意剑圣·御田.png" },
-    { "id": "char_sur_003", "name": "神罚天使·加百列", "rarity": "SUR", "class": "archer", "baseAttributes": { "attack": 880, "defense": 180, "health": 5200, "speed": 125 }, "skills": [{ "id": "skill_sur_003", "name": "末日审判", "description": "对随机4名敌人造成350%伤害，并有40%几率眩晕目标1回合", "cooldown": 4 }], "passive": "神圣光辉：全体队友伤害减免增加20%", "position": "back", "faction": "light", "imageUrl": "./assets/sprites/神罚天使·加百列.png" },
+    {
+      "id": "char_sur_001",
+      "name": "虚空主宰·卡修斯",
+      "rarity": "SUR",
+      "class": "mage",
+      "baseAttributes": { "attack": 850, "defense": 220, "health": 6500, "speed": 115 },
+      "skills": [{
+        "id": "skill_sur_001",
+        "name": "虚空崩塌",
+        "cost": 4,
+        "description": "对敌方全体造成400%攻击力伤害，并额外造成12%目标最大生命值的真实伤害",
+        "effects": [
+          { "type": "damage", "target": "allEnemies", "scale": 4.0 },
+          { "type": "trueDamage", "target": "allEnemies", "scaleFrom": "targetMaxHp", "scale": 0.12 }
+        ]
+      }],
+      "passive": "虚空之躯：每回合开始时，获得自身生命上限10%的护盾",
+      "position": "back",
+      "faction": "void",
+      "imageUrl": "./assets/sprites/虚空主宰·卡修斯.png"
+    },
+    {
+      "id": "char_sur_002",
+      "name": "极意剑圣·御田",
+      "rarity": "SUR",
+      "class": "warrior",
+      "baseAttributes": { "attack": 920, "defense": 200, "health": 5800, "speed": 145 },
+      "skills": [{
+        "id": "skill_sur_002",
+        "name": "无二剑意",
+        "cost": 4,
+        "description": "对敌方单体造成600%攻击力伤害，无视目标50%防御；若目标生命低于30%，追加一次8%最大生命值真实伤害",
+        "effects": [
+          { "type": "damage", "target": "enemy", "scale": 6.0, "ignoreDef": 50 },
+          { "type": "trueDamage", "target": "enemy", "requireHpBelow": 0.30, "scaleFrom": "targetMaxHp", "scale": 0.08 }
+        ]
+      }],
+      "passive": "剑意觉醒：暴击率增加30%，暴击伤害增加50%",
+      "position": "front",
+      "faction": "knight",
+      "imageUrl": "./assets/sprites/极意剑圣·御田.png"
+    },
+    {
+      "id": "char_sur_003",
+      "name": "神罚天使·加百列",
+      "rarity": "SUR",
+      "class": "archer",
+      "baseAttributes": { "attack": 880, "defense": 180, "health": 5200, "speed": 125 },
+      "skills": [{
+        "id": "skill_sur_003",
+        "name": "末日审判",
+        "cost": 4,
+        "description": "对随机4名敌人造成350%伤害，并对其中1名敌人施加眩晕1回合（绝对命中）",
+        "effects": [
+          { "type": "damage", "target": "randomEnemies", "scale": 3.5, "hits": 4 },
+          { "type": "cc", "target": "randomEnemies", "cc": "stun", "turns": 1 }
+        ]
+      }],
+      "passive": "神圣光辉：全体队友伤害减免增加20%",
+      "position": "back",
+      "faction": "light",
+      "imageUrl": "./assets/sprites/神罚天使·加百列.png"
+    },
     { "id": "char_sur_004", "name": "墨羽龙皇·红烨", "rarity": "SUR", "class": "tank", "baseAttributes": { "attack": 650, "defense": 450, "health": 12000, "speed": 90 }, "skills": [{ "id": "skill_sur_004", "name": "龙息震慑", "description": "嘲讽敌方全体并获得50%减伤，持续2回合", "cooldown": 5 }], "passive": "龙鳞铠甲：受到的所有伤害降低30%，并反弹15%伤害；龙魂不灭：复活1次，每次复活恢复30%生命", "position": "front", "faction": "dragon", "imageUrl": "./assets/sprites/墨羽龙皇·红烨.png" },
     { "id": "char_sur_005", "name": "星海歌姬·莉莉丝", "rarity": "SUR", "class": "healer", "baseAttributes": { "attack": 580, "defense": 210, "health": 7200, "speed": 105 }, "skills": [{ "id": "skill_sur_005", "name": "星辉乐章", "description": "恢复全体队友400%攻击力的生命，并增加其30%攻击力，持续2回合", "cooldown": 4 }], "passive": "星之守护：队友生命低于50%时，自动为其提供一个等同于莉莉丝攻击力200%的护盾", "position": "back", "faction": "star", "imageUrl": "./assets/sprites/星海歌姬·莉莉丝.png" },
-    { "id": "char_sur_006", "name": "深渊幽灵·赛恩", "rarity": "SUR", "class": "assassin", "baseAttributes": { "attack": 980, "defense": 150, "health": 4800, "speed": 160 }, "skills": [{ "id": "skill_sur_006", "name": "灵魂收割", "description": "对血量百分比最低的目标造成700%伤害，若击杀目标则立即重置冷却", "cooldown": 4 }], "passive": "幽灵隐匿：闪避率增加40%，成功闪避后下一次攻击必暴击", "position": "back", "faction": "abyss", "imageUrl": "./assets/sprites/深渊幽灵·塞恩.png" },
-    { "id": "char_sur_007", "name": "机械先驱·维克托", "rarity": "SUR", "class": "mage", "baseAttributes": { "attack": 820, "defense": 230, "health": 6000, "speed": 110 }, "skills": [{ "id": "skill_sur_007", "name": "电磁风暴", "description": "对全体敌人造成320%伤害，并减少目标50点速度，持续2回合", "cooldown": 4 }], "passive": "诡谲之力·初：每回合可获得3点能量；为己方全体赋予“特化生命值”（等同于最大生命值20%的额外生命层），特化生命值受到的减伤效果提升2倍。每累计消耗70%特化生命值时，对随机一名敌方施加“极限力场”持续2回合", "position": "back", "faction": "tech", "imageUrl": "./assets/sprites/机械先驱·维克托.png" },
+    {
+      "id": "char_sur_006",
+      "name": "深渊幽灵·赛恩",
+      "rarity": "SUR",
+      "class": "assassin",
+      "baseAttributes": { "attack": 980, "defense": 150, "health": 4800, "speed": 160 },
+      "skills": [{
+        "id": "skill_sur_006",
+        "name": "灵魂收割",
+        "cost": 4,
+        "description": "对血量百分比最低的目标造成700%伤害；若击杀目标，则自身回满能量",
+        "effects": [
+          { "type": "damage", "target": "enemyLowest", "scale": 7.0 }
+        ]
+      }],
+      "passive": "幽灵隐匿：闪避率增加40%，成功闪避后下一次攻击必暴击",
+      "position": "back",
+      "faction": "abyss",
+      "imageUrl": "./assets/sprites/深渊幽灵·塞恩.png"
+    },
+    {
+      "id": "char_sur_007",
+      "name": "机械先驱·维克托",
+      "rarity": "SUR",
+      "class": "mage",
+      "isCore": true,
+      "baseAttributes": { "attack": 820, "defense": 230, "health": 6000, "speed": 110 },
+      "skills": [{
+        "id": "skill_sur_007",
+        "name": "电磁风暴",
+        "cost": 4,
+        "description": "对全体敌人造成320%伤害，并降低其速度50点，持续2回合",
+        "effects": [
+          { "type": "damage", "target": "allEnemies", "scale": 3.2 },
+          { "type": "debuff", "target": "allEnemies", "stat": "spdFlatDown", "value": 50, "turns": 2 }
+        ]
+      }],
+      "passive": "诡谲之力·初：每回合可获得3点能量；为己方全体赋予“特化生命值”（等同于最大生命值20%的额外生命层），特化生命值受到的减伤效果提升2倍。每累计消耗70%特化生命值时，对随机一名敌方施加“极限力场”持续2回合",
+      "position": "back",
+      "faction": "tech",
+      "imageUrl": "./assets/sprites/机械先驱·维克托.png"
+    },
     { "id": "char_sur_008", "name": "万物之母·盖亚", "rarity": "SUR", "class": "tank", "baseAttributes": { "attack": 600, "defense": 480, "health": 15000, "speed": 85 }, "skills": [{ "id": "skill_sur_008", "name": "大地之盾", "description": "为全体队友分摊50%伤害，并回复自身10%已损生命值", "cooldown": 4 }], "passive": "大地复苏：每回合回复自身5%最大生命值", "position": "front", "faction": "nature", "imageUrl": "./assets/sprites/万物之母·盖亚.png" },
     { "id": "char_sur_009", "name": "烬皇·绯莲", "rarity": "SUR", "class": "warrior", "baseAttributes": { "attack": 950, "defense": 180, "health": 6800, "speed": 120 }, "skills": [{ "id": "skill_sur_009", "name": "狂热怒斩", "description": "消耗自身10%当前生命，对敌方单体造成800%伤害", "cooldown": 3 }], "passive": "不灭战意：生命值每降低10%，攻击力提升15%", "position": "front", "faction": "war", "imageUrl": "./assets/sprites/烬皇·绯莲.png" },
     { "id": "char_sur_010", "name": "幻影猫娘·露露", "rarity": "SUR", "class": "assassin", "baseAttributes": { "attack": 900, "defense": 160, "health": 5000, "speed": 170 }, "skills": [{ "id": "skill_sur_010", "name": "幻影连击", "description": "对敌方后排造成4次攻击，每次造成150%伤害，并有30%几率偷取目标10点能量", "cooldown": 3 }], "passive": "嗜虐天性：登场使自身特化加速46%，并与我方攻击力最高的队友建立“生命链接”持续6回合。露露释放技能后，生命链接的队友将以80%强度发动一次“蓄能追击”（每回合最多1次）。生命链接存在时，露露不会被击败；若链接队友被击败则转移链接至新的攻击力最高队友（最多3次）", "position": "front", "faction": "beast", "imageUrl": "./assets/sprites/幻影猫娘·露露.png" },
@@ -16,29 +116,498 @@
     { "id": "char_sur_013", "name": "真视之钥·卡蜜拉", "rarity": "SUR", "class": "mage", "baseAttributes": { "attack": 920, "defense": 210, "health": 6000, "speed": 128 }, "skills": [{ "id": "skill_sur_013", "name": "真视裁决", "description": "解除敌方全体免疫并施加感电标记，造成320%群体伤害；对带有感电标记的目标追加一次240%伤害，并附加12%目标生命上限的真实伤害；降低其25%防御与25%闪避，持续2回合", "cooldown": 4 }], "passive": "真视之钥：效果命中提升20%，攻击时有40%几率给目标添加“感电”标记；对带有感电标记的目标伤害提升30%；无视目标10%防御", "position": "back", "faction": "sun", "imageUrl": "./assets/sprites/真视之钥·卡蜜拉.png" },
     { "id": "char_sur_014", "name": "花千树・鲤", "rarity": "SUR", "class": "healer", "baseAttributes": { "attack": 620, "defense": 220, "health": 7600, "speed": 112 }, "skills": [{ "id": "skill_sur_014", "name": "花海回春", "description": "为全体队友恢复300%攻击力生命，并清除负面状态；为全体队友施加护盾（45%攻击力）并免疫控制1回合，同时提升18%攻击力持续2回合", "cooldown": 5 }], "passive": "千树花域：队友生命低于60%时，自动为其提供一个等同于鲤攻击力250%的护盾；每回合开始时，获得自身生命上限8%的护盾；对负面状态的抗性提升20%。雨花共鸣：与星如雨·夜同场且双方存活时，全队速度提升12%且免伤提升10%；若仅鲤存活，则“蓦然回首”转为全队增益；若仅夜存活，则“蓦然回首”偏向控场强化，并获得1回合控免", "position": "back", "faction": "nature", "imageUrl": "./assets/sprites/花千树・鲤.png" },
     { "id": "char_ur_001", "name": "星如雨·夜", "rarity": "SUR", "class": "archer", "baseAttributes": { "attack": 910, "defense": 185, "health": 5200, "speed": 155 }, "skills": [{ "id": "skill_sur_015", "name": "星雨寂歌", "description": "群星坠落：降低敌方全体40点速度持续2回合；随后进行8段星雨打击（随机落点），每段造成135%伤害；并有35%几率沉默目标1回合。若目标处于沉默状态，追加2段按其最大生命值6%的真实伤害。", "cooldown": 4 }], "passive": "星雨天幕：暴击率提升18%，效果命中提升18%，无视目标10%防御。攻击时有35%几率沉默目标1回合；攻击带有沉默效果的目标时，伤害提升30%；攻击带有减速效果的目标时，伤害提升20%。雨花共鸣：与花千树・鲤同场且双方存活时，全队速度提升12%且免伤提升10%；若仅夜存活，则“蓦然回首”偏向控场强化；若仅鲤存活，则“蓦然回首”转为全队增益，并获得1回合控免", "position": "back", "faction": "star", "imageUrl": "./assets/sprites/星如雨·夜.png" },
-    { "id": "char_ur_002", "name": "烈焰魔导·莉娜", "rarity": "UR", "class": "mage", "baseAttributes": { "attack": 580, "defense": 110, "health": 2500, "speed": 105 }, "skills": [{ "id": "skill_ur_002", "name": "流星火雨", "description": "对全体敌人造成180%伤害，并附加持续3回合的灼烧", "cooldown": 4 }], "passive": "火之渴望：对灼烧目标伤害提升30%", "position": "back", "faction": "fire", "imageUrl": "./assets/sprites/烈焰魔导·莉娜.png" },
-    { "id": "char_ur_003", "name": "圣殿骑士·罗兰", "rarity": "UR", "class": "warrior", "baseAttributes": { "attack": 480, "defense": 220, "health": 3800, "speed": 95 }, "skills": [{ "id": "skill_ur_003", "name": "圣光裁决", "description": "对单体敌人造成300%伤害，并为自身提供等值护盾", "cooldown": 3 }], "passive": "坚毅不拔：防御力提升20%", "position": "front", "faction": "light", "imageUrl": "./assets/sprites/圣殿骑士·罗兰.png" },
-    { "id": "char_ur_004", "name": "暗影刺客·劫", "rarity": "UR", "class": "assassin", "baseAttributes": { "attack": 620, "defense": 100, "health": 2200, "speed": 135 }, "skills": [{ "id": "skill_ur_004", "name": "瞬狱影杀", "description": "对后排单体造成450%伤害，并附加流血效果", "cooldown": 3 }], "passive": "影奥义：暴击时伤害额外增加40%", "position": "back", "faction": "dark", "imageUrl": "./assets/sprites/暗影刺客·劫.png" },
-    { "id": "char_ur_005", "name": "大地守卫·托尔", "rarity": "UR", "class": "tank", "baseAttributes": { "attack": 420, "defense": 250, "health": 4500, "speed": 85 }, "skills": [{ "id": "skill_ur_005", "name": "山崩地裂", "description": "对前排敌人造成200%伤害，并有30%几率眩晕目标", "cooldown": 4 }], "passive": "大地结界：受到的普攻伤害降低25%", "position": "front", "faction": "earth", "imageUrl": "./assets/sprites/大地守卫·托尔.png" },
-    { "id": "char_ur_006", "name": "鬼巫圣女·紫苑", "rarity": "UR", "class": "warrior", "baseAttributes": { "attack": 590, "defense": 140, "health": 3200, "speed": 125 }, "skills": [{ "id": "skill_ur_006", "name": "狂风绝息斩", "description": "对单体目标造成500%伤害，若目标处于控制状态则伤害翻倍", "cooldown": 4 }], "passive": "浪客之道：暴击率提升100%，但暴击伤害降低10%", "position": "front", "faction": "wind", "imageUrl": "./assets/sprites/鬼巫圣女·紫苑.png" },
-    { "id": "char_ur_007", "name": "雷鸣祭司·莱妮", "rarity": "UR", "class": "mage", "baseAttributes": { "attack": 560, "defense": 130, "health": 2600, "speed": 115 }, "skills": [{ "id": "skill_ur_007", "name": "雷霆锁链", "description": "对3个目标造成220%伤害，并降低其20%攻击力", "cooldown": 4 }], "passive": "静电感应：攻击时有20%几率使目标麻痹一回合", "position": "back", "faction": "thunder", "imageUrl": "./assets/sprites/雷鸣祭司·莱妮.png" },
-    { "id": "char_ur_008", "name": "梅书·冬妍", "rarity": "UR", "class": "healer", "baseAttributes": { "attack": 450, "defense": 160, "health": 3500, "speed": 100 }, "skills": [{ "id": "skill_ur_008", "name": "万物生长", "description": "为全队回复等同于攻击力150%的生命值，并持续回复2回合", "cooldown": 4 }], "passive": "自然亲和：受到的治疗效果提升30%", "position": "back", "faction": "nature", "imageUrl": "./assets/sprites/梅书·冬妍.png" },
-    { "id": "char_ur_009", "name": "幽蝶梦使·伊芙", "rarity": "UR", "class": "warrior", "baseAttributes": { "attack": 540, "defense": 180, "health": 4000, "speed": 108 }, "skills": [{ "id": "skill_ur_009", "name": "狂鲨撕咬", "description": "对单体造成400%伤害，并将50%伤害转化为自身生命", "cooldown": 3 }], "passive": "嗜血狂暴：生命低于50%时，攻击力提升20%", "position": "front", "faction": "water", "imageUrl": "./assets/sprites/幽蝶梦使·伊芙.png" },
-    { "id": "char_ur_010", "name": "炼金术士·辛德拉", "rarity": "UR", "class": "mage", "baseAttributes": { "attack": 530, "defense": 140, "health": 2900, "speed": 112 }, "skills": [{ "id": "skill_ur_010", "name": "剧毒云雾", "description": "对全体敌人造成150%伤害，并使其每回合损失5%最大生命值", "cooldown": 4 }], "passive": "腐蚀毒素：中毒目标的防御力降低15%", "position": "back", "faction": "tech", "imageUrl": "./assets/sprites/炼金术士·辛德拉.png" },
-    { "id": "char_ur_011", "name": "圣翼狮骑·希薇娅", "rarity": "UR", "class": "tank", "baseAttributes": { "attack": 460, "defense": 240, "health": 4200, "speed": 92 }, "skills": [{ "id": "skill_ur_011", "name": "铁血咆哮", "description": "强制敌方前排攻击自己，并获得30%防御力加成", "cooldown": 4 }], "passive": "反击风暴：受到攻击时有30%几率反击，造成100%攻击伤害", "position": "front", "faction": "war", "imageUrl": "./assets/sprites/圣翼狮骑·希薇娅.png" },
-    { "id": "char_ur_012", "name": "真理之手·米迪尔", "rarity": "UR", "class": "assassin", "baseAttributes": { "attack": 610, "defense": 110, "health": 2300, "speed": 140 }, "skills": [{ "id": "skill_ur_012", "name": "幻影背刺", "description": "对随机一名敌人造成400%伤害，并使其沉默2回合", "cooldown": 4 }], "passive": "神出鬼没：每回合有25%几率免疫受到的第一次伤害", "position": "back", "faction": "rogue", "imageUrl": "./assets/sprites/真理之手·米迪尔.png" },
-    { "id": "char_ur_013", "name": "晨曦之光·露西", "rarity": "UR", "class": "healer", "baseAttributes": { "attack": 440, "defense": 170, "health": 3300, "speed": 118 }, "skills": [{ "id": "skill_ur_013", "name": "晨曦洗礼", "description": "为生命最低的队友恢复300%攻击力的生命，并清除所有负面状态", "cooldown": 3 }], "passive": "圣光加持：普攻有50%几率为队友增加10%速度", "position": "back", "faction": "light", "imageUrl": "./assets/sprites/晨曦之光·露西.png" },
-    { "id": "char_ur_014", "name": "星镜蛇姬·奈雅", "rarity": "UR", "class": "mage", "baseAttributes": { "attack": 570, "defense": 120, "health": 2700, "speed": 102 }, "skills": [{ "id": "skill_ur_014", "name": "极寒冰封", "description": "对全体敌人造成160%伤害，并有20%几率冻结目标1回合", "cooldown": 5 }], "passive": "霜冻之心：攻击被冻结的目标时，暴击伤害提升50%", "position": "back", "faction": "ice", "imageUrl": "./assets/sprites/星镜蛇姬·奈雅.png" },
-    { "id": "char_ur_015", "name": "荒野猎人·柯琳", "rarity": "UR", "class": "archer", "baseAttributes": { "attack": 550, "defense": 150, "health": 3100, "speed": 122 }, "skills": [{ "id": "skill_ur_015", "name": "兽性大发", "description": "对随机两名敌人造成3次攻击，每次造成80%伤害", "cooldown": 3 }], "passive": "野性印记：普攻会叠加印记，每层印记增加5%后续伤害", "position": "back", "faction": "beast", "imageUrl": "./assets/sprites/荒野猎人·柯琳.png" },
-    { "id": "char_ur_016", "name": "熔岩巨兽·墨菲", "rarity": "UR", "class": "tank", "baseAttributes": { "attack": 400, "defense": 280, "health": 4800, "speed": 82 }, "skills": [{ "id": "skill_ur_016", "name": "势不可挡", "description": "撞击敌方全体，造成150%防御力的伤害并强制嘲讽", "cooldown": 5 }], "passive": "花岗岩护盾：脱离战斗后获得最大生命值10%的永久护盾", "position": "front", "faction": "earth", "imageUrl": "./assets/sprites/熔岩巨兽·墨菲.png" },
-    { "id": "char_ur_017", "name": "虚空行者·卡莎", "rarity": "UR", "class": "assassin", "baseAttributes": { "attack": 630, "defense": 95, "health": 2400, "speed": 138 }, "skills": [{ "id": "skill_ur_017", "name": "虚空突刺", "description": "对单体造成400%伤害，并减少目标50点能量", "cooldown": 3 }], "passive": "虚空穿梭：击杀目标后进入隐身状态一回合", "position": "back", "faction": "void", "imageUrl": "./assets/sprites/虚空行者·卡莎.png" },
-    { "id": "char_ur_018", "name": "修罗武姬·酒呑", "rarity": "UR", "class": "warrior", "baseAttributes": { "attack": 580, "defense": 190, "health": 3600, "speed": 114 }, "skills": [{ "id": "skill_ur_018", "name": "真龙降世", "description": "变身为巨龙，增加30%攻击力和50%生命上限，持续3回合", "cooldown": 6 }], "passive": "龙裔血脉：每回合回复3%已损生命值", "position": "front", "faction": "dragon", "imageUrl": "./assets/sprites/修罗武姬·酒呑.png" },
-    { "id": "char_ur_019", "name": "机械战姬·阿尔法", "rarity": "UR", "class": "archer", "baseAttributes": { "attack": 560, "defense": 130, "health": 2800, "speed": 128 }, "skills": [{ "id": "skill_ur_019", "name": "导弹齐射", "description": "发射6枚导弹，随机攻击敌方单位，每枚造成80%伤害", "cooldown": 4 }], "passive": "精密瞄准：每攻击一次，暴击伤害提升5%（无上限）", "position": "back", "faction": "tech", "imageUrl": "./assets/sprites/机械战姬·阿尔法.png" },
-    { "id": "char_ur_020", "name": "冥界引路人·哈迪", "rarity": "UR", "class": "mage", "baseAttributes": { "attack": 600, "defense": 115, "health": 2600, "speed": 110 }, "skills": [{ "id": "skill_ur_020", "name": "灵魂收割", "description": "对血量低于20%的目标直接斩杀，否则造成300%伤害", "cooldown": 5 }], "passive": "亡者气息：敌方每死亡一人，哈迪增加10%攻击力", "position": "back", "faction": "abyss", "imageUrl": "./assets/sprites/冥界引路人·哈迪.png" },
-    { "id": "char_ur_021", "name": "翡翠龙女·依兰", "rarity": "UR", "class": "warrior", "baseAttributes": { "attack": 575, "defense": 175, "health": 3400, "speed": 120 }, "skills": [{ "id": "skill_ur_021", "name": "翡翠之怒", "description": "对单体造成350%伤害，并降低其40%防御，持续2回合", "cooldown": 3 }], "passive": "龙威：攻击时无视目标15%防御", "position": "front", "faction": "nature", "imageUrl": "./assets/sprites/翡翠龙女·依兰.png" },
-    { "id": "char_ur_022", "name": "烈阳祭司·阿蒙", "rarity": "UR", "class": "mage", "baseAttributes": { "attack": 540, "defense": 150, "health": 3000, "speed": 105 }, "skills": [{ "id": "skill_ur_022", "name": "烈阳普照", "description": "对全体敌人造成180%伤害，并降低其20%命中率", "cooldown": 4 }], "passive": "日光屏障：全队对负面状态的抗性提升20%", "position": "back", "faction": "sun", "imageUrl": "./assets/sprites/烈阳祭司·阿蒙.png" },
-    { "id": "char_ur_023", "name": "瑰羽·夜芙兰", "rarity": "UR", "class": "archer", "baseAttributes": { "attack": 595, "defense": 110, "health": 2700, "speed": 132 }, "skills": [{ "id": "skill_ur_023", "name": "月影连击", "description": "对后排单体造成3次120%伤害，并增加自身20%闪避", "cooldown": 3 }], "passive": "月光洗礼：闪避成功后回复10点能量", "position": "back", "faction": "moon", "imageUrl": "./assets/sprites/瑰羽·夜芙兰.png" },
-    { "id": "char_ur_024", "name": "天元龙女·孟依", "rarity": "UR", "class": "warrior", "baseAttributes": { "attack": 640, "defense": 160, "health": 3200, "speed": 118 }, "skills": [{ "id": "skill_ur_024", "name": "落子天元", "description": "对目标及其周围单位造成350%伤害", "cooldown": 4 }], "passive": "天意棋局：攻击时有30%几率额外触发一次100%伤害的雷击", "position": "front", "faction": "thunder", "imageUrl": "./assets/sprites/天元龙女·孟依.png" },
+    {
+      "id": "char_ur_002",
+      "name": "烈焰魔导·莉娜",
+      "rarity": "UR",
+      "class": "mage",
+      "baseAttributes": { "attack": 580, "defense": 110, "health": 2500, "speed": 105 },
+      "skills": [{
+        "id": "skill_ur_002",
+        "name": "流星火雨",
+        "cost": 4,
+        "description": "对全体敌人造成190%伤害，附加3回合灼烧；对已灼烧目标追加4%最大生命值真实伤害",
+        "effects": [
+          { "type": "damage", "target": "allEnemies", "scale": 1.9 },
+          { "type": "dot", "target": "allEnemies", "dot": "burn", "scale": 0.18, "turns": 3 },
+          { "type": "trueDamage", "target": "allEnemies", "requireStatus": "burn", "scaleFrom": "targetMaxHp", "scale": 0.04 }
+        ]
+      }],
+      "passive": "火之渴望：对灼烧目标伤害提升30%",
+      "position": "back",
+      "faction": "fire",
+      "imageUrl": "./assets/sprites/烈焰魔导·莉娜.png"
+    },
+    {
+      "id": "char_ur_003",
+      "name": "圣殿骑士·罗兰",
+      "rarity": "UR",
+      "class": "warrior",
+      "baseAttributes": { "attack": 480, "defense": 220, "health": 3800, "speed": 95 },
+      "skills": [{
+        "id": "skill_ur_003",
+        "name": "圣光裁决",
+        "cost": 3,
+        "description": "对单体敌人造成300%伤害，并为自身施加持续2回合护盾（300%攻击力）",
+        "effects": [
+          { "type": "damage", "target": "enemy", "scale": 3.0 },
+          { "type": "shield", "target": "ally", "scale": 3.0, "turns": 2 }
+        ]
+      }],
+      "passive": "坚毅不拔：防御力提升20%",
+      "position": "front",
+      "faction": "light",
+      "imageUrl": "./assets/sprites/圣殿骑士·罗兰.png"
+    },
+    {
+      "id": "char_ur_004",
+      "name": "暗影刺客·劫",
+      "rarity": "UR",
+      "class": "assassin",
+      "baseAttributes": { "attack": 620, "defense": 100, "health": 2200, "speed": 135 },
+      "skills": [{
+        "id": "skill_ur_004",
+        "name": "瞬狱影杀",
+        "cost": 4,
+        "description": "对生命最低的敌人造成450%伤害，并附加3回合流血；若目标带有沉默/眩晕/魅惑，追加一次150%伤害",
+        "effects": [
+          { "type": "damage", "target": "enemyLowest", "scale": 4.5 },
+          { "type": "dot", "target": "enemyLowest", "dot": "bleed", "scale": 0.18, "turns": 3 },
+          { "type": "damage", "target": "enemyLowest", "scale": 1.5, "requireStatusAny": ["silence", "stun", "charm"] }
+        ]
+      }],
+      "passive": "影奥义：暴击时伤害额外增加40%",
+      "position": "back",
+      "faction": "dark",
+      "imageUrl": "./assets/sprites/暗影刺客·劫.png"
+    },
+    {
+      "id": "char_ur_005",
+      "name": "大地守卫·托尔",
+      "rarity": "UR",
+      "class": "tank",
+      "baseAttributes": { "attack": 420, "defense": 250, "health": 4500, "speed": 85 },
+      "skills": [{
+        "id": "skill_ur_005",
+        "name": "山崩地裂",
+        "cost": 3,
+        "description": "对敌方前排造成200%伤害，并眩晕其中1名目标1回合（绝对命中）",
+        "effects": [
+          { "type": "damage", "target": "allEnemiesFront", "scale": 2.0 },
+          { "type": "cc", "target": "randomEnemiesFront", "cc": "stun", "turns": 1 }
+        ]
+      }],
+      "passive": "大地结界：受到的普攻伤害降低25%",
+      "position": "front",
+      "faction": "earth",
+      "imageUrl": "./assets/sprites/大地守卫·托尔.png"
+    },
+    {
+      "id": "char_ur_006",
+      "name": "鬼巫圣女·紫苑",
+      "rarity": "UR",
+      "class": "warrior",
+      "baseAttributes": { "attack": 590, "defense": 140, "health": 3200, "speed": 125 },
+      "skills": [{
+        "id": "skill_ur_006",
+        "name": "狂风绝息斩",
+        "cost": 4,
+        "description": "对单体目标造成500%伤害；若目标处于控制状态，追加一次250%伤害",
+        "effects": [
+          { "type": "damage", "target": "enemy", "scale": 5.0 },
+          { "type": "damage", "target": "enemy", "scale": 2.5, "requireStatusAny": ["silence", "stun", "charm"] }
+        ]
+      }],
+      "passive": "浪客之道：暴击率提升100%，但暴击伤害降低10%",
+      "position": "front",
+      "faction": "wind",
+      "imageUrl": "./assets/sprites/鬼巫圣女·紫苑.png"
+    },
+    {
+      "id": "char_ur_007",
+      "name": "雷鸣祭司·莱妮",
+      "rarity": "UR",
+      "class": "mage",
+      "baseAttributes": { "attack": 560, "defense": 130, "health": 2600, "speed": 115 },
+      "skills": [{
+        "id": "skill_ur_007",
+        "name": "雷霆锁链",
+        "cost": 4,
+        "description": "对随机3名敌人各造成220%伤害，并降低其20%攻击力，持续2回合",
+        "effects": [
+          { "type": "damage", "target": "randomEnemies", "scale": 2.2, "hits": 3 },
+          { "type": "debuff", "target": "randomEnemies", "stat": "atkDown", "value": 20, "turns": 2 }
+        ]
+      }],
+      "passive": "静电感应：攻击时有20%几率使目标麻痹一回合",
+      "position": "back",
+      "faction": "thunder",
+      "imageUrl": "./assets/sprites/雷鸣祭司·莱妮.png"
+    },
+    {
+      "id": "char_ur_008",
+      "name": "梅书·冬妍",
+      "rarity": "UR",
+      "class": "healer",
+      "baseAttributes": { "attack": 450, "defense": 160, "health": 3500, "speed": 100 },
+      "skills": [{
+        "id": "skill_ur_008",
+        "name": "万物生长",
+        "cost": 4,
+        "description": "为全体队友恢复150%攻击力生命，并在2回合内持续回复（每回合90%攻击力）",
+        "effects": [
+          { "type": "heal", "target": "allAllies", "scale": 1.5 },
+          { "type": "dot", "target": "allAllies", "dot": "regen", "scale": 0.9, "turns": 2 }
+        ]
+      }],
+      "passive": "自然亲和：受到的治疗效果提升30%",
+      "position": "back",
+      "faction": "nature",
+      "imageUrl": "./assets/sprites/梅书·冬妍.png"
+    },
+    {
+      "id": "char_ur_009",
+      "name": "幽蝶梦使·伊芙",
+      "rarity": "UR",
+      "class": "warrior",
+      "baseAttributes": { "attack": 540, "defense": 180, "health": 4000, "speed": 108 },
+      "skills": [{
+        "id": "skill_ur_009",
+        "name": "狂鲨撕咬",
+        "cost": 3,
+        "description": "对单体造成400%伤害，并为自身恢复200%攻击力生命",
+        "effects": [
+          { "type": "damage", "target": "enemy", "scale": 4.0 },
+          { "type": "heal", "target": "ally", "scale": 2.0 }
+        ]
+      }],
+      "passive": "嗜血狂暴：生命低于50%时，攻击力提升20%",
+      "position": "front",
+      "faction": "water",
+      "imageUrl": "./assets/sprites/幽蝶梦使·伊芙.png"
+    },
+    {
+      "id": "char_ur_010",
+      "name": "炼金术士·辛德拉",
+      "rarity": "UR",
+      "class": "mage",
+      "isCore": true,
+      "baseAttributes": { "attack": 530, "defense": 140, "health": 2900, "speed": 112 },
+      "skills": [{
+        "id": "skill_ur_010",
+        "name": "剧毒云雾",
+        "cost": 4,
+        "description": "对全体敌人造成160%伤害，并附加3回合中毒（每回合造成10%攻击力持续伤害）；对中毒目标额外降低15%防御，持续2回合",
+        "effects": [
+          { "type": "damage", "target": "allEnemies", "scale": 1.6 },
+          { "type": "dot", "target": "allEnemies", "dot": "poison", "scale": 0.10, "turns": 3 },
+          { "type": "debuff", "target": "allEnemies", "stat": "defDown", "value": 15, "turns": 2, "requireStatus": "poison" }
+        ]
+      }],
+      "passive": "腐蚀毒素：中毒目标的防御力降低15%",
+      "position": "back",
+      "faction": "tech",
+      "imageUrl": "./assets/sprites/炼金术士·辛德拉.png"
+    },
+    {
+      "id": "char_ur_011",
+      "name": "圣翼狮骑·希薇娅",
+      "rarity": "UR",
+      "class": "tank",
+      "baseAttributes": { "attack": 460, "defense": 240, "health": 4200, "speed": 92 },
+      "skills": [{
+        "id": "skill_ur_011",
+        "name": "铁血咆哮",
+        "cost": 3,
+        "description": "嘲讽敌方全体2回合，并获得30%防御力加成与30%减伤，持续2回合",
+        "effects": [
+          { "type": "taunt", "target": "ally", "turns": 2 },
+          { "type": "buff", "target": "ally", "stat": "defUp", "value": 30, "turns": 2 },
+          { "type": "buff", "target": "ally", "stat": "dmgReducUp", "value": 30, "turns": 2 }
+        ]
+      }],
+      "passive": "反击风暴：受到攻击时有30%几率反击，造成100%攻击伤害",
+      "position": "front",
+      "faction": "war",
+      "imageUrl": "./assets/sprites/圣翼狮骑·希薇娅.png"
+    },
+    {
+      "id": "char_ur_012",
+      "name": "真理之手·米迪尔",
+      "rarity": "UR",
+      "class": "assassin",
+      "baseAttributes": { "attack": 610, "defense": 110, "health": 2300, "speed": 140 },
+      "skills": [{
+        "id": "skill_ur_012",
+        "name": "幻影背刺",
+        "cost": 4,
+        "description": "对随机一名敌人造成400%伤害，并沉默2回合（绝对命中）",
+        "effects": [
+          { "type": "damage", "target": "randomEnemies", "scale": 4.0 },
+          { "type": "cc", "target": "randomEnemies", "cc": "silence", "turns": 2 }
+        ]
+      }],
+      "passive": "神出鬼没：每回合有25%几率免疫受到的第一次伤害",
+      "position": "back",
+      "faction": "rogue",
+      "imageUrl": "./assets/sprites/真理之手·米迪尔.png"
+    },
+    {
+      "id": "char_ur_013",
+      "name": "晨曦之光·露西",
+      "rarity": "UR",
+      "class": "healer",
+      "baseAttributes": { "attack": 440, "defense": 170, "health": 3300, "speed": 118 },
+      "skills": [{
+        "id": "skill_ur_013",
+        "name": "晨曦洗礼",
+        "cost": 3,
+        "description": "为生命最低的队友恢复300%攻击力生命，并清除其负面状态",
+        "effects": [
+          { "type": "heal", "target": "allyLowest", "scale": 3.0 },
+          { "type": "dispel", "target": "allyLowest" }
+        ]
+      }],
+      "passive": "圣光加持：普攻有50%几率为队友增加10%速度",
+      "position": "back",
+      "faction": "light",
+      "imageUrl": "./assets/sprites/晨曦之光·露西.png"
+    },
+    {
+      "id": "char_ur_014",
+      "name": "星镜蛇姬·奈雅",
+      "rarity": "UR",
+      "class": "mage",
+      "baseAttributes": { "attack": 570, "defense": 120, "health": 2700, "speed": 102 },
+      "skills": [{
+        "id": "skill_ur_014",
+        "name": "极寒冰封",
+        "cost": 4,
+        "description": "对全体敌人造成160%伤害，并眩晕其中1名目标1回合（绝对命中）",
+        "effects": [
+          { "type": "damage", "target": "allEnemies", "scale": 1.6 },
+          { "type": "cc", "target": "randomEnemies", "cc": "stun", "turns": 1 }
+        ]
+      }],
+      "passive": "霜冻之心：攻击被冻结的目标时，暴击伤害提升50%",
+      "position": "back",
+      "faction": "ice",
+      "imageUrl": "./assets/sprites/星镜蛇姬·奈雅.png"
+    },
+    {
+      "id": "char_ur_015",
+      "name": "荒野猎人·柯琳",
+      "rarity": "UR",
+      "class": "archer",
+      "baseAttributes": { "attack": 550, "defense": 150, "health": 3100, "speed": 122 },
+      "skills": [{
+        "id": "skill_ur_015",
+        "name": "兽性大发",
+        "cost": 3,
+        "description": "对随机两名敌人各进行3次攻击，每次造成80%伤害；若目标处于流血/中毒/灼烧，额外追加1次攻击",
+        "effects": [
+          { "type": "damage", "target": "randomEnemies", "scale": 0.8, "hits": 6 },
+          { "type": "damage", "target": "randomEnemies", "scale": 0.8, "hits": 2, "requireStatusAny": ["bleed", "poison", "burn"] }
+        ]
+      }],
+      "passive": "野性印记：普攻会叠加印记，每层印记增加5%后续伤害",
+      "position": "back",
+      "faction": "beast",
+      "imageUrl": "./assets/sprites/荒野猎人·柯琳.png"
+    },
+    {
+      "id": "char_ur_016",
+      "name": "熔岩巨兽·墨菲",
+      "rarity": "UR",
+      "class": "tank",
+      "baseAttributes": { "attack": 400, "defense": 280, "health": 4800, "speed": 82 },
+      "skills": [{
+        "id": "skill_ur_016",
+        "name": "势不可挡",
+        "cost": 4,
+        "description": "对敌方全体造成150%攻击力伤害，并嘲讽敌方全体1回合",
+        "effects": [
+          { "type": "damage", "target": "allEnemies", "scale": 1.5 },
+          { "type": "taunt", "target": "ally", "turns": 2 }
+        ]
+      }],
+      "passive": "花岗岩护盾：脱离战斗后获得最大生命值10%的永久护盾",
+      "position": "front",
+      "faction": "earth",
+      "imageUrl": "./assets/sprites/熔岩巨兽·墨菲.png"
+    },
+    {
+      "id": "char_ur_017",
+      "name": "虚空行者·卡莎",
+      "rarity": "UR",
+      "class": "assassin",
+      "baseAttributes": { "attack": 630, "defense": 95, "health": 2400, "speed": 138 },
+      "skills": [{
+        "id": "skill_ur_017",
+        "name": "虚空突刺",
+        "cost": 3,
+        "description": "对单体造成400%伤害，并偷取目标2点能量",
+        "effects": [
+          { "type": "damage", "target": "enemy", "scale": 4.0 },
+          { "type": "energySteal", "target": "enemy", "amount": 2 }
+        ]
+      }],
+      "passive": "虚空穿梭：击杀目标后进入隐身状态一回合",
+      "position": "back",
+      "faction": "void",
+      "imageUrl": "./assets/sprites/虚空行者·卡莎.png"
+    },
+    {
+      "id": "char_ur_018",
+      "name": "修罗武姬·酒呑",
+      "rarity": "UR",
+      "class": "warrior",
+      "baseAttributes": { "attack": 580, "defense": 190, "health": 3600, "speed": 114 },
+      "skills": [{
+        "id": "skill_ur_018",
+        "name": "真龙降世",
+        "cost": 4,
+        "description": "进入龙裔姿态：提升30%攻击力与20%减伤，持续3回合，并立即获得护盾（80%攻击力）",
+        "effects": [
+          { "type": "buff", "target": "ally", "stat": "atkUp", "value": 30, "turns": 3 },
+          { "type": "buff", "target": "ally", "stat": "dmgReducUp", "value": 20, "turns": 3 },
+          { "type": "shield", "target": "ally", "scale": 0.8, "turns": 3 }
+        ]
+      }],
+      "passive": "龙裔血脉：每回合回复3%已损生命值",
+      "position": "front",
+      "faction": "dragon",
+      "imageUrl": "./assets/sprites/修罗武姬·酒呑.png"
+    },
+    {
+      "id": "char_ur_019",
+      "name": "机械战姬·阿尔法",
+      "rarity": "UR",
+      "class": "archer",
+      "isCore": true,
+      "baseAttributes": { "attack": 560, "defense": 130, "health": 2800, "speed": 128 },
+      "skills": [{
+        "id": "skill_ur_019",
+        "name": "导弹齐射",
+        "cost": 4,
+        "description": "发射6枚导弹随机轰击敌方单位，每枚造成80%伤害；额外偷取1点能量",
+        "effects": [
+          { "type": "damage", "target": "randomEnemies", "scale": 0.8, "hits": 6 },
+          { "type": "energySteal", "target": "randomEnemies", "amount": 1 }
+        ]
+      }],
+      "passive": "精密瞄准：每攻击一次，暴击伤害提升5%（无上限）",
+      "position": "back",
+      "faction": "tech",
+      "imageUrl": "./assets/sprites/机械战姬·阿尔法.png"
+    },
+    {
+      "id": "char_ur_020",
+      "name": "冥界引路人·哈迪",
+      "rarity": "UR",
+      "class": "mage",
+      "baseAttributes": { "attack": 600, "defense": 115, "health": 2600, "speed": 110 },
+      "skills": [{
+        "id": "skill_ur_020",
+        "name": "灵魂收割",
+        "cost": 4,
+        "description": "对生命低于20%的目标直接斩杀，否则造成300%伤害，并附加1回合沉默（绝对命中）",
+        "effects": [
+          { "type": "execute", "target": "enemyLowest", "threshold": 0.2 },
+          { "type": "damage", "target": "enemyLowest", "scale": 3.0 },
+          { "type": "cc", "target": "enemyLowest", "cc": "silence", "turns": 1 }
+        ]
+      }],
+      "passive": "亡者气息：敌方每死亡一人，哈迪增加10%攻击力",
+      "position": "back",
+      "faction": "abyss",
+      "imageUrl": "./assets/sprites/冥界引路人·哈迪.png"
+    },
+    {
+      "id": "char_ur_021",
+      "name": "翡翠龙女·依兰",
+      "rarity": "UR",
+      "class": "warrior",
+      "baseAttributes": { "attack": 575, "defense": 175, "health": 3400, "speed": 120 },
+      "skills": [{
+        "id": "skill_ur_021",
+        "name": "翡翠之怒",
+        "cost": 3,
+        "description": "对单体造成350%伤害，并降低其40%防御，持续2回合",
+        "effects": [
+          { "type": "damage", "target": "enemy", "scale": 3.5 },
+          { "type": "debuff", "target": "enemy", "stat": "defDown", "value": 40, "turns": 2 }
+        ]
+      }],
+      "passive": "龙威：攻击时无视目标15%防御",
+      "position": "front",
+      "faction": "nature",
+      "imageUrl": "./assets/sprites/翡翠龙女·依兰.png"
+    },
+    {
+      "id": "char_ur_022",
+      "name": "烈阳祭司·阿蒙",
+      "rarity": "UR",
+      "class": "mage",
+      "baseAttributes": { "attack": 540, "defense": 150, "health": 3000, "speed": 105 },
+      "skills": [{
+        "id": "skill_ur_022",
+        "name": "烈阳普照",
+        "cost": 4,
+        "description": "对全体敌人造成180%伤害，并降低其20%攻击力与20%速度，持续2回合",
+        "effects": [
+          { "type": "damage", "target": "allEnemies", "scale": 1.8 },
+          { "type": "debuff", "target": "allEnemies", "stat": "atkDown", "value": 20, "turns": 2 },
+          { "type": "debuff", "target": "allEnemies", "stat": "spdDown", "value": 20, "turns": 2 }
+        ]
+      }],
+      "passive": "日光屏障：全队对负面状态的抗性提升20%",
+      "position": "back",
+      "faction": "sun",
+      "imageUrl": "./assets/sprites/烈阳祭司·阿蒙.png"
+    },
+    {
+      "id": "char_ur_023",
+      "name": "瑰羽·夜芙兰",
+      "rarity": "UR",
+      "class": "archer",
+      "baseAttributes": { "attack": 595, "defense": 110, "health": 2700, "speed": 132 },
+      "skills": [{
+        "id": "skill_ur_023",
+        "name": "月影连击",
+        "cost": 3,
+        "description": "对生命最低的敌人造成3次120%伤害，并增加自身20%闪避，持续2回合",
+        "effects": [
+          { "type": "damage", "target": "enemyLowest", "scale": 1.2, "hits": 3 },
+          { "type": "buff", "target": "ally", "stat": "dodgeUp", "value": 20, "turns": 2 }
+        ]
+      }],
+      "passive": "月光洗礼：闪避成功后回复10点能量",
+      "position": "back",
+      "faction": "moon",
+      "imageUrl": "./assets/sprites/瑰羽·夜芙兰.png"
+    },
+    {
+      "id": "char_ur_024",
+      "name": "天元龙女·孟依",
+      "rarity": "UR",
+      "class": "warrior",
+      "baseAttributes": { "attack": 640, "defense": 160, "health": 3200, "speed": 118 },
+      "skills": [{
+        "id": "skill_ur_024",
+        "name": "落子天元",
+        "cost": 4,
+        "description": "对敌方前排造成350%伤害，并对随机一名敌人追加一次100%雷击伤害",
+        "effects": [
+          { "type": "damage", "target": "allEnemiesFront", "scale": 3.5 },
+          { "type": "damage", "target": "randomEnemies", "scale": 1.0 }
+        ]
+      }],
+      "passive": "天意棋局：攻击时有30%几率额外触发一次100%伤害的雷击",
+      "position": "front",
+      "faction": "thunder",
+      "imageUrl": "./assets/sprites/天元龙女·孟依.png"
+    },
 
     { "id": "char_002", "name": "铁拳学徒", "rarity": "R", "class": "warrior", "baseAttributes": { "attack": 105, "defense": 55, "health": 1050, "speed": 88 }, "skills": [{ "id": "skill_r_002", "name": "直拳", "description": "对敌方单体造成130%攻击力的伤害", "cooldown": 3 }], "position": "front", "faction": "war", "imageUrl": "" },
     { "id": "char_003", "name": "林间弓手", "rarity": "R", "class": "archer", "baseAttributes": { "attack": 110, "defense": 45, "health": 980, "speed": 95 }, "skills": [{ "id": "skill_r_003", "name": "双矢连发", "description": "对随机2名敌人各造成110%攻击力的伤害", "cooldown": 3 }], "position": "back", "faction": "nature", "imageUrl": "" },

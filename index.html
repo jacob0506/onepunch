@@ -582,7 +582,7 @@
             <h3 id="skillPopupName" class="text-lg font-bold text-primary mb-1">技能名称</h3>
             <div id="skillPopupLevel" class="text-xs text-gray-500 mb-3">等级: 1</div>
             <p id="skillPopupDesc" class="text-sm text-gray-300 leading-relaxed mb-4">技能描述...</p>
-            <div class="text-[10px] text-gray-500">冷却: <span id="skillPopupCD">3</span>回合 | 点击空白处关闭</div>
+            <div class="text-[10px] text-gray-500">能量消耗: <span id="skillPopupCD">2</span> | 无冷却 | 点击空白处关闭</div>
           </div>
         </div>
       </div>
@@ -2827,7 +2827,7 @@
       document.getElementById('detailCharacterSkill').innerHTML = `
         <div class="flex justify-between items-center">
           <h5 class="font-bold">${skill.name} <span class="text-primary text-xs ml-1">Lv.${skillLevel}</span></h5>
-          <span class="text-xs bg-gray-700 px-2 py-1 rounded">冷却: ${skill.cooldown}回合</span>
+          <span class="text-xs bg-gray-700 px-2 py-1 rounded">能量: ${(typeof skill.cost === 'number' ? skill.cost : 2)}</span>
         </div>
         <p class="text-sm text-gray-400 mt-1">${skill.description}</p>
       `;
@@ -3060,6 +3060,7 @@
           const skills = Array.isArray(c.skills) ? JSON.parse(JSON.stringify(c.skills)) : [];
           const passiveText = battleSceneDebugGetLoadoutPassiveText(c);
           const passiveRuntime = battleSceneDebugParsePassiveText(passiveText);
+          const isCore = !!c.isCore || (Array.isArray(c.tags) && c.tags.includes('core'));
           const atk = Math.floor((stats.attack || 0) * (1 + (passiveRuntime.atkPercent || 0) / 100));
           const def = Math.floor((stats.defense || 0) * (1 + (passiveRuntime.defPercent || 0) / 100));
           const hp = Math.floor((stats.health || 1) * (1 + (passiveRuntime.hpPercent || 0) / 100));
@@ -3071,6 +3072,8 @@
             imageUrl: c.imageUrl,
             rarity: c.rarity,
             class: c.class,
+            position: c.position || 'back',
+            isCore,
             maxHp: hp,
             currentHp: hp,
             attack: atk,
@@ -3089,7 +3092,6 @@
             statuses: [],
             shield: 0,
             skills,
-            skillCd: skills.map(() => 0),
             passiveText,
             passiveRuntime
           });
@@ -3112,6 +3114,8 @@
             attack: typeof e.attack === 'number' ? e.attack : 100,
             defense: typeof e.defense === 'number' ? e.defense : 50,
             speed: typeof e.speed === 'number' ? e.speed : 100,
+            position: e.position || 'front',
+            isCore: false,
             isEnemy: true,
             statuses: [],
             shield: 0,
@@ -3146,7 +3150,7 @@
           round: 1,
           auto: false,
           speed: 2,
-          energy: 6,
+          energy: 2,
           player,
           enemies,
           feed: [],
@@ -3346,15 +3350,13 @@
           const skills = actor && Array.isArray(actor.skills) ? actor.skills : [];
           skills.slice(0, 4).forEach((s, idx) => {
             const cost = battleSceneDebugGetSkillCost(s);
-            const cd = actor && Array.isArray(actor.skillCd) ? (actor.skillCd[idx] || 0) : 0;
             const spec = battleSceneDebugGetSkillTargetSpec(s);
-            const disabled = silenced || cd > 0 || energy < cost;
+            const disabled = silenced || energy < cost;
             const selected = battleSceneDebugState.awaitingTarget.actionType === 'skill' && battleSceneDebugState.awaitingTarget.skillIndex === idx;
-            const label = `${s && s.name ? s.name : `技能${idx + 1}`}${cd > 0 ? ` CD${cd}` : ''}（-${cost}）`;
+            const label = `${s && s.name ? s.name : `技能${idx + 1}`}${cost > 0 ? `（-${cost}）` : ''}`;
             addBtn(label, selected, disabled, () => {
               if (!battleSceneDebugState || !battleSceneDebugState.awaitingTarget) return;
               if ((battleSceneDebugState.energy || 0) < cost) return;
-              if (cd > 0) return;
               if (silenced) return;
               if (spec.kind === 'auto') {
                 const ok = battleSceneDebugApplySkill(actor, 'player', idx, 'enemy', 0);
@@ -3393,19 +3395,20 @@
     function battleSceneDebugInitRound(isFirst) {
       if (!battleSceneDebugState) return;
       const dead = battleSceneDebugState.player.filter(u => u && !(u.currentHp > 0)).length;
-      const gain = Math.max(0, 6 - 2 * dead);
+      const coreAlive = battleSceneDebugState.player.filter(u => u && u.currentHp > 0 && u.isCore).length;
+      const gain = Math.max(0, (2 + 4 * coreAlive) - dead);
       if (!isFirst) battleSceneDebugState.round += 1;
       if (!isFirst && (battleSceneDebugState.round || 1) > 30) {
         pushBattleSceneDebugFeed(`回合上限：超过 30 回合仍未结束，判定失败`);
         battleSceneDebugFinish(false);
         return;
       }
-      battleSceneDebugState.energy = isFirst ? 6 : ((battleSceneDebugState.energy || 0) + gain);
+      battleSceneDebugState.energy = isFirst ? gain : ((battleSceneDebugState.energy || 0) + gain);
       battleSceneDebugState.turnOrder = buildBattleSceneDebugTurnOrder();
       battleSceneDebugState.turnCursor = 0;
       battleSceneDebugState.awaitingTarget = null;
-      if (isFirst) pushBattleSceneDebugFeed(`回合开始：第 ${battleSceneDebugState.round} 回合，初始能量 6`);
-      else pushBattleSceneDebugFeed(`回合开始：第 ${battleSceneDebugState.round} 回合，死亡${dead}人，获得能量 +${gain}（公式 6-2*死亡数）`);
+      if (isFirst) pushBattleSceneDebugFeed(`回合开始：第 ${battleSceneDebugState.round} 回合，初始能量 ${gain}（基础2 + 核心*4 - 死亡）`);
+      else pushBattleSceneDebugFeed(`回合开始：第 ${battleSceneDebugState.round} 回合，核心${coreAlive}人，死亡${dead}人，获得能量 +${gain}`);
       battleSceneDebugApplyRoundStartPassives();
       renderBattleSceneDebug();
     }
@@ -3472,6 +3475,7 @@
     function battleSceneDebugAddStatus(unit, type, value, turns) {
       if (!unit) return;
       if (!unit.statuses) unit.statuses = [];
+      if ((type === 'stun' || type === 'silence' || type === 'charm') && unit.statuses.some(s => s && (s.type === 'ccImmune' || s.type === `${type}Immune`))) return;
       const existing = unit.statuses.find(s => s && s.type === type);
       if (existing) {
         if (typeof existing.value === 'number' && typeof value === 'number') existing.value = value >= 0 ? Math.max(existing.value, value) : Math.min(existing.value, value);
@@ -3492,7 +3496,6 @@
           if ((s.turns || 0) > 0) s.turns -= 1;
         });
         u.statuses = (u.statuses || []).filter(s => s && (s.turns || 0) > 0);
-        if (Array.isArray(u.skillCd)) u.skillCd = u.skillCd.map(cd => Math.max(0, (cd || 0) - 1));
       });
     }
 
@@ -3503,7 +3506,6 @@
         if ((s.turns || 0) > 0) s.turns -= 1;
       });
       unit.statuses = (unit.statuses || []).filter(s => s && (s.turns || 0) > 0);
-      if (Array.isArray(unit.skillCd)) unit.skillCd = unit.skillCd.map(cd => Math.max(0, (cd || 0) - 1));
     }
 
     function battleSceneDebugGetStage() {
@@ -3521,6 +3523,21 @@
     function battleSceneDebugApplyRoundStartPassives() {
       if (!battleSceneDebugState) return;
       battleSceneDebugCatLinkState.roundFollowUpUsed = false;
+      if (battleSceneDebugState.round === 1) {
+        battleSceneDebugState.player.forEach(u => u && u.currentHp > 0 && battleSceneDebugAddStatus(u, 'nonCritUndying', 1, 999));
+        battleSceneDebugState.player.forEach(u => {
+          if (!u || u.currentHp <= 0) return;
+          const text = (u.passiveText || (u.passive && u.passive.text) || '');
+          if (/(全体队友|所有队友)永久免疫控制/.test(text)) battleSceneDebugState.player.forEach(x => x && x.currentHp > 0 && battleSceneDebugAddStatus(x, 'ccImmune', 1, 999));
+          if (/(全体队友|所有队友)永久免疫眩晕/.test(text)) battleSceneDebugState.player.forEach(x => x && x.currentHp > 0 && battleSceneDebugAddStatus(x, 'stunImmune', 1, 999));
+          if (/(全体队友|所有队友)永久免疫沉默/.test(text)) battleSceneDebugState.player.forEach(x => x && x.currentHp > 0 && battleSceneDebugAddStatus(x, 'silenceImmune', 1, 999));
+          if (/(全体队友|所有队友)永久免疫魅惑/.test(text)) battleSceneDebugState.player.forEach(x => x && x.currentHp > 0 && battleSceneDebugAddStatus(x, 'charmImmune', 1, 999));
+          if (/永久免疫控制/.test(text)) battleSceneDebugAddStatus(u, 'ccImmune', 1, 999);
+          if (/永久免疫眩晕/.test(text)) battleSceneDebugAddStatus(u, 'stunImmune', 1, 999);
+          if (/永久免疫沉默/.test(text)) battleSceneDebugAddStatus(u, 'silenceImmune', 1, 999);
+          if (/永久免疫魅惑/.test(text)) battleSceneDebugAddStatus(u, 'charmImmune', 1, 999);
+        });
+      }
       const all = [...battleSceneDebugState.player, ...battleSceneDebugState.enemies].filter(u => u && u.currentHp > 0);
       all.forEach(u => {
         const text = (u.passiveText || (u.passive && u.passive.text) || '');
@@ -3962,7 +3979,7 @@
       }
 
       const { dealt } = battleSceneDebugApplyDamage(target, r.damage);
-      battleSceneDebugAfterHit(attacker, target, label === '普攻');
+      battleSceneDebugAfterHit(attacker, target, label === '普攻', opts);
       const p = attacker.passiveRuntime;
       if (dealt > 0 && p && p.critDmgPerHit > 0) {
         p.critDmgStacks = (p.critDmgStacks || 0) + 1;
@@ -3994,15 +4011,9 @@
         }
         const undying = battleSceneDebugGetStatus(target, 'nonCritUndying');
         if (undying && !r.crit) {
-          const charges = undying.meta && typeof undying.meta.charges === 'number' ? undying.meta.charges : 1;
-          if (charges > 0) {
-            undying.meta = { ...(undying.meta || {}), charges: charges - 1 };
-            target.currentHp = 1;
-            pushBattleSceneDebugFeed(`不屈：${target.displayName || target.name} 在非暴击致命伤下存活`);
-            if (undying.meta.charges <= 0) undying.turns = 0;
-            target.statuses = (target.statuses || []).filter(x => x && (x.turns || 0) > 0);
-            return { damage: dealt };
-          }
+          target.currentHp = 1;
+          pushBattleSceneDebugFeed(`不败：${target.displayName || target.name} 在非暴击致命伤下存活`);
+          return { damage: dealt };
         }
 
         const revive = battleSceneDebugGetStatus(target, 'revive');
@@ -4057,33 +4068,40 @@
       return { damage: dealt };
     }
 
-    function battleSceneDebugAfterHit(attacker, target, isBasic) {
+    function battleSceneDebugAfterHit(attacker, target, isBasic, opts = {}) {
       if (!attacker || !target || target.currentHp <= 0) return;
       const p = attacker.passiveRuntime;
       if (!p) return;
       if (p.onHitMark && Math.random() * 100 < (p.onHitMark.chance || 0)) {
         battleSceneDebugAddStatus(target, p.onHitMark.type, 1, p.onHitMark.turns || 2);
       }
-      if (p.onHitCc && Math.random() * 100 < (p.onHitCc.chance || 0)) {
-        if (!battleSceneDebugGetStatus(target, 'ccImmune')) {
-          if (!target.isEnemy && battleSceneDebugAffixValue('ccResist') > 0 && Math.random() * 100 < battleSceneDebugAffixValue('ccResist')) return;
-          const resistChance = Math.max(0, (target.tenacity || 0) - (attacker.effectHit || 0) * 0.5);
-          if (!(resistChance > 0 && Math.random() * 100 < resistChance)) {
-            battleSceneDebugAddStatus(target, p.onHitCc.type, 1, p.onHitCc.turns || 1);
-          }
-        }
+      if (p.onHitCc) {
+        const type = p.onHitCc.type;
+        const isControl = type === 'stun' || type === 'silence' || type === 'charm';
+        const once = opts && opts.ccOnce ? opts.ccOnce : null;
+        if (once && once.used && isControl) return;
+        const immune = battleSceneDebugGetStatus(target, 'ccImmune') || (type && battleSceneDebugGetStatus(target, `${type}Immune`));
+        if (immune || !type) return;
+        battleSceneDebugAddStatus(target, type, 1, p.onHitCc.turns || 1);
+        if (once && isControl) once.used = true;
       }
     }
 
-    function battleSceneDebugChooseTarget(attacker, candidates) {
+    function battleSceneDebugChooseTarget(attacker, candidates, opts = {}) {
       const alive = candidates.filter(u => u && u.currentHp > 0);
       if (alive.length === 0) return null;
       const taunter = alive.find(u => battleSceneDebugGetStatus(u, 'taunt'));
       if (taunter) return taunter;
-      if (attacker && attacker.class === 'assassin') {
-        return alive.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
+      let pool = alive;
+      if (opts && opts.basic) {
+        const front = alive.filter(u => (u.position || 'front') === 'front');
+        if (front.length) pool = front;
       }
-      return alive[Math.floor(Math.random() * alive.length)];
+      if (pool.length === 0) return null;
+      if (attacker && attacker.class === 'assassin') {
+        return pool.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
+      }
+      return pool[Math.floor(Math.random() * pool.length)];
     }
 
     function battleSceneDebugTickTurnStart(unit) {
@@ -4094,6 +4112,7 @@
       const burn = battleSceneDebugGetStatus(unit, 'burn');
       const bleed = battleSceneDebugGetStatus(unit, 'bleed');
       const poison = battleSceneDebugGetStatus(unit, 'poison');
+      const regen = battleSceneDebugGetStatus(unit, 'regen');
       let dot = 0;
       const burnResist = battleSceneDebugGetStatusValue(unit, 'burnResist');
       const bleedResist = battleSceneDebugGetStatusValue(unit, 'bleedResist');
@@ -4104,6 +4123,12 @@
       if (dot > 0) {
         const { dealt } = battleSceneDebugApplyDamage(unit, dot);
         if (dealt > 0) pushBattleSceneDebugFeed(`${unit.displayName || unit.name} 受到持续伤害 ${dealt}`);
+      }
+      if (regen) {
+        const healDown = Math.min(80, Math.max(0, battleSceneDebugGetStatusValue(unit, 'healDownDebuff') || 0));
+        const raw = Math.max(0, Math.floor((regen.value || 0) * (1 - healDown / 100)));
+        const actual = battleSceneDebugApplyHeal(unit, raw);
+        if (actual > 0) pushBattleSceneDebugFeed(`${unit.displayName || unit.name} 回复 ${actual}`);
       }
     }
 
@@ -4196,11 +4221,8 @@
 
       const cost = battleSceneDebugGetSkillCost(skill);
       if ((battleSceneDebugState.energy || 0) < cost) return false;
-      const cdList = Array.isArray(actor.skillCd) ? actor.skillCd : [];
-      if ((cdList[skillIndex] || 0) > 0) return false;
 
       battleSceneDebugState.energy -= cost;
-      if (Array.isArray(actor.skillCd)) actor.skillCd[skillIndex] = Math.max(actor.skillCd[skillIndex] || 0, skill.cooldown || 4);
 
       const enemies = battleSceneDebugState.enemies;
       const allies = battleSceneDebugState.player;
@@ -4208,9 +4230,19 @@
       const targetsFromType = (type) => {
         const aliveEnemies = enemies.filter(u => u && u.currentHp > 0);
         const aliveAllies = allies.filter(u => u && u.currentHp > 0);
+        const aliveEnemiesFront = aliveEnemies.filter(u => (u.position || 'front') === 'front');
+        const aliveEnemiesBack = aliveEnemies.filter(u => (u.position || 'front') !== 'front');
+        const aliveAlliesFront = aliveAllies.filter(u => (u.position || 'front') === 'front');
+        const aliveAlliesBack = aliveAllies.filter(u => (u.position || 'front') !== 'front');
         if (type === 'allEnemies') return aliveEnemies;
+        if (type === 'allEnemiesFront') return aliveEnemiesFront.length ? aliveEnemiesFront : aliveEnemies;
+        if (type === 'allEnemiesBack') return aliveEnemiesBack.length ? aliveEnemiesBack : aliveEnemies;
         if (type === 'allAllies') return aliveAllies;
+        if (type === 'allAlliesFront') return aliveAlliesFront.length ? aliveAlliesFront : aliveAllies;
+        if (type === 'allAlliesBack') return aliveAlliesBack.length ? aliveAlliesBack : aliveAllies;
         if (type === 'randomEnemies') return aliveEnemies.length ? [aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)]] : [];
+        if (type === 'randomEnemiesFront') return (aliveEnemiesFront.length ? [aliveEnemiesFront[Math.floor(Math.random() * aliveEnemiesFront.length)]] : (aliveEnemies.length ? [aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)]] : []));
+        if (type === 'randomEnemiesBack') return (aliveEnemiesBack.length ? [aliveEnemiesBack[Math.floor(Math.random() * aliveEnemiesBack.length)]] : (aliveEnemies.length ? [aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)]] : []));
         if (type === 'randomAllies') return aliveAllies.length ? [aliveAllies[Math.floor(Math.random() * aliveAllies.length)]] : [];
         if (type === 'enemyLowest') {
           if (!aliveEnemies.length) return [];
@@ -4236,10 +4268,13 @@
 
       const effects = Array.isArray(skill.effects) ? skill.effects : [];
       pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 释放 ${skill.name || '技能'}（能量-${cost}）`);
+      const ccOnce = { used: false };
       effects.forEach(effect => {
         if (!effect) return;
         const chance = typeof effect.chance === 'number' ? effect.chance : 100;
-        if (chance < 100 && Math.random() * 100 >= chance) return;
+        const ccType = effect && effect.type === 'cc' ? effect.cc : '';
+        const isAbsoluteCc = ccType === 'stun' || ccType === 'silence' || ccType === 'charm';
+        if (!isAbsoluteCc && chance < 100 && Math.random() * 100 >= chance) return;
         const targetType = effect.target || 'enemy';
 
         if (effect.type === 'selfCost') {
@@ -4259,13 +4294,22 @@
             hitTargets.forEach(t => {
               if (!t || t.currentHp <= 0) return;
               if (effect.requireStatus && !battleSceneDebugGetStatus(t, effect.requireStatus)) return;
+              if (Array.isArray(effect.requireStatusAny) && effect.requireStatusAny.length > 0) {
+                if (!effect.requireStatusAny.some(s => s && battleSceneDebugGetStatus(t, s))) return;
+              }
+              const hpBelow = (typeof effect.requireHpBelow === 'number')
+                ? effect.requireHpBelow
+                : (typeof effect.requireTargetHpRateBelow === 'number' ? effect.requireTargetHpRateBelow : null);
+              if (typeof hpBelow === 'number' && Number.isFinite(hpBelow)) {
+                if ((t.currentHp / t.maxHp) > Math.max(0, Math.min(1, hpBelow))) return;
+              }
               const scale = typeof effect.scale === 'number' ? effect.scale : 1.0;
               const scaleFrom = effect.scaleFrom || 'atk';
               const rawOverride =
                 scaleFrom === 'maxHp' ? Math.floor((actor.maxHp || 0) * scale + (effect.addFlat || 0)) :
                 scaleFrom === 'targetMaxHp' ? Math.floor((t.maxHp || 0) * scale + (effect.addFlat || 0)) :
                 null;
-              const { damage } = battleSceneDebugApplyHit(actor, t, scale, '技能', { rawOverride, ignoreDef });
+              const { damage } = battleSceneDebugApplyHit(actor, t, scale, '技能', { rawOverride, ignoreDef, ccOnce });
               if (damage > 0) setBattleSceneDebugHitFx(t.isEnemy ? 'enemy' : 'player', (t.isEnemy ? enemies : allies).indexOf(t));
             });
           }
@@ -4279,6 +4323,15 @@
             hitTargets.forEach(t => {
               if (!t || t.currentHp <= 0) return;
               if (effect.requireStatus && !battleSceneDebugGetStatus(t, effect.requireStatus)) return;
+              if (Array.isArray(effect.requireStatusAny) && effect.requireStatusAny.length > 0) {
+                if (!effect.requireStatusAny.some(s => s && battleSceneDebugGetStatus(t, s))) return;
+              }
+              const hpBelow = (typeof effect.requireHpBelow === 'number')
+                ? effect.requireHpBelow
+                : (typeof effect.requireTargetHpRateBelow === 'number' ? effect.requireTargetHpRateBelow : null);
+              if (typeof hpBelow === 'number' && Number.isFinite(hpBelow)) {
+                if ((t.currentHp / t.maxHp) > Math.max(0, Math.min(1, hpBelow))) return;
+              }
               const scale = typeof effect.scale === 'number' ? effect.scale : 0.1;
               const scaleFrom = effect.scaleFrom || 'atk';
               const base =
@@ -4289,7 +4342,7 @@
               const { dealt } = battleSceneDebugApplyDamage(t, amount);
               if (dealt > 0) {
                 setBattleSceneDebugHitFx(t.isEnemy ? 'enemy' : 'player', (t.isEnemy ? enemies : allies).indexOf(t));
-                battleSceneDebugAfterHit(actor, t, false);
+                battleSceneDebugAfterHit(actor, t, false, { ccOnce });
               }
             });
           }
@@ -4341,6 +4394,27 @@
           return;
         }
 
+        if (effect.type === 'energySteal') {
+          const amount = Math.max(0, Math.floor(effect.amount || 1));
+          if (battleSceneDebugState && amount > 0) battleSceneDebugState.energy = (battleSceneDebugState.energy || 0) + amount;
+          return;
+        }
+
+        if (effect.type === 'execute') {
+          const thresholdRaw = typeof effect.threshold === 'number' ? effect.threshold : 0.2;
+          const threshold = Math.min(0.25, Math.max(0.05, thresholdRaw));
+          let did = false;
+          targetsFromType(targetType).forEach(t => {
+            if (!t || t.currentHp <= 0) return;
+            if (t.currentHp / t.maxHp <= threshold) {
+              t.currentHp = 0;
+              pushBattleSceneDebugFeed(`斩杀：${t.displayName || t.name} 被处决`);
+              did = true;
+            }
+          });
+          if (did) return;
+        }
+
         if (effect.type === 'taunt') {
           battleSceneDebugAddStatus(actor, 'taunt', 1, typeof effect.turns === 'number' ? effect.turns : 2);
           return;
@@ -4349,13 +4423,13 @@
         if (effect.type === 'cc') {
           const cc = effect.cc;
           const turns = typeof effect.turns === 'number' ? effect.turns : 1;
-          targetsFromType(targetType).forEach(t => {
-            if (!t || t.currentHp <= 0) return;
-            if (battleSceneDebugGetStatus(t, 'ccImmune')) return;
-            const resistChance = Math.max(0, (t.tenacity || 0) - (actor.effectHit || 0) * 0.5);
-            if (resistChance > 0 && Math.random() * 100 < resistChance) return;
-            battleSceneDebugAddStatus(t, cc, 1, turns);
-          });
+          const list = targetsFromType(targetType);
+          const eligible = list.filter(t => t && t.currentHp > 0 && !battleSceneDebugGetStatus(t, 'ccImmune') && !battleSceneDebugGetStatus(t, `${cc}Immune`));
+          if (eligible.length === 0) return;
+          const isAbsolute = cc === 'stun' || cc === 'silence' || cc === 'charm';
+          const picked = isAbsolute ? eligible[Math.floor(Math.random() * eligible.length)] : eligible[0];
+          if (!picked) return;
+          battleSceneDebugAddStatus(picked, cc, 1, turns);
           return;
         }
 
@@ -4570,11 +4644,11 @@
       if (charm) {
         const allies = turn.side === 'enemy' ? battleSceneDebugState.enemies : battleSceneDebugState.player;
         const candidates = allies.filter(u => u && u.currentHp > 0 && u !== actor);
-        const target = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+        const target = candidates.length ? battleSceneDebugChooseTarget(actor, candidates, { basic: true }) : null;
         if (!target) {
           pushBattleSceneDebugFeed(`${actor.displayName || actor.name} 被魅惑，但没有可攻击目标`);
         } else {
-            battleSceneDebugApplyHit(actor, target, 1.0, '魅惑');
+            battleSceneDebugApplyHit(actor, target, 1.0, '魅惑', { ccOnce: { used: false } });
             setBattleSceneDebugHitFx(turn.side, allies.indexOf(target));
         }
         battleSceneDebugTickAfterAction(actor);
@@ -4598,9 +4672,9 @@
       }
 
       if (turn.side === 'enemy') {
-        const target = battleSceneDebugChooseTarget(actor, battleSceneDebugState.player);
+        const target = battleSceneDebugChooseTarget(actor, battleSceneDebugState.player, { basic: true });
         if (!target) return;
-        battleSceneDebugApplyHit(actor, target, 1.0, '普攻');
+        battleSceneDebugApplyHit(actor, target, 1.0, '普攻', { ccOnce: { used: false } });
         setBattleSceneDebugHitFx('player', battleSceneDebugState.player.indexOf(target));
         battleSceneDebugTickAfterAction(actor);
         battleSceneDebugState.turnCursor += 1;
@@ -4616,8 +4690,7 @@
       let used = false;
       if (hasSkill) {
         const cost = battleSceneDebugGetSkillCost(skills[0]);
-        const cd = Array.isArray(actor.skillCd) ? (actor.skillCd[0] || 0) : 0;
-        if ((battleSceneDebugState.energy || 0) >= cost && cd <= 0 && !battleSceneDebugGetStatus(actor, 'silence')) {
+        if ((battleSceneDebugState.energy || 0) >= cost && !battleSceneDebugGetStatus(actor, 'silence')) {
           const spec = battleSceneDebugGetSkillTargetSpec(skills[0]);
           if (spec.kind === 'enemyPick') {
             const t = battleSceneDebugChooseTarget(actor, battleSceneDebugState.enemies);
@@ -4636,7 +4709,7 @@
         }
       }
       if (!used) {
-        const target = battleSceneDebugChooseTarget(actor, battleSceneDebugState.enemies);
+        const target = battleSceneDebugChooseTarget(actor, battleSceneDebugState.enemies, { basic: true });
         if (!target) return;
         const mult =
           actor.class === 'assassin' ? 1.1 :
@@ -4644,7 +4717,7 @@
           actor.class === 'archer' ? 1.0 :
           actor.class === 'mage' ? 1.0 :
           1.0;
-        battleSceneDebugApplyHit(actor, target, mult, '普攻');
+        battleSceneDebugApplyHit(actor, target, mult, '普攻', { ccOnce: { used: false } });
         setBattleSceneDebugHitFx('enemy', battleSceneDebugState.enemies.indexOf(target));
       }
       battleSceneDebugTickAfterAction(actor);
@@ -5106,12 +5179,15 @@
       const buildPlayerUnit = (char) => {
         const passiveText = getLoadoutPassiveText(char);
         const stats = applyPassiveStats(calculateTotalStats(char), passiveText);
+        const isCore = !!char.isCore || (Array.isArray(char.tags) && char.tags.includes('core'));
         return {
           id: char.id,
           name: char.name,
           rarity: char.rarity,
           class: char.class,
+          position: char.position || 'back',
           isPlayer: true,
+          isCore,
           skills: Array.isArray(char.skills) ? char.skills : [],
           attack: stats.attack,
           defense: stats.defense,
@@ -5134,7 +5210,7 @@
           statuses: [],
           skillCd: 0,
           energy: 0,
-          maxEnergy: 4,
+          maxEnergy: isCore ? 6 : 4,
           passive: buildPassiveRuntime(char, stats, passiveText)
         };
       };
@@ -5145,7 +5221,9 @@
           name: enemy.name,
           rarity: enemy.isBoss ? 'BOSS' : 'ENEMY',
           class: enemy.class || 'warrior',
+          position: enemy.position || 'front',
           isPlayer: false,
+          isCore: false,
           skills: [{ id: `${enemy.id}_skill`, name: '敌方技能', cooldown: enemy.isBoss ? 3 : 4 }],
           attack: enemy.attack,
           defense: enemy.defense,
@@ -5227,6 +5305,9 @@
       appendBattleLog(logs, logsContainer, `<div class="text-primary font-bold">--- 战斗开始: ${stage.name} ---</div>`);
 
       const addStatus = (unit, type, value, turns, meta) => {
+        if ((type === 'stun' || type === 'silence' || type === 'charm') && unit && Array.isArray(unit.statuses)) {
+          if (unit.statuses.some(s => s && (s.type === 'ccImmune' || s.type === `${type}Immune`))) return;
+        }
         const existing = unit.statuses.find(s => s.type === type);
         if (existing) {
           if (typeof existing.value === 'number' && typeof value === 'number') {
@@ -5284,10 +5365,9 @@
 
       const giveCoreEnergy = () => {
         if (!coreState.active) return;
-        team.forEach(u => {
-          if (u.currentHp <= 0) return;
-          u.energy = Math.min(u.maxEnergy || 4, (u.energy || 0) + coreState.energyPerTurn);
-        });
+        const owner = getTeamUnit(coreState.ownerId);
+        if (!owner || owner.currentHp <= 0) return;
+        owner.energy = Math.min(owner.maxEnergy || 6, (owner.energy || 0) + coreState.energyPerTurn);
       };
 
       const triggerLimitField = () => {
@@ -5493,15 +5573,21 @@
           team.forEach(u => {
             if (u.currentHp <= 0) return;
             const text = (u.passive && u.passive.text) || '';
+            addStatus(u, 'nonCritUndying', 1, 999);
+            if (/(全体队友|所有队友)永久免疫控制/.test(text)) team.forEach(x => x.currentHp > 0 && addStatus(x, 'ccImmune', 1, 999));
+            if (/(全体队友|所有队友)永久免疫眩晕/.test(text)) team.forEach(x => x.currentHp > 0 && addStatus(x, 'stunImmune', 1, 999));
+            if (/(全体队友|所有队友)永久免疫沉默/.test(text)) team.forEach(x => x.currentHp > 0 && addStatus(x, 'silenceImmune', 1, 999));
+            if (/(全体队友|所有队友)永久免疫魅惑/.test(text)) team.forEach(x => x.currentHp > 0 && addStatus(x, 'charmImmune', 1, 999));
+            if (/永久免疫控制/.test(text)) addStatus(u, 'ccImmune', 1, 999);
+            if (/永久免疫眩晕/.test(text)) addStatus(u, 'stunImmune', 1, 999);
+            if (/永久免疫沉默/.test(text)) addStatus(u, 'silenceImmune', 1, 999);
+            if (/永久免疫魅惑/.test(text)) addStatus(u, 'charmImmune', 1, 999);
             const mRevive = text.match(/复活(\d+)次/);
             if (mRevive) {
               const charges = Math.max(1, parseInt(mRevive[1], 10));
               const mHp = text.match(/每次复活恢复(\d+)%生命/);
               const hpPct = mHp ? Math.max(0.05, Math.min(0.9, parseInt(mHp[1], 10) / 100)) : 0.3;
               addStatus(u, 'revive', 1, 999, { charges, hpPct });
-            }
-            if (/非暴击不死/.test(text)) {
-              addStatus(u, 'nonCritUndying', 1, 999, { charges: 1 });
             }
           });
         }
@@ -5611,6 +5697,7 @@
         const burn = getStatus(unit, 'burn');
         const bleed = getStatus(unit, 'bleed');
         const poison = getStatus(unit, 'poison');
+        const regen = getStatus(unit, 'regen');
         const burnResist = getStatusValue(unit, 'burnResist');
         const poisonResist = getStatusValue(unit, 'poisonResist');
         const bleedResist = getStatusValue(unit, 'bleedResist');
@@ -5624,16 +5711,32 @@
           appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 受到持续伤害 <span class="text-red-400 font-bold">${taken}</span></div>`);
           markKey();
         }
+        if (regen && unit.currentHp > 0) {
+          const healDown = Math.min(80, Math.max(0, getStatusValue(unit, 'healDownDebuff') || 0));
+          const raw = Math.max(0, Math.floor((regen.value || 0) * (1 - healDown / 100)));
+          const actual = Math.min(unit.maxHp - unit.currentHp, raw);
+          if (actual > 0) {
+            unit.currentHp += actual;
+            appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 回复 <span class="text-green-400 font-bold">${actual}</span></div>`);
+            markKey();
+          }
+        }
       };
 
-      const chooseTarget = (attacker, candidates) => {
+      const chooseTarget = (attacker, candidates, opts = {}) => {
         const alive = candidates.filter(u => u.currentHp > 0);
         const taunter = alive.find(u => getStatus(u, 'taunt'));
         if (taunter) return taunter;
-        if (attacker.class === 'assassin') {
-          return alive.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
+        let pool = alive;
+        if (opts && opts.basic) {
+          const front = alive.filter(u => (u.position || 'front') === 'front');
+          if (front.length) pool = front;
         }
-        return alive[Math.floor(Math.random() * alive.length)];
+        if (pool.length === 0) return null;
+        if (attacker.class === 'assassin') {
+          return pool.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
+        }
+        return pool[Math.floor(Math.random() * pool.length)];
       };
 
       const computeDamage = (attacker, target, multiplier, rawOverride) => {
@@ -5799,22 +5902,18 @@
         if (r.damage > 0 && attacker.passive && attacker.passive.onHitCc && target.currentHp > 0) {
           const cc = attacker.passive.onHitCc;
           const moranCtl = attacker.isPlayer ? getStatus(attacker, 'moranControl') : null;
-          const extraChance = moranCtl && moranCtl.meta && typeof moranCtl.meta.chanceBonus === 'number' ? moranCtl.meta.chanceBonus : 0;
           const extraTurns = moranCtl && moranCtl.meta && typeof moranCtl.meta.turnsBonus === 'number' ? moranCtl.meta.turnsBonus : 0;
           const extraSpd = moranCtl && moranCtl.meta && typeof moranCtl.meta.spdFlatDown === 'number' ? moranCtl.meta.spdFlatDown : 0;
-          if (!getStatus(target, 'ccImmune') && Math.random() * 100 < Math.min(95, (cc.chance || 0) + extraChance)) {
-            let blocked = false;
-            if (target.isPlayer) {
-              const ccResist = affixValue('ccResist');
-              if (ccResist > 0 && Math.random() * 100 < ccResist) blocked = true;
-              const ten = target.tenacity || 0;
-              const hit = attacker.effectHit || 0;
-              const resistChance = Math.max(0, ten - hit * 0.5);
-              if (resistChance > 0 && Math.random() * 100 < resistChance) blocked = true;
-            }
-            if (!blocked) {
-              addStatus(target, cc.type, 1, (cc.turns || 1) + extraTurns);
+          const ccType = cc && cc.type ? cc.type : '';
+          const isControl = ccType === 'stun' || ccType === 'silence' || ccType === 'charm';
+          const once = opts && opts.ccOnce ? opts.ccOnce : null;
+          if (once && once.used && isControl) {
+          } else {
+            const immune = getStatus(target, 'ccImmune') || (ccType && getStatus(target, `${ccType}Immune`));
+            if (!immune && ccType) {
+              addStatus(target, ccType, 1, (cc.turns || 1) + extraTurns);
               if (extraSpd > 0) addStatus(target, 'spdFlatDown', Math.abs(extraSpd), 1);
+              if (once && isControl) once.used = true;
             }
           }
         }
@@ -5849,16 +5948,10 @@
           }
           const undying = getStatus(target, 'nonCritUndying');
           if (undying && !r.crit) {
-            const charges = undying.meta && typeof undying.meta.charges === 'number' ? undying.meta.charges : 1;
-            if (charges > 0) {
-              undying.meta = { ...(undying.meta || {}), charges: charges - 1 };
-              target.currentHp = 1;
-              appendBattleLog(logs, roundContainer, `<div class="text-yellow-300 font-black">不屈：${target.name} 在非暴击致命伤下存活</div>`);
-              markKey();
-              if (undying.meta.charges <= 0) undying.turns = 0;
-              cleanStatuses(target);
-              return { damage: r.damage };
-            }
+            target.currentHp = 1;
+            appendBattleLog(logs, roundContainer, `<div class="text-yellow-300 font-black">不败：${target.name} 在非暴击致命伤下存活</div>`);
+            markKey();
+            return { damage: r.damage };
           }
 
           const revive = getStatus(target, 'revive');
@@ -5884,9 +5977,8 @@
             markKey();
           }
           if (!target.isPlayer && attacker.isPlayer && attacker.id === 'char_sur_006' && label === '技能') {
-            attacker.skillCd = 0;
             attacker.energy = attacker.maxEnergy || 4;
-            appendBattleLog(logs, roundContainer, `<div class="text-blue-300 font-black">收割：${attacker.name} 重置冷却</div>`);
+            appendBattleLog(logs, roundContainer, `<div class="text-blue-300 font-black">收割：${attacker.name} 回能</div>`);
             markKey();
           }
           if (!target.isPlayer) {
@@ -5941,8 +6033,6 @@
           if (unit.isPlayer && cost > 0 && (unit.energy || 0) < cost) return false;
           if (unit.isPlayer && cost > 0) unit.energy = Math.max(0, (unit.energy || 0) - cost);
         }
-        const cd = (skill && skill.cooldown) ? skill.cooldown : 4;
-        if (!opts.bypassCd) unit.skillCd = cd;
         const skillName = skill ? skill.name : '技能';
         const level = (skill && skill.level) ? skill.level : 1;
         const rarityBoost = unit.rarity === 'SUR' ? 0.18 : (unit.rarity === 'UR' ? 0.10 : (unit.rarity === 'SSR' ? 0.06 : 0));
@@ -5965,9 +6055,19 @@
           };
 
           const pickTargets = (targetType) => {
+            const foesFront = aliveFoes.filter(u => (u.position || 'front') === 'front');
+            const foesBack = aliveFoes.filter(u => (u.position || 'front') !== 'front');
+            const alliesFront = aliveAllies.filter(u => (u.position || 'front') === 'front');
+            const alliesBack = aliveAllies.filter(u => (u.position || 'front') !== 'front');
             if (targetType === 'allEnemies') return aliveFoes;
+            if (targetType === 'allEnemiesFront') return foesFront.length ? foesFront : aliveFoes;
+            if (targetType === 'allEnemiesBack') return foesBack.length ? foesBack : aliveFoes;
             if (targetType === 'allAllies') return aliveAllies;
+            if (targetType === 'allAlliesFront') return alliesFront.length ? alliesFront : aliveAllies;
+            if (targetType === 'allAlliesBack') return alliesBack.length ? alliesBack : aliveAllies;
             if (targetType === 'randomEnemies') return aliveFoes.length ? [aliveFoes[Math.floor(Math.random() * aliveFoes.length)]] : [];
+            if (targetType === 'randomEnemiesFront') return (foesFront.length ? [foesFront[Math.floor(Math.random() * foesFront.length)]] : (aliveFoes.length ? [aliveFoes[Math.floor(Math.random() * aliveFoes.length)]] : []));
+            if (targetType === 'randomEnemiesBack') return (foesBack.length ? [foesBack[Math.floor(Math.random() * foesBack.length)]] : (aliveFoes.length ? [aliveFoes[Math.floor(Math.random() * aliveFoes.length)]] : []));
             if (targetType === 'randomAllies') return aliveAllies.length ? [aliveAllies[Math.floor(Math.random() * aliveAllies.length)]] : [];
             if (targetType === 'enemyLowest') return pickLowest(aliveFoes) ? [pickLowest(aliveFoes)] : [];
             if (targetType === 'allyLowest') return pickLowest(aliveAllies) ? [pickLowest(aliveAllies)] : [];
@@ -5977,10 +6077,13 @@
 
           appendBattleLog(logs, roundContainer, `<div>${announcePrefix ? `<span class="text-blue-300 font-black">${announcePrefix}</span> ` : ''}<span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span></div>`);
           markKey();
+          const ccOnce = { used: false };
 
           effects.forEach(effect => {
             const chance = typeof effect.chance === 'number' ? effect.chance : 100;
-            if (chance < 100 && Math.random() * 100 >= chance) return;
+            const ccType = effect && effect.type === 'cc' ? effect.cc : '';
+            const isAbsoluteCc = ccType === 'stun' || ccType === 'silence' || ccType === 'charm';
+            if (!isAbsoluteCc && chance < 100 && Math.random() * 100 >= chance) return;
 
             const targetType = effect.target || 'enemy';
             if (effect.type === 'dispel') {
@@ -6019,6 +6122,7 @@
             if (effect.type === 'execute') {
               const thresholdRaw = typeof effect.threshold === 'number' ? effect.threshold : 0.2;
               const threshold = Math.min(0.25, Math.max(0.05, thresholdRaw));
+              let did = false;
               pickTargets(targetType).forEach(t => {
                 if (!t || t.currentHp <= 0) return;
                 if (t.currentHp / t.maxHp <= threshold) {
@@ -6027,9 +6131,10 @@
                   markKey();
                   appendBattleLog(logs, roundContainer, `<div class="text-gray-500">[${t.name}] 已倒下</div>`);
                   markKey();
+                  did = true;
                 }
               });
-              return;
+              if (did) return;
             }
 
             if (effect.type === 'damage') {
@@ -6043,6 +6148,15 @@
                 targets.forEach(t => {
                   if (!t || t.currentHp <= 0) return;
                   if (effect.requireStatus && !getStatus(t, effect.requireStatus)) return;
+                  if (Array.isArray(effect.requireStatusAny) && effect.requireStatusAny.length > 0) {
+                    if (!effect.requireStatusAny.some(s => s && getStatus(t, s))) return;
+                  }
+                  const hpBelow = (typeof effect.requireHpBelow === 'number')
+                    ? effect.requireHpBelow
+                    : (typeof effect.requireTargetHpRateBelow === 'number' ? effect.requireTargetHpRateBelow : null);
+                  if (typeof hpBelow === 'number' && Number.isFinite(hpBelow)) {
+                    if ((t.currentHp / t.maxHp) > Math.max(0, Math.min(1, hpBelow))) return;
+                  }
                   const prevPen = unit.penetration;
                   if (ignoreDef !== null) unit.penetration = Math.min(200, prevPen + ignoreDef * 2);
                   const scaleFrom = effect.scaleFrom || 'atk';
@@ -6050,7 +6164,7 @@
                     scaleFrom === 'maxHp' ? Math.floor(unit.maxHp * (effect.scale || 1) * scaleFactor + (effect.addFlat || 0) * scaleFactor) :
                     scaleFrom === 'targetMaxHp' ? Math.floor(t.maxHp * (effect.scale || 1) * scaleFactor + (effect.addFlat || 0) * scaleFactor) :
                     null;
-                  applyHit(unit, t, mult, '技能', { rawOverride });
+                  applyHit(unit, t, mult, '技能', { rawOverride, ccOnce });
                   unit.penetration = prevPen;
                 });
               }
@@ -6069,6 +6183,15 @@
                 targets.forEach(t => {
                   if (!t || t.currentHp <= 0) return;
                   if (effect.requireStatus && !getStatus(t, effect.requireStatus)) return;
+                  if (Array.isArray(effect.requireStatusAny) && effect.requireStatusAny.length > 0) {
+                    if (!effect.requireStatusAny.some(s => s && getStatus(t, s))) return;
+                  }
+                  const hpBelow = (typeof effect.requireHpBelow === 'number')
+                    ? effect.requireHpBelow
+                    : (typeof effect.requireTargetHpRateBelow === 'number' ? effect.requireTargetHpRateBelow : null);
+                  if (typeof hpBelow === 'number' && Number.isFinite(hpBelow)) {
+                    if ((t.currentHp / t.maxHp) > Math.max(0, Math.min(1, hpBelow))) return;
+                  }
                   const base =
                     scaleFrom === 'atk' ? unit.attack * (effect.scale || 1) * scaleFactor :
                     scaleFrom === 'targetMaxHp' ? t.maxHp * (effect.scale || 1) * scaleFactor :
@@ -6169,21 +6292,13 @@
             if (effect.type === 'cc') {
               const cc = effect.cc;
               const turns = typeof effect.turns === 'number' ? effect.turns : 1;
-              const chance = typeof effect.chance === 'number' ? effect.chance : 100;
-              pickTargets(targetType).forEach(t => {
-                if (!t || t.currentHp <= 0) return;
-                if (getStatus(t, 'ccImmune')) return;
-                if (chance < 100 && Math.random() * 100 >= chance) return;
-                if (t.isPlayer) {
-                  const ccResist = affixValue('ccResist');
-                  if (ccResist > 0 && Math.random() * 100 < ccResist) return;
-                }
-                const ten = t.tenacity || 0;
-                const hit = unit.effectHit || 0;
-                const resistChance = Math.max(0, ten - hit * 0.5);
-                if (resistChance > 0 && Math.random() * 100 < resistChance) return;
-                addStatus(t, cc, 1, turns);
-              });
+              const list = pickTargets(targetType);
+              const eligible = list.filter(t => t && t.currentHp > 0 && !getStatus(t, 'ccImmune') && !getStatus(t, `${cc}Immune`));
+              if (eligible.length === 0) return;
+              const isAbsolute = cc === 'stun' || cc === 'silence' || cc === 'charm';
+              const picked = isAbsolute ? eligible[Math.floor(Math.random() * eligible.length)] : eligible[0];
+              if (!picked) return;
+              addStatus(picked, cc, 1, turns);
               markKey();
               return;
             }
@@ -6270,8 +6385,9 @@
           const mult = (1.25 + rarityBoost) * lvlBoost;
           appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>（群体）</div>`);
           markKey();
+          const ccOnce = { used: false };
           foes.filter(f => f.currentHp > 0).forEach(f => {
-            const { damage } = applyHit(unit, f, mult, '技能');
+            const { damage } = applyHit(unit, f, mult, '技能', { ccOnce });
             if (damage > 0) addStatus(f, 'burn', Math.floor(unit.attack * 0.18 * lvlBoost * (1 + affixValue('burnAmp') / 100)), 2);
           });
           return true;
@@ -6280,11 +6396,12 @@
         if (unit.class === 'archer') {
           appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>（连射）</div>`);
           markKey();
+          const ccOnce = { used: false };
           const hits = 3 + (unit.rarity === 'SUR' ? 1 : 0);
           for (let h = 0; h < hits; h++) {
             const target = chooseTarget(unit, foes);
             if (!target) break;
-            applyHit(unit, target, (0.75 + rarityBoost * 0.4) * lvlBoost, '连射');
+            applyHit(unit, target, (0.75 + rarityBoost * 0.4) * lvlBoost, '连射', { ccOnce });
             addStatus(target, 'defDown', 10, 2);
           }
           return true;
@@ -6297,7 +6414,7 @@
           const mult = ((hpRate < 0.35 ? 3.2 : 2.2) + rarityBoost) * lvlBoost;
           appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span>（刺杀）</div>`);
           markKey();
-          const { damage } = applyHit(unit, target, mult, '刺杀');
+          const { damage } = applyHit(unit, target, mult, '刺杀', { ccOnce: { used: false } });
           if (damage > 0) addStatus(target, 'bleed', Math.floor(unit.attack * 0.14 * lvlBoost * (1 + affixValue('dotUp') / 100)), 3);
           return true;
         }
@@ -6307,7 +6424,7 @@
         const mult = (1.65 + rarityBoost) * lvlBoost;
         appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'} font-bold">${unit.name}</span> 释放 <span class="text-yellow-400">[${skillName}]</span></div>`);
         markKey();
-        applyHit(unit, target, mult, '技能');
+        applyHit(unit, target, mult, '技能', { ccOnce: { used: false } });
         addStatus(target, 'defDown', 18, 2);
         return true;
       };
@@ -6498,10 +6615,8 @@
             if (round % 3 === 0) {
               appendBattleLog(logs, roundContainer, `<div class="text-purple-300 font-black">磁暴脉冲：封锁我方技能</div>`);
               const alive = team.filter(t => t.currentHp > 0);
-              for (let i = 0; i < Math.min(2, alive.length); i++) {
-                const t = alive[Math.floor(Math.random() * alive.length)];
-                addStatus(t, 'silence', 1, 1);
-              }
+              const t = alive.length ? alive[Math.floor(Math.random() * alive.length)] : null;
+              if (t) addStatus(t, 'silence', 1, 1);
               team.filter(t => t.currentHp > 0).forEach(t => applyHit(boss, t, 1.05, '磁暴脉冲'));
               markKey();
             }
@@ -6557,7 +6672,8 @@
           if (team.every(t => !(t.currentHp > 0)) || enemies.every(e => !(e.currentHp > 0))) break;
 
           const drain = affixValue('energyDrain');
-          const gain = (unit.isPlayer && drain > 0 && Math.random() * 100 < drain) ? 0 : 1;
+          const baseGain = unit && unit.isCore ? 6 : 2;
+          const gain = (unit.isPlayer && drain > 0 && Math.random() * 100 < drain) ? 0 : baseGain;
           unit.energy = Math.min(unit.maxEnergy || 4, (unit.energy || 0) + gain);
 
           tickTurnStart(unit);
@@ -6579,8 +6695,8 @@
             const alliesNow = unit.isPlayer ? team : enemies;
             const candidates = alliesNow.filter(a => a.currentHp > 0 && a.id !== unit.id);
             if (candidates.length > 0) {
-              const target = candidates[Math.floor(Math.random() * candidates.length)];
-              applyHit(unit, target, 0.9, '魅惑');
+              const target = chooseTarget(unit, candidates, { basic: true });
+              if (target) applyHit(unit, target, 0.9, '魅惑', { ccOnce: { used: false } });
               markKey();
             } else {
               appendBattleLog(logs, roundContainer, `<div><span class="${unit.isPlayer ? 'text-blue-400' : 'text-red-400'}">${unit.name}</span> 被魅惑，但没有可攻击目标</div>`);
@@ -6593,27 +6709,25 @@
             continue;
           }
 
-          if (unit.skillCd > 0) unit.skillCd--;
-
           const allies = unit.isPlayer ? team : enemies;
           const foes = unit.isPlayer ? enemies : team;
 
           const aliveFoes = foes.filter(f => f.currentHp > 0);
           if (aliveFoes.length === 0) break;
 
-          if (unit.skillCd === 0 && unit.skills && unit.skills.length > 0) {
+          if (unit.skills && unit.skills.length > 0) {
             const used = castSkill(unit, allies, foes);
             if (!used) {
-              const target = chooseTarget(unit, foes);
+              const target = chooseTarget(unit, foes, { basic: true });
               if (!target) break;
-              applyHit(unit, target, 1.0, '普攻');
+              applyHit(unit, target, 1.0, '普攻', { ccOnce: { used: false } });
             } else if (unit.isPlayer && unit.id === catLinkState.catId) {
               triggerStoredFollowUp();
             }
           } else {
-            const target = chooseTarget(unit, foes);
+            const target = chooseTarget(unit, foes, { basic: true });
             if (!target) break;
-            applyHit(unit, target, 1.0, '普攻');
+            applyHit(unit, target, 1.0, '普攻', { ccOnce: { used: false } });
           }
 
           unit.statuses.forEach(s => s.turns--);
