@@ -62,7 +62,7 @@
   }
 
   function isPercentAttr(key) {
-    return key.includes('Rate') || key.includes('Reduc') || key.includes('Hit') || key.includes('Percent') || ['atkPercent', 'defPercent', 'hpPercent', 'critDmg', 'penetration', 'tenacity'].includes(key);
+    return key.includes('Rate') || key.includes('Reduc') || key.includes('Hit') || key.includes('Percent') || ['atkPercent', 'defPercent', 'hpPercent', 'critDmg', 'penetration', 'tenacity', 'antiCrit'].includes(key);
   }
 
   function formatAttrValue(key, val, leveledBonus) {
@@ -92,7 +92,7 @@
       const n = getStatName(key);
       if (n) return n;
     }
-    const names = { attack: '攻击力', defense: '防御力', health: '生命值', speed: '速度', atkPercent: '攻击加成', defPercent: '防御加成', hpPercent: '生命加成', critRate: '暴击率', critDmg: '暴击伤害', dodgeRate: '闪避率', blockRate: '格挡率', dmgReduc: '免伤率', lifesteal: '吸血率', effectHit: '效果命中', penetration: '穿透', tenacity: '韧性' };
+    const names = { attack: '攻击力', defense: '防御力', health: '生命值', speed: '速度', atkPercent: '攻击加成', defPercent: '防御加成', hpPercent: '生命加成', critRate: '暴击率', critDmg: '暴击伤害', dodgeRate: '闪避率', blockRate: '格挡率', dmgReduc: '免伤率', lifesteal: '吸血率', effectHit: '效果命中', penetration: '穿透', tenacity: '韧性', antiCrit: '抗暴' };
     return names[key] || key;
   }
 
@@ -162,54 +162,51 @@
     if (!target) return false;
     const maxLevel = (window.__inventory && window.__inventory.getMaxEquipmentLevel) ? window.__inventory.getMaxEquipmentLevel(target.rarity) : 20;
     if ((target.level || 1) >= maxLevel) return false;
-    const gain = material
-      ? ((window.__inventory && window.__inventory.getEquipmentFeedExp) ? window.__inventory.getEquipmentFeedExp(material) : 40)
-      : 100;
-    const goldCost = Math.max(0, Math.floor(gain * 2.2));
-    const stoneCost = Math.max(1, Math.ceil(gain / 55) * getRarityCostMult(target.rarity));
+    const need = (window.__inventory && window.__inventory.getEquipmentExpToNextLevel) ? window.__inventory.getEquipmentExpToNextLevel(target.level || 1, target.rarity) : 999999;
+    const curExp = Math.max(0, target.exp || 0);
+    const gain = Math.max(0, need - curExp);
+    const goldCost = gain > 0 ? Math.max(0, Math.floor(gain * 2.2)) : 0;
+    const stoneCost = gain > 0 ? Math.max(1, Math.ceil(gain / 55) * getRarityCostMult(target.rarity)) : 0;
     ensureMaterials();
-    if (gameData.player.gold < goldCost) {
-      alert('金币不足');
-      return false;
-    }
-    if ((gameData.player.materials.enhanceStone || 0) < stoneCost) {
-      alert('强化石不足');
-      return false;
-    }
-    gameData.player.gold -= goldCost;
-    gameData.player.materials.enhanceStone -= stoneCost;
-
-    target.exp = (target.exp || 0) + gain;
-    while ((target.level || 1) < maxLevel) {
-      const need = (window.__inventory && window.__inventory.getEquipmentExpToNextLevel) ? window.__inventory.getEquipmentExpToNextLevel(target.level || 1, target.rarity) : 999999;
-      if ((target.exp || 0) < need) break;
-      target.exp -= need;
+    if (gain > 0) {
+      const hasGold = (gameData.player.gold || 0) >= goldCost;
+      const hasStone = (gameData.player.materials.enhanceStone || 0) >= stoneCost;
+      if (!hasGold || !hasStone) {
+        alert('材料不足');
+        return false;
+      }
+      gameData.player.gold -= goldCost;
+      gameData.player.materials.enhanceStone -= stoneCost;
+      target.exp = 0;
       target.level = (target.level || 1) + 1;
+      return { gain, goldCost, stoneCost };
     }
-    return { gain, goldCost, stoneCost };
+    target.exp = Math.max(0, curExp - need);
+    target.level = (target.level || 1) + 1;
+    return { gain: 0, goldCost: 0, stoneCost: 0 };
   }
 
   function applyInscriptionUpgrade(target, material) {
     if (!target) return false;
     if ((target.level || 1) >= 10) return false;
-    const gain = material
-      ? ((window.__inventory && window.__inventory.getInscriptionFeedExp) ? window.__inventory.getInscriptionFeedExp(material) : 35)
-      : 45;
-    const dustCost = Math.max(1, Math.ceil(gain / 45) * getRarityCostMult(target.rarity));
+    const need = (window.__inventory && window.__inventory.calculateInscriptionExpToNextLevel) ? window.__inventory.calculateInscriptionExpToNextLevel(target.level || 1) : 999999;
+    const curExp = Math.max(0, target.exp || 0);
+    const gain = Math.max(0, need - curExp);
+    const dustCost = gain > 0 ? Math.max(1, Math.ceil(gain / 45) * getRarityCostMult(target.rarity)) : 0;
     ensureMaterials();
-    if ((gameData.player.materials.inscriptionDust || 0) < dustCost) {
-      alert('铭文粉尘不足');
-      return false;
-    }
-    gameData.player.materials.inscriptionDust -= dustCost;
-    target.exp = (target.exp || 0) + gain;
-    while ((target.level || 1) < 10) {
-      const need = (window.__inventory && window.__inventory.calculateInscriptionExpToNextLevel) ? window.__inventory.calculateInscriptionExpToNextLevel(target.level || 1) : 999999;
-      if ((target.exp || 0) < need) break;
-      target.exp -= need;
+    if (gain > 0) {
+      if ((gameData.player.materials.inscriptionDust || 0) < dustCost) {
+        alert('材料不足');
+        return false;
+      }
+      gameData.player.materials.inscriptionDust -= dustCost;
+      target.exp = 0;
       target.level = (target.level || 1) + 1;
+      return { gain, dustCost };
     }
-    return { gain, dustCost };
+    target.exp = Math.max(0, curExp - need);
+    target.level = (target.level || 1) + 1;
+    return { gain: 0, dustCost: 0 };
   }
 
   function getModalEls() {
@@ -626,7 +623,7 @@
     els.detail.appendChild(reforgeBox);
 
     const actionBox = document.createElement('div');
-    actionBox.className = 'mt-3 bg-black/20 border border-gray-800 rounded-xl p-4';
+    actionBox.className = 'mt-3 bg-black/20 border border-gray-800 rounded-xl p-4 sticky bottom-0';
     const btnRow = document.createElement('div');
     btnRow.className = 'grid grid-cols-2 gap-2';
 
@@ -709,7 +706,7 @@
       render();
     };
 
-    upgradeBtn.textContent = '升级';
+    upgradeBtn.textContent = '升级+1';
     upgradeBtn.onclick = () => {
       ensureMaterials();
       if (kind === 'equipment') {
@@ -718,38 +715,15 @@
           alert('已达到最高等级');
           return;
         }
-        const material = findMaterialEquipment(item.instanceId);
-        const gain = material ? ((window.__inventory && window.__inventory.getEquipmentFeedExp) ? window.__inventory.getEquipmentFeedExp(material) : 0) : 100;
-        const goldCost = Math.max(0, Math.floor(gain * 2.2));
-        const stoneCost = Math.max(1, Math.ceil(gain / 55) * getRarityCostMult(item.rarity));
-        const mMeta = getMaterialMeta('enhanceStone');
-        const ownedStone = gameData.player.materials.enhanceStone || 0;
-        const tip = material
-          ? `消耗装备作为材料并升级？\n材料：${material.name} Lv.${material.level || 1}（${material.rarity}）`
-          : `使用材料强化并升级？\n材料：${mMeta.name}`;
-        const ok = confirm(`${tip}\n获得经验：+${gain}\n金币消耗：${goldCost}\n${mMeta.name}：${ownedStone}/${stoneCost}`);
-        if (!ok) return;
-        const res = applyEquipmentUpgrade(item, material);
+        const res = applyEquipmentUpgrade(item, null);
         if (!res) return;
-        if (material) gameData.equipment = gameData.equipment.filter(x => x && x.instanceId !== material.instanceId);
       } else {
         if ((item.level || 1) >= 10) {
           alert('已达到最高等级');
           return;
         }
-        const material = findMaterialInscription(item.instanceId);
-        const gain = material ? ((window.__inventory && window.__inventory.getInscriptionFeedExp) ? window.__inventory.getInscriptionFeedExp(material) : 0) : 45;
-        const dustCost = Math.max(1, Math.ceil(gain / 45) * getRarityCostMult(item.rarity));
-        const mMeta = getMaterialMeta('inscriptionDust');
-        const ownedDust = gameData.player.materials.inscriptionDust || 0;
-        const tip = material
-          ? `消耗铭文作为材料并升级？\n材料：${material.name} Lv.${material.level || 1}（${material.rarity}）`
-          : `使用材料升级？\n材料：${mMeta.name}`;
-        const ok = confirm(`${tip}\n获得经验：+${gain}\n${mMeta.name}：${ownedDust}/${dustCost}`);
-        if (!ok) return;
-        const res = applyInscriptionUpgrade(item, material);
+        const res = applyInscriptionUpgrade(item, null);
         if (!res) return;
-        if (material) gameData.inscriptions = gameData.inscriptions.filter(x => x && x.instanceId !== material.instanceId);
       }
 
       if (typeof saveGameProgress === 'function') saveGameProgress();

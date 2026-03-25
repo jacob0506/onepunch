@@ -551,8 +551,8 @@
 
       <div id="backpackModal" class="fixed inset-0 z-[75] hidden">
         <div id="backpackModalBg" class="absolute inset-0 bg-black bg-opacity-75"></div>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-4xl">
-          <div class="glass-effect rounded-2xl border border-gray-700 shadow-2xl overflow-hidden">
+        <div class="absolute inset-x-0 top-4 bottom-4 mx-auto w-11/12 max-w-4xl">
+          <div class="glass-effect rounded-2xl border border-gray-700 shadow-2xl overflow-hidden h-full flex flex-col">
             <div class="flex items-center justify-between p-4 border-b border-gray-800 bg-black/30">
               <div class="min-w-0">
                 <div class="text-[10px] text-gray-400">角色培养</div>
@@ -560,14 +560,14 @@
               </div>
               <button id="closeBackpackModal" class="text-gray-400 hover:text-white text-2xl px-2">×</button>
             </div>
-            <div class="p-4">
+            <div class="p-4 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y custom-scrollbar" style="-webkit-overflow-scrolling: touch;">
               <div class="flex gap-2 mb-3">
                 <button data-backpack-tab="equipment" class="px-3 py-2 rounded-lg border text-xs font-black bg-gray-900 border-gray-700 text-white hover:bg-gray-800">装备</button>
                 <button data-backpack-tab="inscription" class="px-3 py-2 rounded-lg border text-xs font-black bg-gray-900 border-gray-700 text-white hover:bg-gray-800">铭文</button>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div id="backpackList" class="bg-black/20 border border-gray-800 rounded-xl p-2 max-h-[60vh] overflow-y-auto custom-scrollbar"></div>
-                <div id="backpackDetail" class="bg-black/10 border border-gray-800 rounded-xl p-3 max-h-[60vh] overflow-y-auto custom-scrollbar"></div>
+                <div id="backpackDetail" class="bg-black/10 border border-gray-800 rounded-xl p-3 max-h-[60vh] overflow-y-auto custom-scrollbar relative pb-24"></div>
               </div>
             </div>
           </div>
