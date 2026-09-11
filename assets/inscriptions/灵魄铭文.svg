@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- generated:icon-v1 -->
+  <defs>
+    <linearGradient id="gr" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fef9c3"/>
+      <stop offset="1" stop-color="#b45309"/>
+    </linearGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <circle cx="64" cy="64" r="58" fill="#0b1220"/>
+  <circle cx="64" cy="64" r="57" fill="none" stroke="#FFD700" stroke-width="3" stroke-opacity="0.8"/>
+  <circle cx="64" cy="64" r="46" fill="none" stroke="#fef9c3" stroke-width="1" stroke-opacity="0.18"/>
+  <path d="M114.0 64.0 L120.0 64.0" stroke="#FFD700" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+  <path d="M99.4 99.4 L103.6 103.6" stroke="#FFD700" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+  <path d="M64.0 114.0 L64.0 120.0" stroke="#FFD700" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+  <path d="M28.6 99.4 L24.4 103.6" stroke="#FFD700" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+  <path d="M14.0 64.0 L8.0 64.0" stroke="#FFD700" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+  <path d="M28.6 28.6 L24.4 24.4" stroke="#FFD700" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+  <path d="M64.0 14.0 L64.0 8.0" stroke="#FFD700" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+  <path d="M99.4 28.6 L103.6 24.4" stroke="#FFD700" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+  <g filter="url(#sh)">
+    <path d="M20 64 Q42 34 64 34 Q86 34 108 64 Q86 94 64 94 Q42 94 20 64 Z" fill="url(#gr)" stroke="#fef9c3" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="64" cy="64" r="15" fill="#0b1220"/>
+    <circle cx="64" cy="64" r="7" fill="#f8fafc" opacity="0.9"/>
+    <circle cx="58" cy="58" r="4" fill="#f8fafc" opacity="0.75"/>
+  </g>
+</svg>

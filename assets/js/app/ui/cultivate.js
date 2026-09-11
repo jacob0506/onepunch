@@ -70,7 +70,8 @@
     if (powerEl) powerEl.textContent = powerValue.toLocaleString();
 
     const factionEl = document.getElementById('cultivateFaction');
-    if (factionEl) factionEl.textContent = char.faction || '未知';
+    // 走中文映射；单一实现：core/names.js（FACTION_NAMES）
+    if (factionEl) factionEl.textContent = (typeof getFactionName === 'function') ? getFactionName(char.faction) : (char.faction || '未知');
 
     const classEl = document.getElementById('cultivateClass');
     if (classEl) classEl.textContent = getClassName(char.class);
@@ -97,7 +98,7 @@
     if (classMobile) classMobile.textContent = getClassName(char.class);
 
     const factionMobile = document.getElementById('cultivateFactionMobile');
-    if (factionMobile) factionMobile.textContent = char.faction || '未知';
+    if (factionMobile) factionMobile.textContent = (typeof getFactionName === 'function') ? getFactionName(char.faction) : (char.faction || '未知');
 
     const rarityRank = { R: 1, SR: 2, SSR: 3, UR: 4, SUR: 5 };
     const awakenBtn = document.getElementById('awakenBtn');
@@ -157,7 +158,7 @@
         const idx = parseInt(slotType.split('-')[1]);
         const ins = char.inscriptions[idx];
         if (ins) slotEl.innerHTML = `<img src="${ins.imageUrl}" class="w-full h-full object-contain rounded-full border border-purple-500 p-1">`;
-        else slotEl.innerHTML = `<i class="fa fa-gem text-purple-950"></i>`;
+        else slotEl.innerHTML = `<i class="fa fa-diamond text-purple-950"></i>`;
         slotEl.onclick = () => openItemPicker(idx, true);
       } else {
         const item = char.equipments[slotType];

@@ -9,7 +9,7 @@
         "attack": 30,
         "atkPercent": 2
       },
-      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/45877ab24a85430293a83efafc7f0564~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928671&x-signature=hq1lXj3YUeenP62AX4s97zGvoHA%3D"
+      "imageUrl": "./assets/items/新手木剑.svg"
     },
     {
       "id": "eq_002",
@@ -20,7 +20,7 @@
         "defense": 15,
         "hpPercent": 2
       },
-      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/45877ab24a85430293a83efafc7f0564~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928671&x-signature=hq1lXj3YUeenP62AX4s97zGvoHA%3D"
+      "imageUrl": "./assets/items/破旧布甲.svg"
     },
     {
       "id": "eq_003",
@@ -32,7 +32,7 @@
         "atkPercent": 15,
         "critRate": 10
       },
-      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/4312afe72d2d41c2be2ed5f36061af5e~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928672&x-signature=nXCZm0703pzNfDQg%2BJE6m%2FXZIsg%3D"
+      "imageUrl": "./assets/items/屠龙宝刀.svg"
     },
     {
       "id": "eq_004",
@@ -45,7 +45,7 @@
         "blockRate": 15,
         "dmgReduc": 10
       },
-      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/66c3f30707414b3aa40945e25d64a2ed~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928672&x-signature=8vNROfFqfUvL06PaH6HoX9WGqII%3D"
+      "imageUrl": "./assets/items/不灭之盾.svg"
     },
     {
       "id": "eq_005",
@@ -56,7 +56,7 @@
         "speed": 50,
         "dodgeRate": 5
       },
-      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/66c3f30707414b3aa40945e25d64a2ed~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928672&x-signature=8vNROfFqfUvL06PaH6HoX9WGqII%3D"
+      "imageUrl": "./assets/items/疾风之靴.svg"
     },
     {
       "id": "eq_006",
@@ -69,7 +69,7 @@
         "effectHit": 15,
         "speed": 20
       },
-      "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/4312afe72d2d41c2be2ed5f36061af5e~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928672&x-signature=nXCZm0703pzNfDQg%2BJE6m%2FXZIsg%3D"
+      "imageUrl": "./assets/items/大魔导师之戒.svg"
     },
     {
       "id": "eq_007",
@@ -81,7 +81,7 @@
         "critRate": 4,
         "penetration": 6
       },
-      "imageUrl": "./assets/items/猎魂匕首.png"
+      "imageUrl": "./assets/items/猎魂匕首.svg"
     },
     {
       "id": "eq_008",
@@ -94,7 +94,7 @@
         "dodgeRate": 5,
         "antiCrit": 6
       },
-      "imageUrl": "./assets/items/疾影披风.png"
+      "imageUrl": "./assets/items/疾影披风.svg"
     },
     {
       "id": "eq_anti_001",
@@ -107,7 +107,7 @@
         "antiCrit": 18,
         "dmgReduc": 4
       },
-      "imageUrl": "./assets/items/影舞披风.png"
+      "imageUrl": "./assets/items/镇心斗篷.svg"
     },
     {
       "id": "eq_009",
@@ -119,7 +119,7 @@
         "tenacity": 6,
         "defPercent": 3
       },
-      "imageUrl": "./assets/items/银纹头盔.png"
+      "imageUrl": "./assets/items/银纹头盔.svg"
     },
     {
       "id": "eq_010",
@@ -131,7 +131,7 @@
         "dodgeRate": 4,
         "effectHit": 4
       },
-      "imageUrl": "./assets/items/踏风轻履.png"
+      "imageUrl": "./assets/items/踏风轻履.svg"
     },
     {
       "id": "eq_011",
@@ -143,7 +143,7 @@
         "lifesteal": 4,
         "hpPercent": 4
       },
-      "imageUrl": "./assets/items/治愈坠饰.png"
+      "imageUrl": "./assets/items/治愈坠饰.svg"
     },
     {
       "id": "eq_012",
@@ -156,7 +156,7 @@
         "critRate": 8,
         "critDmg": 20
       },
-      "imageUrl": "./assets/items/屠戮长刃.png"
+      "imageUrl": "./assets/items/屠戮长刃.svg"
     },
     {
       "id": "eq_013",
@@ -169,7 +169,7 @@
         "effectHit": 14,
         "penetration": 12
       },
-      "imageUrl": "./assets/items/虚空法杖.png"
+      "imageUrl": "./assets/items/虚空法杖.svg"
     },
     {
       "id": "eq_014",
@@ -183,7 +183,7 @@
         "critDmg": 30,
         "penetration": 18
       },
-      "imageUrl": "./assets/items/终焉之刃.png"
+      "imageUrl": "./assets/items/终焉之刃.svg"
     },
     {
       "id": "eq_015",
@@ -196,7 +196,7 @@
         "blockRate": 10,
         "dmgReduc": 6
       },
-      "imageUrl": "./assets/items/龙骨重铠.png"
+      "imageUrl": "./assets/items/龙骨重铠.svg"
     },
     {
       "id": "eq_016",
@@ -209,7 +209,7 @@
         "dodgeRate": 12,
         "dmgReduc": 5
       },
-      "imageUrl": "./assets/items/影舞披风.png"
+      "imageUrl": "./assets/items/影舞披风.svg"
     },
     {
       "id": "eq_017",
@@ -222,7 +222,7 @@
         "dmgReduc": 12,
         "tenacity": 12
       },
-      "imageUrl": "./assets/items/虚空护心镜.png"
+      "imageUrl": "./assets/items/虚空护心镜.svg"
     },
     {
       "id": "eq_018",
@@ -235,7 +235,7 @@
         "effectHit": 8,
         "hpPercent": 4
       },
-      "imageUrl": "./assets/items/冠冕·日曜.png"
+      "imageUrl": "./assets/items/冠冕·日曜.svg"
     },
     {
       "id": "eq_019",
@@ -248,7 +248,7 @@
         "dodgeRate": 6,
         "atkPercent": 4
       },
-      "imageUrl": "./assets/items/诡术面具.png"
+      "imageUrl": "./assets/items/诡术面具.svg"
     },
     {
       "id": "eq_020",
@@ -261,7 +261,7 @@
         "critDmg": 35,
         "effectHit": 12
       },
-      "imageUrl": "./assets/items/命运王冠.png"
+      "imageUrl": "./assets/items/命运王冠.svg"
     },
     {
       "id": "eq_021",
@@ -273,7 +273,7 @@
         "tenacity": 10,
         "dodgeRate": 8
       },
-      "imageUrl": "./assets/items/时之靴.png"
+      "imageUrl": "./assets/items/时之靴.svg"
     },
     {
       "id": "eq_022",
@@ -286,7 +286,7 @@
         "effectHit": 10,
         "tenacity": 10
       },
-      "imageUrl": "./assets/items/相位战靴.png"
+      "imageUrl": "./assets/items/相位战靴.svg"
     },
     {
       "id": "eq_023",
@@ -298,7 +298,7 @@
         "hpPercent": 6,
         "critDmg": 20
       },
-      "imageUrl": "./assets/items/星辉吊坠.png"
+      "imageUrl": "./assets/items/星辉吊坠.svg"
     },
     {
       "id": "eq_024",
@@ -311,7 +311,7 @@
         "tenacity": 10,
         "penetration": 10
       },
-      "imageUrl": "./assets/items/深渊徽记.png"
+      "imageUrl": "./assets/items/深渊徽记.svg"
     },
     {
       "id": "eq_025",
@@ -324,7 +324,7 @@
         "penetration": 15,
         "speed": 24
       },
-      "imageUrl": "./assets/items/核心调谐器.png"
+      "imageUrl": "./assets/items/核心调谐器.svg"
     },
     {
       "id": "eq_026",
@@ -336,7 +336,7 @@
         "lifesteal": 10,
         "dmgReduc": 4
       },
-      "imageUrl": "./assets/items/血誓护符.png",
+      "imageUrl": "./assets/items/血誓护符.svg",
       "passiveEffect": "生命低于30%时，获得免疫1回合"
     },
     {
@@ -349,7 +349,7 @@
         "critRate": 8,
         "effectHit": 6
       },
-      "imageUrl": "./assets/items/审判徽章.png",
+      "imageUrl": "./assets/items/审判徽章.svg",
       "passiveEffect": "攻击时有15%几率魅惑目标1回合"
     },
     {
@@ -363,7 +363,7 @@
         "speed": 18,
         "penetration": 12
       },
-      "imageUrl": "./assets/items/裂界长弓.png",
+      "imageUrl": "./assets/items/裂界长弓.svg",
       "passiveEffect": "普通攻击有15%几率触发追击，造成80%伤害"
     },
     {
@@ -376,7 +376,7 @@
         "health": 900,
         "dmgReduc": 6
       },
-      "imageUrl": "./assets/items/反伤肩甲.png",
+      "imageUrl": "./assets/items/反伤肩甲.svg",
       "passiveEffect": "反弹12%伤害"
     },
     {
@@ -389,7 +389,7 @@
         "tenacity": 18,
         "dmgReduc": 4
       },
-      "imageUrl": "./assets/items/不屈战盔.png",
+      "imageUrl": "./assets/items/不屈战盔.svg",
       "passiveEffect": "非暴击不死"
     },
     {
@@ -402,7 +402,7 @@
         "critRate": 9,
         "penetration": 10
       },
-      "imageUrl": "./assets/items/暗影之刃.png",
+      "imageUrl": "./assets/items/暗影之刃.svg",
       "passiveEffect": "击杀目标后进入隐身状态一回合"
     },
     {
@@ -415,7 +415,7 @@
         "tenacity": 12,
         "dmgReduc": 6
       },
-      "imageUrl": "./assets/items/复生胸针.png",
+      "imageUrl": "./assets/items/复生胸针.svg",
       "passiveEffect": "复活1次，每次复活恢复30%生命"
     }
   ]

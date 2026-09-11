@@ -1,10 +1,9 @@
 (() => {
+  // 占位图单一实现：globals.js 的 __sprites.portraitPlaceholder
+  // （此前这里有一份与 globals.js **逐字相同**的 SVG 副本 —— 改配色只改一处会导致
+  //   抽卡页与其它页面出现两种占位图）
   function portraitPlaceholder(char) {
-    const rarity = String((char && char.rarity) || 'R').toUpperCase();
-    const name = String((char && char.name) || '').slice(0, 6);
-    const bg = rarity === 'SUR' ? '#a855f7' : (rarity === 'UR' ? '#f59e0b' : (rarity === 'SSR' ? '#fb7185' : (rarity === 'SR' ? '#60a5fa' : '#94a3b8')));
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${bg}" stop-opacity="0.35"/><stop offset="1" stop-color="#0b1220"/></linearGradient></defs><rect width="512" height="512" fill="url(#g)"/><circle cx="256" cy="210" r="88" fill="${bg}" fill-opacity="0.28"/><text x="256" y="226" text-anchor="middle" font-family="system-ui,Segoe UI,Arial" font-size="56" fill="#e5e7eb" font-weight="800">${rarity}</text><text x="256" y="352" text-anchor="middle" font-family="system-ui,Segoe UI,Arial" font-size="28" fill="#cbd5e1" font-weight="700">${name || '未知'}</text><text x="256" y="392" text-anchor="middle" font-family="system-ui,Segoe UI,Arial" font-size="18" fill="#94a3b8">立绘缺失</text></svg>`;
-    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    return window.__sprites.portraitPlaceholder(char && char.name, char && char.rarity);
   }
 
   function getPortraitUrl(char) {

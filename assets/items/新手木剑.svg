@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- generated:icon-v1 -->
+  <defs>
+    <linearGradient id="gr" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#dbeafe"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="#0b1220" stroke="#7FB5FF" stroke-width="3" stroke-opacity="0.8"/>
+  <rect x="14" y="14" width="100" height="100" rx="19" fill="none" stroke="#dbeafe" stroke-width="1" stroke-opacity="0.2"/>
+  <g filter="url(#sh)">
+    <path d="M64 16 L76 44 L76 88 L64 100 L52 88 L52 44 Z" fill="url(#gr)" stroke="#dbeafe" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M64 30 L64 86" stroke="#dbeafe" stroke-width="2" opacity="0.55"/>
+    <rect x="38" y="86" width="52" height="9" rx="4" fill="#7FB5FF" stroke="#dbeafe" stroke-width="2"/>
+    <rect x="59" y="95" width="10" height="18" rx="4" fill="#1e293b" stroke="#dbeafe" stroke-width="2"/>
+    <circle cx="64" cy="116" r="6" fill="#7FB5FF" stroke="#dbeafe" stroke-width="2"/>
+  </g>
+</svg>

@@ -1,29 +1,15 @@
 (() => {
+  // 材料工具单一实现：ui/materials.js（此前与 ui/backpack.js 各一份逐字相同副本）
   function ensureMaterials() {
-    if (window.__progression && typeof window.__progression.ensurePlayerMaterials === 'function') {
-      window.__progression.ensurePlayerMaterials(gameData);
-    } else {
-      if (!gameData.player) gameData.player = {};
-      if (!gameData.player.materials) gameData.player.materials = {};
-      if (typeof gameData.player.materials.enhanceStone !== 'number') gameData.player.materials.enhanceStone = 0;
-      if (typeof gameData.player.materials.inscriptionDust !== 'number') gameData.player.materials.inscriptionDust = 0;
-      if (typeof gameData.player.materials.reforgeDust !== 'number') gameData.player.materials.reforgeDust = 0;
-      if (typeof gameData.player.materials.lockCrystal !== 'number') gameData.player.materials.lockCrystal = 0;
-    }
+    return window.__materials.ensureMaterials(gameData);
   }
 
   function getMaterialMeta(key) {
-    const list = (typeof materialsData !== 'undefined' && Array.isArray(materialsData)) ? materialsData : (Array.isArray(window.materialsData) ? window.materialsData : []);
-    const m = Array.isArray(list) ? list.find(x => x && x.key === key) : null;
-    return {
-      name: m && m.name ? m.name : key,
-      iconUrl: m && m.iconUrl ? m.iconUrl : ''
-    };
+    return window.__materials.getMaterialMeta(key);
   }
 
   function getRarityCostMult(rarity) {
-    const map = { R: 1, SR: 2, SSR: 4, UR: 7, SUR: 10 };
-    return map[rarity] || 1;
+    return window.__materials.getRarityCostMult(rarity);
   }
 
   function renderAttrSections(item, kind) {

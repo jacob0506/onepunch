@@ -7,9 +7,9 @@
 
     if (offlineHours > 0) {
       const offlineGold = offlineHours * GAME_CONFIG.offlineRewardRate.gold;
-      document.getElementById('offlineRewards').innerHTML = `<i class="fa fa-coins mr-1"></i>${offlineGold.toLocaleString()}`;
+      document.getElementById('offlineRewards').innerHTML = `<i class="fa fa-money mr-1"></i>${offlineGold.toLocaleString()}`;
     } else {
-      document.getElementById('offlineRewards').innerHTML = `<i class="fa fa-coins mr-1"></i>0`;
+      document.getElementById('offlineRewards').innerHTML = `<i class="fa fa-money mr-1"></i>0`;
       document.getElementById('claimOfflineRewards').classList.add('opacity-50');
       document.getElementById('claimOfflineRewards').disabled = true;
     }
@@ -35,7 +35,7 @@
       if (typeof checkPlayerLevelUp === 'function') checkPlayerLevelUp();
 
       document.getElementById('playerGold').textContent = gameData.player.gold.toLocaleString();
-      document.getElementById('offlineRewards').innerHTML = `<i class="fa fa-coins mr-1"></i>0`;
+      document.getElementById('offlineRewards').innerHTML = `<i class="fa fa-money mr-1"></i>0`;
       document.getElementById('claimOfflineRewards').classList.add('opacity-50');
       document.getElementById('claimOfflineRewards').disabled = true;
 

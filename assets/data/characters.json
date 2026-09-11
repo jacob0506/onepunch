@@ -1,6 +1,6 @@
 {
   "characters": [
-    { "id": "char_001", "name": "剑心", "rarity": "R", "class": "warrior", "baseAttributes": { "attack": 100, "defense": 50, "health": 1000, "speed": 80 }, "skills": [{ "id": "skill_001", "name": "剑刃风暴", "description": "对敌方全体造成120%攻击力的伤害", "cooldown": 3 }], "position": "front", "faction": "knight", "imageUrl": "https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/3cf6c9fe60794fdea2505ec680b05dd5~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026031301300386356C67CBBD90539B66&rrcfp=f06b921b&x-expires=1775928650&x-signature=NFEoebpMo0LJ8Cw7kVA8ZvVr6WY%3D" },
+    { "id": "char_001", "name": "剑心", "rarity": "R", "class": "warrior", "baseAttributes": { "attack": 100, "defense": 50, "health": 1000, "speed": 80 }, "skills": [{ "id": "skill_001", "name": "剑刃风暴", "description": "对敌方全体造成120%攻击力的伤害", "cooldown": 3 }], "position": "front", "faction": "knight", "imageUrl": "" },
     {
       "id": "char_sur_001",
       "name": "虚空主宰·卡修斯",
@@ -84,7 +84,7 @@
       "passive": "幽灵隐匿：闪避率增加40%，成功闪避后下一次攻击必暴击",
       "position": "back",
       "faction": "abyss",
-      "imageUrl": "./assets/sprites/深渊幽灵·塞恩.png"
+      "imageUrl": "./assets/sprites/深渊幽灵·赛恩.png"
     },
     {
       "id": "char_sur_007",

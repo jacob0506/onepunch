@@ -14,22 +14,14 @@
     document.head.appendChild(style);
   }
 
+  // A3 命名空间契约：core/format.js 是本项目 HTML / 正则转义的唯一实现。
+  // 本模块在其之后加载，Game.core.format 必定存在；此处不再保留副本。
   function getEscapeHtml() {
-    if (typeof escapeHtml === 'function') return escapeHtml;
-    if (window.Game && window.Game.core && window.Game.core.format && typeof window.Game.core.format.escapeHtml === 'function') {
-      return window.Game.core.format.escapeHtml;
-    }
-    return (str) => String(str || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+    return window.Game.core.format.escapeHtml;
   }
 
   function escapeRegExp(s) {
-    if (typeof window.escapeRegExp === 'function') return window.escapeRegExp(s);
-    return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return window.Game.core.format.escapeRegExp(s);
   }
 
   function buildBattleLogs(params) {

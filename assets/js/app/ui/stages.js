@@ -2,6 +2,28 @@
   let mode = 'main';
   let towerInitialized = false;
 
+  /**
+   * 是否处于开发者模式（见 assets/js/app/dev.js）。
+   * 「场景调试」按钮只在开发者模式下渲染，正式玩家看不到内部调试入口。
+   */
+  function isDevMode() {
+    return !!(window.Game && window.Game.dev &&
+      typeof window.Game.dev.isOn === 'function' && window.Game.dev.isOn());
+  }
+
+  /**
+   * ★ 统一战斗入口（A1）：主线与无尽塔都走同一个引擎。
+   * 入口实现在 assets/js/app/battle/scene.js → window.Game.battle.enterBattle。
+   * 这里保留两级兜底，避免模块加载顺序变化时"点不动"。
+   */
+  function enterBattleUnified(stageId) {
+    const entry = window.__battleEntry;
+    if (entry && typeof entry.enterBattle === 'function') return entry.enterBattle(stageId);
+    if (typeof openBattleSceneDebug === 'function') return openBattleSceneDebug(stageId);
+    if (typeof startBattle === 'function') return startBattle(stageId);
+    return false;
+  }
+
   function ensureTowerData() {
     if (!gameData) return;
     if (!gameData.tower || typeof gameData.tower !== 'object') gameData.tower = {};
@@ -231,7 +253,7 @@
           stage.towerBlessing = b.id;
         }
         modal.classList.add('hidden');
-        if (typeof startBattle === 'function') startBattle(stage.id);
+        enterBattleUnified(stage.id);
       });
       wrap.appendChild(btn);
     });
@@ -335,7 +357,7 @@
               经验: ${stage.rewards.exp}
             </div>
             <div class="px-3 py-1 bg-gray-800 rounded-full text-xs flex items-center">
-              <i class="fa fa-coins text-yellow-500 mr-1"></i>
+              <i class="fa fa-money text-yellow-500 mr-1"></i>
               金币: ${stage.rewards.gold}
             </div>
             ${((stage.rewards && stage.rewards.items) || []).map(item => {
@@ -355,9 +377,10 @@
             <button class="btn-primary ${!isUnlocked ? 'opacity-50 cursor-not-allowed' : ''}" ${!isUnlocked ? 'disabled' : ''} data-stage="${stage.id}">
               ${isUnlocked ? (isCleared ? '再次挑战' : '挑战') : '通关上一关解锁'}
             </button>
+            ${isDevMode() ? `
             <button class="px-4 py-2 rounded-lg text-xs font-black bg-gray-900 border border-gray-700 hover:bg-gray-800 ${!isUnlocked ? 'opacity-50 cursor-not-allowed' : ''}" ${!isUnlocked ? 'disabled' : ''} data-stage-debug="${stage.id}">
               场景调试
-            </button>
+            </button>` : ''}
           </div>
         </div>
       `;
@@ -365,17 +388,15 @@
       const challengeBtn = cardElement.querySelector('[data-stage]');
       challengeBtn.addEventListener('click', () => {
         if (!isUnlocked) return;
-        if (BATTLE_SCENE_CONFIG && BATTLE_SCENE_CONFIG.replaceFormal) {
-          openBattleSceneDebug(stage.id);
-        } else {
-          startBattle(stage.id);
-        }
+        enterBattleUnified(stage.id);
       });
 
       const debugBtn = cardElement.querySelector('[data-stage-debug]');
-      debugBtn.addEventListener('click', () => {
-        if (isUnlocked) openBattleSceneDebug(stage.id);
-      });
+      if (debugBtn) {
+        debugBtn.addEventListener('click', () => {
+          if (isUnlocked) openBattleSceneDebug(stage.id);
+        });
+      }
 
       stagesList.appendChild(cardElement);
     });
@@ -458,7 +479,7 @@
           <div class="text-xs font-bold text-gray-400 mb-2">奖励预览</div>
           <div class="flex flex-wrap gap-2">
             <div class="px-3 py-1 bg-gray-800 rounded-full text-xs flex items-center"><i class="fa fa-star text-yellow-400 mr-1"></i>经验: ${stage.rewards.exp}</div>
-            <div class="px-3 py-1 bg-gray-800 rounded-full text-xs flex items-center"><i class="fa fa-coins text-yellow-500 mr-1"></i>金币: ${stage.rewards.gold}</div>
+            <div class="px-3 py-1 bg-gray-800 rounded-full text-xs flex items-center"><i class="fa fa-money text-yellow-500 mr-1"></i>金币: ${stage.rewards.gold}</div>
             ${(stage.rewards.items || []).slice(0, 4).map(it => {
               const itemData = equipmentData.find(i => i && i.id === it.id) || inscriptionsData.find(i => i && i.id === it.id);
               const name = itemData ? itemData.name : getMaterialNameById(it.id);
@@ -516,4 +537,10 @@
   const api = { updateStagesList, goToStage };
   if (window.Game && window.Game.ui) window.Game.ui.stages = api;
   window.__stagesUI = api;
+
+  // 开发者模式切换后需要重渲染，才能增删「场景调试」按钮
+  window.addEventListener('game:devmodechange', () => {
+    const el = document.getElementById('stagesList');
+    if (el && el.children.length > 0) updateStagesList();
+  });
 })();

@@ -76,15 +76,14 @@
     return `text-rarity-${r}`;
   }
 
+  // 名称映射单一实现：core/names.js
+  // （此前这里的副本不完整 —— getInscriptionTypeName 的 fallback 直接返回英文 key，会漏成 "attack"）
   function getEquipmentTypeName(type) {
-    if (typeof window.getEquipmentTypeName === 'function') return window.getEquipmentTypeName(type);
-    const map = { weapon: '武器', armor: '防具', helmet: '头盔', shoes: '鞋子', accessory: '饰品' };
-    return map[type] || type;
+    return window.Game.core.names.getEquipmentTypeName(type);
   }
 
   function getInscriptionTypeName(type) {
-    if (typeof window.getInscriptionTypeName === 'function') return window.getInscriptionTypeName(type);
-    return type;
+    return window.Game.core.names.getInscriptionTypeName(type);
   }
 
   function getStatNameSafe(key) {
@@ -131,31 +130,17 @@
     return candidates[0] || null;
   }
 
+  // 材料工具单一实现：ui/materials.js（此前与 ui/inventory.js 各一份逐字相同副本）
   function ensureMaterials() {
-    if (window.__progression && typeof window.__progression.ensurePlayerMaterials === 'function') {
-      window.__progression.ensurePlayerMaterials(gameData);
-    } else {
-      if (!gameData.player) gameData.player = {};
-      if (!gameData.player.materials) gameData.player.materials = {};
-      if (typeof gameData.player.materials.enhanceStone !== 'number') gameData.player.materials.enhanceStone = 0;
-      if (typeof gameData.player.materials.inscriptionDust !== 'number') gameData.player.materials.inscriptionDust = 0;
-      if (typeof gameData.player.materials.reforgeDust !== 'number') gameData.player.materials.reforgeDust = 0;
-      if (typeof gameData.player.materials.lockCrystal !== 'number') gameData.player.materials.lockCrystal = 0;
-    }
+    return window.__materials.ensureMaterials(gameData);
   }
 
   function getMaterialMeta(key) {
-    const list = (typeof materialsData !== 'undefined' && Array.isArray(materialsData)) ? materialsData : (Array.isArray(window.materialsData) ? window.materialsData : []);
-    const m = Array.isArray(list) ? list.find(x => x && x.key === key) : null;
-    return {
-      name: m && m.name ? m.name : key,
-      iconUrl: m && m.iconUrl ? m.iconUrl : ''
-    };
+    return window.__materials.getMaterialMeta(key);
   }
 
   function getRarityCostMult(rarity) {
-    const map = { R: 1, SR: 2, SSR: 4, UR: 7, SUR: 10 };
-    return map[rarity] || 1;
+    return window.__materials.getRarityCostMult(rarity);
   }
 
   function applyEquipmentUpgrade(target, material) {
@@ -318,7 +303,7 @@
         const row = document.createElement('button');
         row.type = 'button';
         row.className = `w-full text-left p-3 rounded-xl border ${state.selectedId === item.instanceId ? 'border-primary bg-black/40' : 'border-gray-800 bg-black/20 hover:bg-black/35'} flex items-center gap-3`;
-        const img = item.imageUrl ? `<img src="${item.imageUrl}" class="w-10 h-10 object-contain rounded-full bg-black/30 border border-gray-800" data-img="1">` : `<div class="w-10 h-10 rounded-full bg-black/30 border border-gray-800 flex items-center justify-center"><i class="fa fa-gem text-gray-500"></i></div>`;
+        const img = item.imageUrl ? `<img src="${item.imageUrl}" class="w-10 h-10 object-contain rounded-full bg-black/30 border border-gray-800" data-img="1">` : `<div class="w-10 h-10 rounded-full bg-black/30 border border-gray-800 flex items-center justify-center"><i class="fa fa-diamond text-gray-500"></i></div>`;
         row.innerHTML = `
           ${img}
           <div class="min-w-0 flex-1">
@@ -390,7 +375,7 @@
       img.onerror = () => { imgWrap.innerHTML = `<i class="fa fa-image text-gray-600 text-xl"></i>`; };
       imgWrap.appendChild(img);
     } else {
-      imgWrap.innerHTML = kind === 'inscription' ? `<i class="fa fa-gem text-gray-600 text-xl"></i>` : `<i class="fa fa-cube text-gray-600 text-xl"></i>`;
+      imgWrap.innerHTML = kind === 'inscription' ? `<i class="fa fa-diamond text-gray-600 text-xl"></i>` : `<i class="fa fa-cube text-gray-600 text-xl"></i>`;
     }
 
     const meta = document.createElement('div');
