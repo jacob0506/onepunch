@@ -1,9 +1,9 @@
-const CACHE_NAME = 'card-game-v25';
+const CACHE_NAME = 'card-game-v26';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  './service-worker.js?v=23',
+  './service-worker.js',
   './assets/data/characters.json',
   './assets/data/items.json',
   './assets/data/materials.json',
@@ -33,8 +33,18 @@ const ASSETS_TO_CACHE = [
   './assets/js/app/battle/report.js',
   './assets/js/app/battle/vfx.js',
   './assets/js/app/battle/boss_mechanics.js',
-  './assets/js/app/battle/rewards.js?v=23',
-  './assets/js/app/battle/scene.js',
+  './assets/js/app/battle/rewards.js?v=26',
+  './assets/js/app/battle/scene.js?v=26',
+  // ── P5（2026-09-12）从 index.html 内联主脚本搬出的 9 个模块 ──
+  './assets/js/app/data/bootstrap.js?v=26',
+  './assets/js/app/data/characters.js?v=26',
+  './assets/js/app/data/stage_expand.js?v=26',
+  './assets/js/app/domain/character_ops.js?v=26',
+  './assets/js/app/ui/home.js?v=26',
+  './assets/js/app/ui/character_view.js?v=26',
+  './assets/js/app/battle/loadout_text.js?v=26',
+  './assets/js/app/battle/fallback_hud.js?v=26',
+  './assets/js/app/debug/cheats.js?v=26',
   // 品牌素材（背景 / Logo / 抽卡横幅 / PWA 图标），由 tools/gen-brand.mjs 生成
   './assets/brand/bg-space.svg',
   './assets/brand/stardust.svg',
@@ -105,8 +115,8 @@ const ASSETS_TO_CACHE = [
   './assets/inscriptions/雷鸣铭文.svg',
   './assets/inscriptions/魅惑铭文.svg',
   // 第三方库（本地化，见 tools/vendor-cdn.mjs）—— 必须预缓存，否则离线时会退化成无样式
-  './assets/vendor/tailwind/tailwind.js?v=23',
-  './assets/vendor/font-awesome/css/font-awesome.min.css?v=23',
+  './assets/vendor/tailwind/tailwind.js?v=26',
+  './assets/vendor/font-awesome/css/font-awesome.min.css?v=26',
   './assets/vendor/font-awesome/fonts/fontawesome-webfont.woff2?v=4.7.0',
   './assets/vendor/font-awesome/fonts/fontawesome-webfont.woff?v=4.7.0'
 ];
