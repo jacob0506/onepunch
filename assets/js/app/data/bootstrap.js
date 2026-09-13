@@ -34,6 +34,10 @@
           dailiesData = loaded.dailiesData || null;
           achievementsData = loaded.achievementsData || null;
           countersData = loaded.countersData || null;
+          tutorialData = loaded.tutorialData || null;
+          // A4：json 配置覆盖内置兜底（GAME_CONFIG / BATTLE_SCENE_CONFIG / AWAKEN_PROFILES）
+          // —— 必须在任何读配置的逻辑之前；powered by core/config.js（幂等，缺字段保留兜底）
+          if (window.__config && typeof window.__config.apply === 'function') window.__config.apply(loaded);
           normalizeCharacterSkills(charactersData);
           if (!Array.isArray(stagesData)) stagesData = [];
           if (stagesData.length < 50) {
@@ -433,6 +437,12 @@
         null, null, null, null
       ];
       ensureFormation();
+
+      // C11：新档启用新手引导（fresh=true：连出师奖标记一起清，新玩家才领得到）
+      //      老档走 domain/tutorial.js 的 ensure() 自动判定为已完成，不打扰。
+      const tw = window.__tutorial;
+      if (tw && typeof tw.restart === 'function') tw.restart({ fresh: true });
+      else gameData.tutorial = { v: 1, active: true, skipped: false, finished: false, claimed: false, done: [] };
 
       fixMissingInstanceIds();
       

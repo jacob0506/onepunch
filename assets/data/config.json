@@ -1,0 +1,37 @@
+{
+  "_comment": "A4 配置外置：GAME_CONFIG / BATTLE_SCENE_CONFIG 的唯一真相源。加载由 data/loader.js 完成、应用由 core/config.js 的 apply() 完成；json 缺失或字段不全时，core/config.js 用内置同值兜底，行为与改版前完全一致。改数值只改这里，不要改代码。",
+  "gameConfig": {
+    "rarityProbabilities": {
+      "R": 0.8,
+      "SR": 0.15,
+      "SSR": 0.035,
+      "UR": 0.013,
+      "SUR": 0.002
+    },
+    "gachaCost": {
+      "single": 200,
+      "ten": 1800
+    },
+    "levelUpCost": {
+      "base": 100,
+      "multiplier": 1.5
+    },
+    "offlineRewardRate": {
+      "gold": 10,
+      "exp": 2
+    },
+    "fragmentYield": {
+      "R": 5,
+      "SR": 10,
+      "SSR": 20,
+      "UR": 50,
+      "SUR": 100
+    },
+    "maxLevel": 150,
+    "maxStars": 8
+  },
+  "battleScene": {
+    "backgroundImageUrl": "./assets/backgrounds/battle_scene_bg.jpg",
+    "replaceFormal": true
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "finishTitle": "出师",
+  "finishText": "核心循环你已经全走通了：升级 → 召唤 → 推关 → 扫荡 → 挂机。队伍里已有初始 2 人，之后人多了记得回养成页点「上阵」自动补强。剩下的就是变强。",
+  "finishReward": { "gems": 300, "gold": 5000 },
+  "steps": [
+    {
+      "id": "welcome",
+      "title": "欢迎来到幻卡传说",
+      "text": "这是一座被星海侵蚀的浮空城。队伍里已给你配好 2 名初始角色，跟着引导走 2 分钟，把核心循环过一遍 —— 不想看可以随时跳过。",
+      "page": "home",
+      "anchor": "",
+      "metric": "manual",
+      "target": 1
+    },
+    {
+      "id": "levelup",
+      "title": "第一步 · 一键升级",
+      "text": "角色等级是战力大头。去养成页点「一键升级」，把攒下的经验一次性用掉。",
+      "page": "characters",
+      "anchor": "#quickLevelUp",
+      "metric": "levelUps",
+      "target": 1
+    },
+    {
+      "id": "gacha",
+      "title": "第二步 · 召唤伙伴",
+      "text": "用钻石召唤新角色，稀有度越高越强（R < SR < SSR < UR < SUR）。先来一发单抽试试手气。",
+      "page": "gacha",
+      "anchor": "#singleGacha",
+      "metric": "gachaTotal",
+      "target": 1
+    },
+    {
+      "id": "battle",
+      "title": "第三步 · 打第一关",
+      "text": "去关卡页挑战「新手村外围」。打赢就推进主线，解锁后面的关卡和挂机收益。",
+      "page": "stages",
+      "anchor": "[data-stage=\"stage_001\"]",
+      "metric": "mainCleared",
+      "target": 1
+    },
+    {
+      "id": "sweep",
+      "title": "第四步 · 扫荡囤资源",
+      "text": "通关过的关卡可以直接扫荡，几秒拿满奖励，不用重打。这是后期养成的资源主来源。",
+      "page": "stages",
+      "anchor": "[data-sweep]",
+      "metric": "sweeps",
+      "target": 1
+    },
+    {
+      "id": "idle",
+      "title": "最后一步 · 挂机收益",
+      "text": "离线时队伍也在自动打钱，最多攒 12 小时。随时回来点「领取挂机收益」收菜。",
+      "page": "home",
+      "anchor": "#claimOfflineRewards",
+      "metric": "idleClaims",
+      "target": 1
+    }
+  ]
+}

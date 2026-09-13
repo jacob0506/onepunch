@@ -104,6 +104,9 @@
       return i <= 0 ? 0 : i;
     },
     towerBest: () => {
+      // C10 赛季化：读"历史最高（含当前赛季）"——重置开新赛季后成就进度不倒退
+      const tw = window.__tower;
+      if (tw && typeof tw.historyBest === 'function') return tw.historyBest() || 0;
       const d = gd();
       return (d && d.tower) ? (Number(d.tower.bestFloor) || 0) : 0;
     },

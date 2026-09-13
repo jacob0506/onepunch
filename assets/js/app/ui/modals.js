@@ -111,15 +111,15 @@
 
     const ownedFrag = gameData.fragments[char.id] || 0;
     if (gameData.player.gold < cost.gold) {
-      alert('金币不足');
+      uiToast('金币不足', 'danger');
       return;
     }
     if (gameData.player.gems < cost.gems) {
-      alert('钻石不足');
+      uiToast('钻石不足', 'danger');
       return;
     }
     if (ownedFrag < cost.fragments) {
-      alert('碎片不足');
+      uiToast('碎片不足', 'danger');
       return;
     }
     const ok = confirm(`确认觉醒【${char.name}】？\n- 觉醒仅一次且永久生效\n- 消耗：金币${cost.gold}，钻石${cost.gems}，碎片${cost.fragments}`);
@@ -136,7 +136,7 @@
     updateUI();
     selectCharacterToCultivate(char);
     document.getElementById('awakenModal').classList.add('hidden');
-    alert(`觉醒完成：${profile.name}`);
+    uiToast(`觉醒完成：${profile.name}`, 'success');
   }
 
   const api = {

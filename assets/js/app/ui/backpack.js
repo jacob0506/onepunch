@@ -157,7 +157,7 @@
       const hasGold = (gameData.player.gold || 0) >= goldCost;
       const hasStone = (gameData.player.materials.enhanceStone || 0) >= stoneCost;
       if (!hasGold || !hasStone) {
-        alert('材料不足');
+        uiToast('材料不足', 'danger');
         return false;
       }
       gameData.player.gold -= goldCost;
@@ -181,7 +181,7 @@
     ensureMaterials();
     if (gain > 0) {
       if ((gameData.player.materials.inscriptionDust || 0) < dustCost) {
-        alert('材料不足');
+        uiToast('材料不足', 'danger');
         return false;
       }
       gameData.player.materials.inscriptionDust -= dustCost;
@@ -582,9 +582,9 @@
           ? window.__inventory.getReforgeCost(item.rarity, item.lockedKeys.length, keys.length)
           : { gold: 0, reforgeDust: 0, lockCrystal: 0 };
         const mats = gameData.player.materials || {};
-        if ((gameData.player.gold || 0) < costNow.gold) return alert('金币不足');
-        if ((mats.reforgeDust || 0) < costNow.reforgeDust) return alert('重铸粉尘不足');
-        if ((mats.lockCrystal || 0) < costNow.lockCrystal) return alert('锁定核心不足');
+        if ((gameData.player.gold || 0) < costNow.gold) return uiToast('金币不足', 'danger');
+        if ((mats.reforgeDust || 0) < costNow.reforgeDust) return uiToast('重铸粉尘不足', 'danger');
+        if ((mats.lockCrystal || 0) < costNow.lockCrystal) return uiToast('锁定核心不足', 'danger');
         const ok = confirm(`确认重铸随机词条？\n锁定：${item.lockedKeys.length}/${maxLocked}\n消耗：💰${costNow.gold} · ${dustMeta.name} ${costNow.reforgeDust}${costNow.lockCrystal > 0 ? ` · ${lockMeta.name} ${costNow.lockCrystal}` : ''}`);
         if (!ok) return;
         gameData.player.gold -= costNow.gold;
@@ -647,7 +647,7 @@
     equipBtn.onclick = () => {
       if (!hasSelectedChar) {
         switchPage('characters');
-        alert('请先在养成界面选择一个角色');
+        uiToast('请先在养成界面选择一个角色', 'danger');
         return;
       }
       if (blockedByOther) return;
@@ -697,14 +697,14 @@
       if (kind === 'equipment') {
         const maxLevel = (window.__inventory && window.__inventory.getMaxEquipmentLevel) ? window.__inventory.getMaxEquipmentLevel(item.rarity) : 20;
         if ((item.level || 1) >= maxLevel) {
-          alert('已达到最高等级');
+          uiToast('已达到最高等级', 'danger');
           return;
         }
         const res = applyEquipmentUpgrade(item, null);
         if (!res) return;
       } else {
         if ((item.level || 1) >= 10) {
-          alert('已达到最高等级');
+          uiToast('已达到最高等级', 'danger');
           return;
         }
         const res = applyInscriptionUpgrade(item, null);
@@ -724,7 +724,7 @@
       if (kind === 'equipment') {
         const ownerNow = findEquippedOwner(item, 'equipment');
         if (ownerNow) {
-          alert('该装备已被角色装备，无法分解');
+          uiToast('该装备已被角色装备，无法分解', 'danger');
           return;
         }
         const feed = (window.__inventory && window.__inventory.getEquipmentFeedExp) ? window.__inventory.getEquipmentFeedExp(item) : 0;
@@ -734,7 +734,7 @@
       } else {
         const ownerNow = findEquippedOwner(item, 'inscription');
         if (ownerNow) {
-          alert('该铭文已被角色镶嵌，无法分解');
+          uiToast('该铭文已被角色镶嵌，无法分解', 'danger');
           return;
         }
         const feed = (window.__inventory && window.__inventory.getInscriptionFeedExp) ? window.__inventory.getInscriptionFeedExp(item) : 0;

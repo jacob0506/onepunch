@@ -62,6 +62,27 @@
     } catch (e) {
       console.warn('[loader] counters.json 加载失败，本次运行用内置克制环', e && e.message);
     }
+    // A4：全局配置（GAME_CONFIG / BATTLE_SCENE_CONFIG）—— 拿不到则 core/config.js 用内置同值兜底
+    let configJson = null;
+    try {
+      configJson = await fetchJson('assets/data/config.json');
+    } catch (e) {
+      console.warn('[loader] config.json 加载失败，本次运行用内置配置', e && e.message);
+    }
+    // A4：觉醒档案（拿不到则 core/config.js 退回内置同值档案）
+    let awakenJson = null;
+    try {
+      awakenJson = await fetchJson('assets/data/awaken_profiles.json');
+    } catch (e) {
+      console.warn('[loader] awaken_profiles.json 加载失败，本次运行用内置觉醒档案', e && e.message);
+    }
+    // C11：新手引导步骤（拿不到则 domain/tutorial.js 退回内置同值步骤）
+    let tutorialJson = null;
+    try {
+      tutorialJson = await fetchJson('assets/data/tutorial.json');
+    } catch (e) {
+      console.warn('[loader] tutorial.json 加载失败，本次运行用内置引导步骤', e && e.message);
+    }
     return {
       charactersData: charactersJson.characters || [],
       equipmentData: itemsJson.items || [],
@@ -71,7 +92,10 @@
       bondsData: bondsJson,
       dailiesData: dailiesJson,
       achievementsData: achievementsJson,
-      countersData: countersJson
+      countersData: countersJson,
+      tutorialData: tutorialJson,
+      configData: configJson,
+      awakenProfilesData: awakenJson
     };
   }
 

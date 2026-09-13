@@ -54,8 +54,10 @@
      内部结构类（.ui-card__*）定义在 components.css，不依赖 Tailwind。 */
   function charCard(opts) {
     const o = opts || {};
+    // B8：breath = 立绘缓慢呼吸（给图，不给整卡，避免文字跟着抖）
     const imgCls = 'ui-card__img' + (o.square ? ' ui-card__img--square' : '') +
-      (o.dim ? ' ui-card__img--dim' : '');
+      (o.dim ? ' ui-card__img--dim' : '') +
+      (o.breath ? ' ui-card__img--breath' : '');
     const phCls = 'ui-card__ph' + (o.square ? ' ui-card__ph--square' : '');
     let inner = '<div class="ui-card__media">';
     if (o.img) {
@@ -82,7 +84,10 @@
     }
     if (o.extra) inner += o.extra;
     inner += '</div>';
+    // B8：lift = 悬停/按压浮起；rare = UR/SUR 旋转光晕
     return '<div class="ui-card' + (o.pop ? ' ui-card--pop' : '') +
+      (o.lift ? ' ui-card--lift' : '') +
+      (o.rare ? ' ui-card--rare' : '') +
       (o.selected ? ' ui-card--selected' : '') +
       (o.disabled ? ' ui-card--disabled' : '') + ' ui-card--tappable"' +
       (o.id ? ' data-char-id="' + esc(o.id) + '"' : '') +
@@ -134,6 +139,9 @@
     });
     document.addEventListener('keydown', onKey);
     document.body.appendChild(wrap);
+    // B6：body 里有自定义交互（如塔祝福三选一）时，用 onMount 拿 wrap/close 绑定事件，
+    // 不要在调用侧去猜 document 里最后一个 .ui-modal（并发弹窗会绑错）。
+    if (typeof o.onMount === 'function') o.onMount(wrap, close);
     requestAnimationFrame(() => wrap.classList.add('ui-modal--open'));
     return close;
   }
@@ -171,7 +179,18 @@
     });
   }
 
-  const api = { esc, starRow, tag, progress, charCard, openModal, confirmModal, toast };
+  /* ── 全局通知单源（B6） ──────────────────────────────────
+     过去全仓散落 40+ 处原生 alert：样式割裂、且会阻断主线程。
+     统一走 uiToast：组件库就绪 → toast；未就绪 → 退化 alert，
+     保证提示**永不静默丢失**（这类提示往往是"金币不足"等关键反馈）。
+     用法：uiToast('金币不足', 'danger')，tone: success|danger|warning|'' */
+  function uiToast(msg, tone) {
+    if (typeof toast === 'function') { toast(msg, tone || ''); return; }
+    alert(msg);
+  }
+  window.uiToast = uiToast;
+
+  const api = { esc, starRow, tag, progress, charCard, openModal, confirmModal, toast, uiToast };
   if (window.Game && window.Game.ui) window.Game.ui.components = api;
   window.__uiComponents = api;
 })();

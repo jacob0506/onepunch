@@ -149,7 +149,7 @@
       if (showAttributesBtn) showAttributesBtn.addEventListener('click', showDetailedAttributes);
       
       const costumeBtn = document.getElementById('costumeBtn');
-      if (costumeBtn) costumeBtn.addEventListener('click', () => alert('时装系统暂未开放，敬请期待！'));
+      if (costumeBtn) costumeBtn.addEventListener('click', () => uiToast('时装系统暂未开放，敬请期待！', 'danger'));
       
       const awakenBtn = document.getElementById('awakenBtn');
       if (awakenBtn) awakenBtn.addEventListener('click', () => openAwakenModal(true));

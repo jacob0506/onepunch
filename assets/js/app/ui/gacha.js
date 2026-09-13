@@ -55,6 +55,9 @@
         const isFragment = frag > 0;
         const imgUrl = getPortraitUrl(char);
 
+        // B8：稀有度演出 —— UR/SUR 旋转光晕，SSR+ 立绘缓慢呼吸
+        const HI_RARE = ['UR', 'SUR'];
+        const rare = HI_RARE.includes(char.rarity) && !isFragment;
         const html = C ? C.charCard({
           id: char.id,
           name: char.name + (isFragment ? '碎片' : ''),
@@ -65,6 +68,9 @@
           square: true,
           dim: isFragment,
           pop: true,
+          lift: true,
+          rare,
+          breath: ['SSR', 'UR', 'SUR'].includes(char.rarity) && !isFragment,
           overlay: isFragment
             ? '<div class="ui-card__convert">' +
               '<span class="ui-card__convert-label">已拥有</span>' +
@@ -95,7 +101,8 @@
   function performGacha(count) {
     const cost = count === 1 ? GAME_CONFIG.gachaCost.single : GAME_CONFIG.gachaCost.ten;
     if (gameData.player.gems < cost) {
-      alert('钻石不足！');
+      // B6：不再用原生 alert（阻断主线程且与游戏 UI 割裂）→ 统一 uiToast
+      uiToast(`钻石不足，还差 ${(cost - gameData.player.gems).toLocaleString()}`, 'danger');
       return;
     }
 

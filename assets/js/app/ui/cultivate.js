@@ -129,7 +129,7 @@
 
     const bigImageEl = document.getElementById('cultivateBigImage');
     if (bigImageEl) {
-      bigImageEl.innerHTML = `<img src="${char.imageUrl}" class="max-h-full max-w-full object-contain portrait-static pointer-events-none">`;
+      bigImageEl.innerHTML = `<img src="${char.imageUrl}" class="max-h-full max-w-full object-contain portrait-static pointer-events-none ui-portrait-breath">`;
     }
 
     document.querySelectorAll('.cultivate-slot').forEach(slotEl => {
@@ -295,7 +295,7 @@
     } else {
       const empty = gameData.formation.findIndex(x => !x);
       if (empty === -1) {
-        alert('上阵已满（最多6人）');
+        uiToast('上阵已满（最多6人）', 'danger');
         return;
       }
       gameData.formation[empty] = id;
@@ -340,7 +340,7 @@
     saveGameProgress();
     updateUI();
     selectCharacterToCultivate(char);
-    alert(`还原完成，已返还金币 ${refund.toLocaleString()}`);
+    uiToast(`还原完成，已返还金币 ${refund.toLocaleString()}`, 'success');
   }
 
   const api = {

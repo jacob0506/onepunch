@@ -39,9 +39,9 @@
           s.name = '瞬破连击';
           s.cooldown = 4;
           s.cost = 2;
-          s.description = '对敌方全体进行5连击：每段先解除目标“免疫”，再造成130%生命上限+10的伤害，并附加100%生命上限的真实伤害。释放后提升自身20%真实伤害增伤，持续2回合。';
+          s.description = '对敌方全体进行4连击：每段先解除目标“免疫”，再造成130%生命上限+10的伤害，并附加100%生命上限的真实伤害。释放后提升自身20%真实伤害增伤，持续2回合。';
           const seq = [{ type: 'buff', target: 'ally', stat: 'trueDmgUp', value: 20, turns: 2 }];
-          for (let i = 0; i < 5; i++) {
+          for (let i = 0; i < 4; i++) {
             seq.push({ type: 'dispel', target: 'allEnemies', statuses: ['immune'] });
             seq.push({ type: 'damage', target: 'allEnemies', scaleFrom: 'maxHp', scale: 1.3, addFlat: 10, hits: 1 });
             seq.push({ type: 'trueDamage', target: 'allEnemies', scaleFrom: 'maxHp', scale: 1.0, hits: 1 });
@@ -157,7 +157,7 @@
           s.cooldown = 4;
           s.effects = [
             { type: 'debuff', target: 'allEnemies', stat: 'spdFlatDown', value: 40, turns: 2 },
-            { type: 'damage', target: 'randomEnemies', scale: 1.35, hits: 8 },
+            { type: 'damage', target: 'randomEnemies', scale: 1.2, hits: 8 },
             { type: 'cc', target: 'randomEnemies', cc: 'silence', turns: 1, chance: 35 },
             { type: 'cc', target: 'randomEnemies', cc: 'silence', turns: 1, chance: 35 },
             { type: 'cc', target: 'randomEnemies', cc: 'silence', turns: 1, chance: 35 },
@@ -395,6 +395,30 @@
             { type: 'damage', target: 'randomEnemies', scale: 3.5, hits: 2 }
           ];
         }
+
+        // C12 数值再平衡（2026-09-14）：机巧炮姬·零 —— 文本反解无法表达
+        // "8枚导弹随机攻击"（infer 只认 X次/X名，曾解析成 0.85×1 单体废技），
+        // 这里按设计意图显式给 effects：每段 hit 都会重抽随机目标。
+        if (char.id === 'char_ssr_015' && char.skills[0]) {
+          const s = char.skills[0];
+          s.effects = [
+            { type: 'damage', target: 'randomEnemies', scale: 0.85, hits: 8 }
+          ];
+        }
+
+        // C12 数值再平衡（2026-09-14）：万物之母·盖亚 —— "分摊50%伤害"引擎无
+        // 对应 effect 类型，此前反解为空、上场只有普攻（SUR 最贵废卡）。
+        // 用既有类型等价表达：全体护盾（×自身攻击）+ 自回复 + 自身减伤。
+        if (char.id === 'char_sur_008' && char.skills[0]) {
+          const s = char.skills[0];
+          s.cost = 2;
+          s.cooldown = 4;
+          s.effects = [
+            { type: 'shield', target: 'allAllies', scale: 1.5, turns: 2 },
+            { type: 'heal', target: 'ally', scale: 1.0 },
+            { type: 'buff', target: 'ally', stat: 'dmgReducUp', value: 15, turns: 2 }
+          ];
+        }
       });
     }
 
@@ -402,9 +426,13 @@
       const desc = (skill.description || '').trim();
       const effects = [];
 
+      // C12：优先取"造成X%"的伤害倍率 —— 修复"生命低于20%…造成320%"这类
+      // 前置百分比把倍率劫持成 0.2 的废卡 bug（赤月裁决·鸦）。
       const percent = (() => {
-        const m = desc.match(/(\d+)\s*%/);
-        return m ? (parseInt(m[1], 10) / 100) : null;
+        const m = desc.match(/造成(\d+(?:\.\d+)?)\s*%/);
+        if (m) return (parseFloat(m[1]) / 100);
+        const m2 = desc.match(/(\d+)\s*%/);
+        return m2 ? (parseFloat(m2[1]) / 100) : null;
       })();
 
       const turns = (() => {
@@ -455,7 +483,8 @@
         return m ? parseInt(m[1], 10) : null;
       })();
       const executePct = (() => {
-        const m = desc.match(/血量低于(\d+)\s*%[^，。]*直接斩杀/);
+        // C12：兼容"血量低于/生命低于"两种措辞（赤月裁决·鸦用"生命低于"）
+        const m = desc.match(/(?:血量|生命)低于(\d+)\s*%[^，。]*直接斩杀/);
         return m ? parseInt(m[1], 10) : null;
       })();
 

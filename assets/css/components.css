@@ -25,6 +25,7 @@
   line-height: 1.2;
   color: var(--c-text-hi);
   border: 2px solid transparent;
+  white-space: nowrap; /* B6：窄容器里按钮文字不许竖排（stages 模式条实测踩坑） */
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -73,6 +74,57 @@
 .ui-btn--sm { padding: 5px 12px; font-size: var(--text-sm); border-radius: var(--radius-md); border-width: 1px; }
 .ui-btn--lg { padding: 16px 32px; font-size: var(--text-xl); border-radius: var(--radius-xl); }
 .ui-btn--block { display: flex; width: 100%; }
+
+/* ── 选择卡（多选一，如塔祝福三选一） ───────────────────────
+   用法：<button class="ui-opt"><span class="ui-opt__name">锋刃祝福</span>
+         <span class="ui-opt__desc">攻击 +10%</span>
+         <span class="ui-opt__hint">点击开始挑战</span></button>
+   B6：塔祝福 / 未来任何"卡片式多选一"一律用它，不要手拼 Tailwind。 */
+.ui-opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  background: rgba(var(--c-primary-rgb) / 0.06);
+  border: 1px solid var(--c-border-faint);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-game),
+              background var(--dur-fast) var(--ease-game),
+              transform var(--dur-fast) var(--ease-game);
+}
+
+.ui-opt:hover,
+.ui-opt:focus-visible {
+  border-color: var(--c-primary);
+  background: rgba(var(--c-primary-rgb) / 0.16);
+  transform: translateY(-2px);
+}
+
+.ui-opt:active { transform: translateY(1px); }
+
+.ui-opt__name {
+  display: block;
+  font-size: var(--text-base);
+  font-weight: 900;
+  color: var(--c-primary);
+}
+
+.ui-opt__desc {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--c-text-dim);
+}
+
+.ui-opt__hint {
+  display: block;
+  margin-top: 8px;
+  font-size: var(--text-xs);
+  color: var(--c-text-dim);
+  opacity: 0.7;
+}
 
 /* ── 玻璃面板 ─────────────────────────────────────────────────── */
 .ui-panel {
@@ -1234,5 +1286,146 @@
 .ui-counter__row--hit { outline: 1px solid var(--c-primary); }
 .ui-counter__row .ui-counter__arrow { flex: 0 0 auto; }
 .ui-counter__rel { flex: 1; text-align: right; font-size: 10px; color: var(--c-text-dim); }
+
+/* ── C11 新手引导（ui/tutorial.js）────────────────────────────── */
+.ui-tut {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 76px;
+  z-index: 55;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 12px 14px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: 14px;
+  background: var(--c-surface-solid);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+}
+.ui-tut__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.ui-tut__step { font-size: 10px; font-weight: 900; letter-spacing: 0.05em; color: var(--c-accent); }
+.ui-tut__skip {
+  font-size: 10px; color: var(--c-text-dim);
+  background: none; border: none; padding: 0; cursor: pointer;
+}
+.ui-tut__skip:hover { color: var(--c-text-hi); }
+.ui-tut__title { font-size: var(--text-sm); font-weight: 900; color: var(--c-text-hi); }
+.ui-tut__text { margin-top: 4px; font-size: var(--text-xs); line-height: 1.5; color: var(--c-text-dim); }
+.ui-tut__foot { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.ui-tut__bar { flex: 1; min-width: 0; }
+.ui-tut__go { flex: 0 0 auto; }
+.ui-tut__finish { display: flex; flex-direction: column; gap: 8px; }
+.ui-tut__reward { font-size: var(--text-xs); font-weight: 700; color: var(--c-accent); }
+
+/* 引导高亮：只加轮廓与呼吸光，不动布局（元素重渲会丢，靠 tick 补） */
+@keyframes ui-tut-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--c-accent), 0 0 10px rgba(245, 166, 35, 0.45); }
+  50% { box-shadow: 0 0 0 3px var(--c-accent-light), 0 0 20px rgba(245, 166, 35, 0.85); }
+}
+.ui-tut-hl {
+  position: relative;
+  z-index: 56;
+  border-radius: 10px;
+  animation: ui-tut-pulse 1.4s ease-in-out infinite;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   B8 · 动效层（2026-09-14）
+   原则：
+   · 只动 transform / opacity / filter —— 不触发重排，低端机也稳。
+   · 战斗内的动效一律由 state 驱动（hitFx 通道），render 重建后能还原，
+     不要靠 setTimeout 直接加 class（会被 innerHTML 重建抹掉）。
+   · 尊重 prefers-reduced-motion：系统开了减弱动效就整体关闭。
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 战斗打击感：受击顿挫 / 暴击冲击 ────────────────────────── */
+@keyframes ui-bt-strike {
+  0%   { transform: scale(1); }
+  20%  { transform: scale(0.94) translateX(-3px); }
+  50%  { transform: scale(1.03) translateX(2px); }
+  100% { transform: scale(1); }
+}
+
+@keyframes ui-bt-crit {
+  0%   { transform: scale(1) rotate(0deg); }
+  14%  { transform: scale(0.9) rotate(-2.5deg); }
+  38%  { transform: scale(1.09) rotate(2deg); }
+  62%  { transform: scale(0.97) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.ui-bt--strike { animation: ui-bt-strike 260ms var(--ease-game); }
+
+.ui-bt--crit { animation: ui-bt-crit 420ms var(--ease-game); }
+
+/* 暴击时立绘提亮，配合抖动强化"重击"观感 */
+.ui-bt--crit .ui-bt__img,
+.ui-bt--crit .ui-bt__ph { filter: brightness(1.45) saturate(1.25); }
+
+/* 暴击镜头：整个战斗层轻微震动（挂 #battleSceneDebug） */
+@keyframes ui-shake {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-5px, 2px); }
+  32% { transform: translate(4px, -3px); }
+  48% { transform: translate(-3px, -2px); }
+  66% { transform: translate(3px, 2px); }
+  82% { transform: translate(-2px, 1px); }
+}
+.ui-shake { animation: ui-shake 260ms var(--ease-game); }
+
+/* ── 立绘呼吸 + 卡牌浮起 ─────────────────────────────────────── */
+@keyframes ui-breath {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.035); }
+}
+/* 只给图（不是整卡）加呼吸，避免卡面文字跟着抖 */
+.ui-card__img--breath { animation: ui-breath 4.5s var(--ease-game) infinite; }
+
+/* 养成页大立绘呼吸（复用 ui-breath） */
+.ui-portrait-breath { animation: ui-breath 4.5s var(--ease-game) infinite; }
+
+.ui-card--lift {
+  transition: transform var(--dur-base) var(--ease-game),
+              box-shadow var(--dur-base) var(--ease-game);
+}
+/* 触屏没有 hover，用 :active 给"按下去"的反馈 */
+.ui-card--lift:active { transform: translateY(-2px) scale(0.99); }
+@media (hover: hover) {
+  .ui-card--lift:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-panel);
+  }
+}
+
+/* ── 抽卡稀有度演出（UR / SUR 卡旋转光晕） ─────────────────── */
+@keyframes ui-spin { to { transform: rotate(360deg); } }
+
+.ui-card--rare { position: relative; overflow: hidden; }
+.ui-card--rare::after {
+  content: '';
+  position: absolute;
+  /* 负值铺满并溢出，旋转时才不会露出方形边界 */
+  inset: -60%;
+  background: conic-gradient(from 0deg,
+    transparent 0deg,
+    var(--c-accent) 50deg,
+    transparent 110deg,
+    transparent 360deg);
+  opacity: 0.28;
+  animation: ui-spin 4s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+/* 卡面内容压在光晕之上，避免立绘被盖 */
+.ui-card--rare > * { position: relative; z-index: 1; }
+
+/* 系统开启"减弱动效"时整体关闭（无障碍） */
+@media (prefers-reduced-motion: reduce) {
+  .ui-bt--strike, .ui-bt--crit, .ui-shake,
+  .ui-card__img--breath, .ui-portrait-breath, .ui-card--rare::after {
+    animation: none !important;
+  }
+  .ui-card--lift { transition: none; }
+}
 
 

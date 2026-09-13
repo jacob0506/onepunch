@@ -45,7 +45,7 @@
       const cost = calculateSkillUpgradeCost(currentLevel);
       
       if (gameData.player.gold < cost) {
-        alert(`金币不足！升级技能需要 ${cost} 金币`);
+        uiToast(`金币不足！升级技能需要 ${cost} 金币`, 'danger');
         return;
       }
       
@@ -64,7 +64,7 @@
       updateUI();
       selectCharacterToCultivate(selectedCharacter);
       saveGameProgress();
-      alert(`技能 [${skill.name}] 已升级至 Lv.${skill.level}`);
+      uiToast(`技能 [${skill.name}] 已升级至 Lv.${skill.level}`);
     }
 
     function calculateSkillUpgradeCost(level) {
@@ -83,9 +83,9 @@
       
       if (selectedCharacter.level >= maxLevel) {
         if (selectedCharacter.level >= MAX_GLOBAL_LEVEL) {
-          alert('已达到满级 150 级！');
+          uiToast('已达到满级 150 级！', 'danger');
         } else {
-          alert(`当前星级最高等级为 ${maxLevel} 级，请先升星！`);
+          uiToast(`当前星级最高等级为 ${maxLevel} 级，请先升星！`, 'danger');
         }
         return;
       }
@@ -94,7 +94,7 @@
       while (selectedCharacter.level < maxLevel) {
         const cost = calculateLevelUpCost(selectedCharacter.level);
         if (gameData.player.gold < cost) {
-          if (leveledCount === 0) alert(`金币不足！升级需要 ${cost.toLocaleString()} 金币`);
+          if (leveledCount === 0) uiToast(`金币不足！升级需要 ${cost.toLocaleString()} 金币`, 'danger');
           break;
         }
         
@@ -125,7 +125,7 @@
       
       const MAX_STARS = GAME_CONFIG.maxStars || 8;
       if (selectedCharacter.stars >= MAX_STARS) {
-        alert('已达到最高星级！');
+        uiToast('已达到最高星级！', 'danger');
         return;
       }
       
@@ -137,7 +137,7 @@
         
         if (ownedFragments < requiredFragments) {
           if (ascendedCount === 0) {
-            alert(`碎片不足！需要 ${requiredFragments} 碎片，当前拥有 ${ownedFragments}`);
+            uiToast(`碎片不足！需要 ${requiredFragments} 碎片，当前拥有 ${ownedFragments}`, 'danger');
           }
           break;
         }

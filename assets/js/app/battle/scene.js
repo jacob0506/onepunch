@@ -79,8 +79,9 @@ let battleSceneDebugBondActive = [];
         actor.class === 'archer' ? 1.0 :
         actor.class === 'mage' ? 1.0 :
         1.0;
-      battleSceneDebugApplyHit(actor, target, mult, '普攻', { ccOnce: { used: false } });
-      setBattleSceneDebugHitFx('enemy', targetIndex);
+      const basicR = battleSceneDebugApplyHit(actor, target, mult, '普攻', { ccOnce: { used: false } });
+      // B8：暴击走更重的冲击反馈
+      setBattleSceneDebugHitFx('enemy', targetIndex, basicR && basicR.crit);
     } else if (pending.actionType === 'skill' && typeof pending.skillIndex === 'number') {
       const ok = battleSceneDebugApplySkill(actor, 'player', pending.skillIndex, targetSide, targetIndex);
       if (ok) setBattleSceneDebugHitFx(targetSide, targetIndex);
@@ -413,7 +414,7 @@ function battleSceneDebugApplyShellUI() {
         try { document.getElementById('battleSceneDebug').classList.add('hidden'); } catch (_) {}
         battleSceneDebugState = null;
         battleSceneDebugRestoreShellUI();
-        alert(`进入战斗场景失败：${e && e.message ? e.message : e}`);
+        uiToast(`进入战斗场景失败：${e && e.message ? e.message : e}`, 'danger');
       }
     }
 
@@ -568,11 +569,13 @@ function battleSceneDebugApplyShellUI() {
           const targetable = selecting && pickSide === side && !dead;
           const dim = selecting && side !== pickSide && !isActor ? ' ui-bt--dim' : '';
           const fx = battleSceneDebugState.hitFx && battleSceneDebugState.hitFx.side === side && battleSceneDebugState.hitFx.index === i && battleSceneDebugState.hitFx.until > Date.now();
+          // B8：暴击 → --crit（重击抖动 + 立绘提亮）；普通命中 → --strike（顿挫）；叠在闪白之上
+          const fxCls = fx ? (battleSceneDebugState.hitFx.crit ? ' ui-bt--crit' : ' ui-bt--strike') : '';
           const fxOverlay = fx ? `<div class="ui-bt--hit" style="position:absolute;inset:0;pointer-events:none;background:rgba(255,255,255,0.14)"></div>` : '';
           const actorMark = (isActor && !selecting) ? `<div class="ui-bt__mark">▶</div>` : '';
           const deadMark = dead ? `<div class="ui-bt__deadmark">已倒下</div>` : '';
           cell.innerHTML = `
-            <div class="ui-bt${isActor && !selecting ? ' ui-bt--actor' : ''}${targetable ? ' ui-bt--target' : ''}${dim}${dead ? ' ui-bt--dead' : ''}">
+            <div class="ui-bt${isActor && !selecting ? ' ui-bt--actor' : ''}${targetable ? ' ui-bt--target' : ''}${dim}${fxCls}${dead ? ' ui-bt--dead' : ''}">
               ${fxOverlay}
               ${actorMark}
               ${img}
@@ -1393,13 +1396,13 @@ function battleSceneDebugApplyShellUI() {
 
       if (!(target.currentHp > 0)) {
         if (!target.isEnemy && battleSceneDebugTryPreventLifeLinkDeath(target)) {
-          return { damage: dealt };
+          return { damage: dealt, crit: !!r.crit };
         }
         const undying = battleSceneDebugGetStatus(target, 'nonCritUndying');
         if (undying && !r.crit) {
           target.currentHp = 1;
           pushBattleSceneDebugFeed(`不败：${target.displayName || target.name} 在非暴击致命伤下存活`);
-          return { damage: dealt };
+          return { damage: dealt, crit: !!r.crit };
         }
 
         const revive = battleSceneDebugGetStatus(target, 'revive');
@@ -1409,7 +1412,7 @@ function battleSceneDebugApplyShellUI() {
           target.currentHp = Math.max(1, Math.floor((target.maxHp || 1) * hpPct));
           target.statuses = (target.statuses || []).filter(s => s && ['revive'].includes(s.type));
           pushBattleSceneDebugFeed(`复活：${target.displayName || target.name} 重新站起（剩余 ${revive.meta.charges}）`);
-          return { damage: dealt };
+          return { damage: dealt, crit: !!r.crit };
         }
 
         pushBattleSceneDebugFeed(`[${target.displayName || target.name}] 已倒下`);
@@ -1451,7 +1454,7 @@ function battleSceneDebugApplyShellUI() {
         }
       }
 
-      return { damage: dealt };
+      return { damage: dealt, crit: !!r.crit };
     }
 
     function battleSceneDebugAfterHit(attacker, target, isBasic, opts = {}) {
@@ -1578,6 +1581,8 @@ function battleSceneDebugApplyShellUI() {
 
     function battleSceneDebugGetSkillCost(skill) {
       if (!skill) return 2;
+      // D1：数据显式 cost 优先（战术技 1 费、大招 3/4 费），未标 cost 的老技能走原启发式
+      if (Number.isFinite(skill.cost)) return Math.max(0, skill.cost);
       const desc = typeof skill.description === 'string' ? skill.description : '';
       const effects = Array.isArray(skill.effects) ? skill.effects : [];
       const isSpeedSkill = /速度/.test(desc) && /(增加|提升)/.test(desc) && !/降低/.test(desc);
@@ -1704,8 +1709,8 @@ function battleSceneDebugApplyShellUI() {
                 scaleFrom === 'maxHp' ? Math.floor((actor.maxHp || 0) * scale + (effect.addFlat || 0)) :
                 scaleFrom === 'targetMaxHp' ? Math.floor((t.maxHp || 0) * scale + (effect.addFlat || 0)) :
                 null;
-              const { damage } = battleSceneDebugApplyHit(actor, t, scale, '技能', { rawOverride, ignoreDef, ccOnce });
-              if (damage > 0) setBattleSceneDebugHitFx(t.isEnemy ? 'enemy' : 'player', (t.isEnemy ? enemies : allies).indexOf(t));
+              const { damage, crit } = battleSceneDebugApplyHit(actor, t, scale, '技能', { rawOverride, ignoreDef, ccOnce });
+              if (damage > 0) setBattleSceneDebugHitFx(t.isEnemy ? 'enemy' : 'player', (t.isEnemy ? enemies : allies).indexOf(t), crit);
             });
           }
           return;
@@ -1850,17 +1855,33 @@ function battleSceneDebugApplyShellUI() {
       return true;
     }
 
-    function setBattleSceneDebugHitFx(side, index) {
+    /**
+     * B8：受击反馈（顿挫 / 暴击冲击 + 镜头震动）
+     * crit = true 时：单位卡走 .ui-bt--crit（更长更重），并给整个战斗层加 .ui-shake。
+     * ⚠️ 一律走 state.hitFx 通道 —— render 会重建 innerHTML，直接加 class 会被抹掉。
+     */
+    function setBattleSceneDebugHitFx(side, index, crit) {
       if (!battleSceneDebugState) return;
-      battleSceneDebugState.hitFx = { side, index, until: Date.now() + 240 };
+      const isCrit = !!crit;
+      battleSceneDebugState.hitFx = { side, index, until: Date.now() + (isCrit ? 420 : 240), crit: isCrit };
       renderBattleSceneDebug();
+      if (isCrit) {
+        const root = document.getElementById('battleSceneDebug');
+        if (root) {
+          root.classList.remove('ui-shake');
+          // 强制重排以重启动画（连续暴击时不会"只震第一次"）
+          void root.offsetWidth;
+          root.classList.add('ui-shake');
+          setTimeout(() => root.classList.remove('ui-shake'), 300);
+        }
+      }
       setTimeout(() => {
         if (!battleSceneDebugState) return;
         if (battleSceneDebugState.hitFx && battleSceneDebugState.hitFx.side === side && battleSceneDebugState.hitFx.index === index) {
           battleSceneDebugState.hitFx = null;
           renderBattleSceneDebug();
         }
-      }, 260);
+      }, isCrit ? 440 : 260);
     }
 
     // 掉落结算 —— 单一实现：battle/rewards.js 的 rollRewards
@@ -2018,37 +2039,66 @@ function battleSceneDebugApplyShellUI() {
     /* ── C9 切片 3：我方 AI 行动（单源）─────────────────────────
        自动模式每步、混合模式"AI 代打"按钮都走这里：优先放技能（能量够且未被沉默），
        否则普攻；收尾统一做 tick/推进/渲染/胜负判定。 */
+    /* D1 战术技（第 2 技能）：AI 选技策略 —— 全仓唯一决策点
+       规则：放得起的技能里优先 cost 最高的（大招优先）；若「再攒约 1 回合就够放大招」则本回合
+       普攻攒能量 —— 否则低费战术技会把高费大招活活饿死（能量 3 → 放 2 费小技 → 剩 1 → 永远到不了 4）。
+       ⚠️ AUTO_SAVE_GAP ≈ 每回合基础能量增长（2）。改能量规则时这里要一起看。*/
+    const AUTO_SAVE_GAP = 2;
+
+    function battleSceneDebugPickAutoSkill(actor, energy) {
+      const skills = Array.isArray(actor && actor.skills) ? actor.skills : [];
+      const cand = [];
+      for (let i = 0; i < skills.length; i++) {
+        if (!skills[i]) continue;
+        const cost = battleSceneDebugGetSkillCost(skills[i]);
+        if (cost > 0) cand.push({ i, cost });
+      }
+      if (!cand.length) return -1;
+      // cost 降序；同 cost 取靠前的（= 主技优先于战术技）
+      cand.sort((a, b) => (b.cost - a.cost) || (a.i - b.i));
+      const big = cand[0];
+      if (energy >= big.cost) return big.i;
+      if (big.cost - energy <= AUTO_SAVE_GAP) return -1;   // 攒一手
+      const alt = cand.find(x => energy >= x.cost);
+      return alt ? alt.i : -1;
+    }
+
     function battleSceneDebugCanManualUlt(actor) {
       if (!actor || !(actor.currentHp > 0)) return false;
       if (battleSceneDebugGetStatus(actor, 'silence')) return false;
       const skills = Array.isArray(actor.skills) ? actor.skills : [];
-      if (!skills.length || !skills[0]) return false;
-      const cost = battleSceneDebugGetSkillCost(skills[0]);
-      return (battleSceneDebugState.energy || 0) >= cost && cost > 0;
+      // D1：任一技能放得起就能手动（不再只判 skills[0]）
+      for (let i = 0; i < skills.length; i++) {
+        if (!skills[i]) continue;
+        const cost = battleSceneDebugGetSkillCost(skills[i]);
+        if (cost > 0 && (battleSceneDebugState.energy || 0) >= cost) return true;
+      }
+      return false;
     }
 
     function battleSceneDebugAutoAct(actor) {
       if (!battleSceneDebugState || !actor) return;
-      const skills = Array.isArray(actor.skills) ? actor.skills : [];
-      const hasSkill = skills.length > 0 && skills[0];
+      const energy = battleSceneDebugState.energy || 0;
+      const silenced = battleSceneDebugGetStatus(actor, 'silence');
       let used = false;
-      if (hasSkill) {
-        const cost = battleSceneDebugGetSkillCost(skills[0]);
-        if ((battleSceneDebugState.energy || 0) >= cost && !battleSceneDebugGetStatus(actor, 'silence')) {
-          const spec = battleSceneDebugGetSkillTargetSpec(skills[0]);
+      // D1：多技能选技（唯一决策点 battleSceneDebugPickAutoSkill）
+      if (!silenced) {
+        const sIdx = battleSceneDebugPickAutoSkill(actor, energy);
+        if (sIdx >= 0) {
+          const spec = battleSceneDebugGetSkillTargetSpec(actor.skills[sIdx]);
           if (spec.kind === 'enemyPick') {
             const t = battleSceneDebugChooseTarget(actor, battleSceneDebugState.enemies);
             if (t) {
               const idx = battleSceneDebugState.enemies.indexOf(t);
-              used = battleSceneDebugApplySkill(actor, 'player', 0, 'enemy', idx);
+              used = battleSceneDebugApplySkill(actor, 'player', sIdx, 'enemy', idx);
             }
           } else if (spec.kind === 'allyPick') {
             const allies = battleSceneDebugState.player.filter(u => u && u.currentHp > 0);
             const lowest = allies.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0] || null;
             const idx = lowest ? battleSceneDebugState.player.indexOf(lowest) : -1;
-            if (idx >= 0) used = battleSceneDebugApplySkill(actor, 'player', 0, 'player', idx);
+            if (idx >= 0) used = battleSceneDebugApplySkill(actor, 'player', sIdx, 'player', idx);
           } else {
-            used = battleSceneDebugApplySkill(actor, 'player', 0, 'enemy', 0);
+            used = battleSceneDebugApplySkill(actor, 'player', sIdx, 'enemy', 0);
           }
         }
       }
@@ -2080,6 +2130,7 @@ function battleSceneDebugApplyShellUI() {
   window.closeBattleSceneDebug = closeBattleSceneDebug;
   window.battleSceneDebugSyncControls = battleSceneDebugSyncControls;
   window.battleSceneDebugAutoAct = battleSceneDebugAutoAct;   // C9 切片 3：AI 代打路径，调试工具/回归脚本直接调用
+  window.battleSceneDebugPickAutoSkill = battleSceneDebugPickAutoSkill; // D1：多技能选技（唯一决策点）
   window.pushBattleSceneDebugFeed = pushBattleSceneDebugFeed;
   window.renderBattleSceneDebug = renderBattleSceneDebug;
   window.aliveCount = aliveCount;

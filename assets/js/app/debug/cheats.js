@@ -67,12 +67,12 @@
       const amount = parseInt(input.value) || 0;
       
       if (!charId) {
-        alert('请先选择一个英雄！');
+        uiToast('请先选择一个英雄！', 'danger');
         return;
       }
       
       if (amount <= 0) {
-        alert('请输入有效的碎片数量！');
+        uiToast('请输入有效的碎片数量！');
         return;
       }
       
@@ -98,7 +98,7 @@
       const charId = select.value;
       
       if (!charId) {
-        alert('请先选择一个英雄！');
+        uiToast('请先选择一个英雄！', 'danger');
         return;
       }
       
@@ -113,7 +113,7 @@
         //    原内联是 sloppy mode 才能跑。纯局部变量改名，语义不变。
         const fragYield = GAME_CONFIG.fragmentYield[charData.rarity] || 50;
         gameData.fragments[charId] = (gameData.fragments[charId] || 0) + fragYield;
-        alert(`已拥有该英雄，自动转化为 ${charData.name} 碎片 x${fragYield}`);
+        uiToast(`已拥有该英雄，自动转化为 ${charData.name} 碎片 x${fragYield}`);
       } else {
         // 首次获取
         const charInstance = {
@@ -127,7 +127,7 @@
         if (charInstance.skills) charInstance.skills.forEach(s => s.level = 1);
         
         gameData.characters.push(charInstance);
-        alert(`成功直接获取英雄：${charData.name}！`);
+        uiToast(`成功直接获取英雄：${charData.name}！`, 'success');
       }
       
       updateUI();

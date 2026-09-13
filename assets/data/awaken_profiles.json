@@ -1,0 +1,401 @@
+{
+  "char_sur_001": {
+    "name": "虚空觉醒",
+    "desc": "虚空侵蚀强化，获得穿透与控制能力",
+    "bonus": {
+      "atkPercent": 18,
+      "critRate": 8,
+      "penetration": 12,
+      "effectHit": 12
+    },
+    "passiveEffect": "暴击时伤害额外增加20%；无视目标15%防御；攻击时有20%几率魅惑目标1回合"
+  },
+  "char_sur_002": {
+    "name": "剑意无垠",
+    "desc": "剑意更深，技能叠攻并提升爆发上限",
+    "bonus": {
+      "atkPercent": 16,
+      "critRate": 10,
+      "critDmg": 20,
+      "penetration": 10
+    },
+    "passiveEffect": "每释放一次技能，攻击力永久增加8%（最高叠加5层）"
+  },
+  "char_sur_003": {
+    "name": "审判降临",
+    "desc": "审判强化，提升命中与控制稳定性",
+    "bonus": {
+      "atkPercent": 14,
+      "critRate": 8,
+      "effectHit": 12
+    },
+    "passiveEffect": "攻击时有25%几率眩晕目标1回合"
+  },
+  "char_sur_004": {
+    "name": "龙魂永燃",
+    "desc": "坦度与续航显著提升",
+    "bonus": {
+      "hpPercent": 18,
+      "defPercent": 12,
+      "dmgReduc": 8,
+      "tenacity": 10
+    },
+    "passiveEffect": "每回合开始时，获得自身生命上限8%的护盾；复活1次，每次复活恢复30%生命"
+  },
+  "char_sur_005": {
+    "name": "星辉永续",
+    "desc": "治疗与保护更稳定",
+    "bonus": {
+      "atkPercent": 14,
+      "hpPercent": 14,
+      "tenacity": 12,
+      "speed": 10
+    },
+    "passiveEffect": "每回合开始时，获得自身生命上限8%的护盾；闪避成功时回复3%最大生命值"
+  },
+  "char_sur_006": {
+    "name": "幽影收割",
+    "desc": "收割节奏更快，追击强化",
+    "bonus": {
+      "atkPercent": 18,
+      "critRate": 10,
+      "dodgeRate": 8,
+      "speed": 12
+    },
+    "passiveEffect": "普通攻击有25%几率触发追击，造成80%伤害；击杀目标后进入隐身状态一回合"
+  },
+  "char_sur_007": {
+    "name": "核心超载",
+    "desc": "核心强化，特化生命与能量供给提升",
+    "bonus": {
+      "atkPercent": 10,
+      "effectHit": 12,
+      "tenacity": 12
+    },
+    "passiveEffect": "每回合可获得4点能量；特化生命值等同于最大生命值25%的额外生命层；每累计消耗60%特化生命值时触发极限力场持续2回合"
+  },
+  "char_sur_008": {
+    "name": "大地母神",
+    "desc": "更厚的身躯与更稳的抗性",
+    "bonus": {
+      "hpPercent": 20,
+      "defPercent": 12,
+      "dmgReduc": 6,
+      "tenacity": 12
+    },
+    "passiveEffect": "每回合回复自身6%最大生命值；反弹10%伤害"
+  },
+  "char_sur_009": {
+    "name": "战神不屈",
+    "desc": "狂战强化，低血反打与生存提升",
+    "bonus": {
+      "atkPercent": 16,
+      "critRate": 6,
+      "lifesteal": 6,
+      "dmgReduc": 4
+    },
+    "passiveEffect": "非暴击不死；暴击时伤害额外增加15%"
+  },
+  "char_sur_010": {
+    "name": "嗜虐终式",
+    "desc": "链接更强，追击更狠",
+    "bonus": {
+      "atkPercent": 10,
+      "critRate": 8,
+      "speed": 14,
+      "dodgeRate": 6
+    },
+    "passiveEffect": "特化加速60%；生命链接持续7回合；以90%强度发动一次蓄能追击；最多4次"
+  },
+  "char_sur_011": {
+    "name": "天罚雷冠",
+    "desc": "感电覆盖更强，爆发上限提升",
+    "bonus": {
+      "atkPercent": 16,
+      "critRate": 8,
+      "effectHit": 10
+    },
+    "passiveEffect": "攻击时有70%几率给目标添加“感电”标记；暴击时伤害额外增加15%"
+  },
+  "char_sur_012": {
+    "name": "时之主宰",
+    "desc": "团队节奏显著提升",
+    "bonus": {
+      "atkPercent": 10,
+      "critRate": 6,
+      "speed": 16,
+      "tenacity": 10
+    },
+    "passiveEffect": "每回合结束时，增加全队8%速度（最高40%）"
+  },
+  "char_sur_013": {
+    "name": "真理启示",
+    "desc": "真视强化，穿透与控场显著提升",
+    "bonus": {
+      "atkPercent": 18,
+      "effectHit": 18,
+      "penetration": 15,
+      "critRate": 8,
+      "speed": 10
+    },
+    "passiveEffect": "无视目标15%防御；攻击时有30%几率魅惑目标1回合；对带有感电标记的目标伤害提升35%"
+  },
+  "char_sur_014": {
+    "name": "千树永春",
+    "desc": "守护与净化强化，团队生存大幅提升",
+    "bonus": {
+      "atkPercent": 14,
+      "hpPercent": 18,
+      "tenacity": 18,
+      "speed": 8
+    },
+    "passiveEffect": "复活1次，每次复活恢复30%生命；每回合开始时，获得自身生命上限10%的护盾；队友生命低于60%时，自动为其提供一个等同于鲤攻击力280%的护盾"
+  },
+  "char_ur_001": {
+    "name": "星潮觉醒",
+    "desc": "星雨侵蚀更深，控场与爆发跃迁",
+    "bonus": {
+      "atkPercent": 18,
+      "critRate": 10,
+      "effectHit": 16,
+      "penetration": 14,
+      "speed": 12
+    },
+    "passiveEffect": "无视目标15%防御；攻击时有45%几率沉默目标1回合；攻击带有沉默效果的目标时，伤害提升40%；普通攻击有20%几率触发追击，造成80%伤害"
+  },
+  "char_ur_002": {
+    "name": "炽焰觉醒",
+    "desc": "灼烧压制强化",
+    "bonus": {
+      "atkPercent": 12,
+      "critRate": 6,
+      "effectHit": 6
+    },
+    "passiveEffect": "对灼烧目标伤害提升40%"
+  },
+  "char_ur_003": {
+    "name": "圣裁觉醒",
+    "desc": "攻守一体强化",
+    "bonus": {
+      "hpPercent": 10,
+      "defPercent": 10,
+      "blockRate": 8,
+      "dmgReduc": 4
+    },
+    "passiveEffect": "每回合开始时，获得自身生命上限6%的护盾"
+  },
+  "char_ur_004": {
+    "name": "影杀觉醒",
+    "desc": "爆发与收割提升",
+    "bonus": {
+      "atkPercent": 14,
+      "critRate": 8,
+      "penetration": 8,
+      "speed": 10
+    },
+    "passiveEffect": "暴击时伤害额外增加45%"
+  },
+  "char_ur_005": {
+    "name": "磐石觉醒",
+    "desc": "控制与坦度提升",
+    "bonus": {
+      "hpPercent": 12,
+      "defPercent": 12,
+      "tenacity": 10
+    },
+    "passiveEffect": "受到攻击时有20%几率眩晕目标1回合"
+  },
+  "char_ur_006": {
+    "name": "剑风觉醒",
+    "desc": "连斩上限提升",
+    "bonus": {
+      "atkPercent": 12,
+      "critRate": 6,
+      "critDmg": 10,
+      "speed": 8
+    },
+    "passiveEffect": "暴击伤害提升10%"
+  },
+  "char_ur_007": {
+    "name": "雷锁觉醒",
+    "desc": "控制稳定性与命中提升",
+    "bonus": {
+      "atkPercent": 10,
+      "effectHit": 12,
+      "speed": 6
+    },
+    "passiveEffect": "攻击时有25%几率眩晕目标1回合"
+  },
+  "char_ur_008": {
+    "name": "森语觉醒",
+    "desc": "续航与韧性提升",
+    "bonus": {
+      "hpPercent": 12,
+      "tenacity": 12,
+      "atkPercent": 8
+    },
+    "passiveEffect": "每回合开始时，获得自身生命上限6%的护盾"
+  },
+  "char_ur_009": {
+    "name": "狂鲨觉醒",
+    "desc": "吸血更强，残局能力提升",
+    "bonus": {
+      "atkPercent": 12,
+      "lifesteal": 8,
+      "dmgReduc": 3
+    },
+    "passiveEffect": "生命低于30%时，获得免疫1回合"
+  },
+  "char_ur_010": {
+    "name": "毒素觉醒",
+    "desc": "中毒压制强化",
+    "bonus": {
+      "atkPercent": 10,
+      "effectHit": 14,
+      "penetration": 6
+    },
+    "passiveEffect": "对中毒目标伤害提升20%"
+  },
+  "char_ur_011": {
+    "name": "铁血觉醒",
+    "desc": "反击与防护提升",
+    "bonus": {
+      "hpPercent": 10,
+      "defPercent": 10,
+      "blockRate": 10
+    },
+    "passiveEffect": "受到攻击时有35%几率反击，造成100%攻击伤害"
+  },
+  "char_ur_012": {
+    "name": "幻影觉醒",
+    "desc": "保命更稳定",
+    "bonus": {
+      "atkPercent": 10,
+      "critRate": 8,
+      "dodgeRate": 6,
+      "speed": 10
+    },
+    "passiveEffect": "每回合有30%几率免疫受到的第一次伤害"
+  },
+  "char_ur_013": {
+    "name": "晨曦觉醒",
+    "desc": "辅助节奏提升",
+    "bonus": {
+      "atkPercent": 10,
+      "speed": 10,
+      "tenacity": 10
+    },
+    "passiveEffect": "闪避成功后回复4点能量"
+  },
+  "char_ur_014": {
+    "name": "霜冠觉醒",
+    "desc": "控场与爆发提升",
+    "bonus": {
+      "atkPercent": 12,
+      "effectHit": 10,
+      "critRate": 6
+    },
+    "passiveEffect": "攻击时有20%几率眩晕目标1回合"
+  },
+  "char_ur_015": {
+    "name": "兽王觉醒",
+    "desc": "多段输出更稳",
+    "bonus": {
+      "atkPercent": 12,
+      "critRate": 8,
+      "speed": 8
+    },
+    "passiveEffect": "普通攻击有15%几率触发追击，造成80%伤害"
+  },
+  "char_ur_016": {
+    "name": "熔岩觉醒",
+    "desc": "坦度与压制提升",
+    "bonus": {
+      "hpPercent": 14,
+      "defPercent": 10,
+      "dmgReduc": 4,
+      "tenacity": 10
+    },
+    "passiveEffect": "每回合开始时，获得自身生命上限6%的护盾"
+  },
+  "char_ur_017": {
+    "name": "虚空觉醒",
+    "desc": "能量压制强化",
+    "bonus": {
+      "atkPercent": 12,
+      "speed": 10,
+      "penetration": 8
+    },
+    "passiveEffect": "击杀目标后进入隐身状态一回合"
+  },
+  "char_ur_018": {
+    "name": "龙裔觉醒",
+    "desc": "持续作战提升",
+    "bonus": {
+      "atkPercent": 12,
+      "hpPercent": 12,
+      "lifesteal": 4
+    },
+    "passiveEffect": "每回合回复自身4%最大生命值"
+  },
+  "char_ur_019": {
+    "name": "战姬觉醒",
+    "desc": "成长型爆伤更快",
+    "bonus": {
+      "atkPercent": 12,
+      "critRate": 6,
+      "speed": 8
+    },
+    "passiveEffect": "每攻击一次，暴击伤害提升6%（无上限）"
+  },
+  "char_ur_020": {
+    "name": "冥界觉醒",
+    "desc": "斩杀更稳定，压制节奏",
+    "bonus": {
+      "atkPercent": 12,
+      "effectHit": 12,
+      "penetration": 6
+    },
+    "passiveEffect": "敌方每死亡一人，哈迪增加12%攻击力"
+  },
+  "char_ur_021": {
+    "name": "翠龙觉醒",
+    "desc": "破甲更稳定",
+    "bonus": {
+      "atkPercent": 12,
+      "penetration": 12,
+      "critRate": 6
+    },
+    "passiveEffect": "无视目标20%防御"
+  },
+  "char_ur_022": {
+    "name": "烈阳觉醒",
+    "desc": "控制与抗性提升",
+    "bonus": {
+      "atkPercent": 10,
+      "effectHit": 12,
+      "tenacity": 12
+    },
+    "passiveEffect": "对负面状态的抗性提升30%"
+  },
+  "char_ur_023": {
+    "name": "月影觉醒",
+    "desc": "闪避与追击节奏提升",
+    "bonus": {
+      "atkPercent": 10,
+      "dodgeRate": 10,
+      "speed": 10
+    },
+    "passiveEffect": "闪避成功后回复10点能量"
+  },
+  "char_ur_024": {
+    "name": "天元觉醒",
+    "desc": "雷击更频繁",
+    "bonus": {
+      "atkPercent": 12,
+      "critRate": 8,
+      "speed": 6
+    },
+    "passiveEffect": "普通攻击有15%几率触发追击，造成80%伤害"
+  }
+}

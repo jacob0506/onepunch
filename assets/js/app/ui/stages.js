@@ -26,6 +26,11 @@
 
   function ensureTowerData() {
     if (!gameData) return;
+    // C10：赛季化迁移（seasonNo / history / startedAt）由 domain/tower.js 单源负责
+    if (window.Game && window.Game.domain && window.Game.domain.tower) {
+      window.Game.domain.tower.ensure();
+      return;
+    }
     if (!gameData.tower || typeof gameData.tower !== 'object') gameData.tower = {};
     if (typeof gameData.tower.floor !== 'number') gameData.tower.floor = 1;
     if (typeof gameData.tower.bestFloor !== 'number') gameData.tower.bestFloor = 0;
@@ -184,36 +189,10 @@
     return m ? m.name : id;
   }
 
+  /** B6：塔祝福三选一 —— 弹窗与卡片全走组件库（openModal + .ui-opt） */
   function openBlessingModal(stage) {
-    const modalId = 'towerBlessingModal';
-    let modal = document.getElementById(modalId);
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = modalId;
-      modal.className = 'fixed inset-0 z-[80] hidden';
-      modal.innerHTML = `
-        <div class="absolute inset-0 bg-black/75" data-close="1"></div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-xl">
-          <div class="ui-panel rounded-2xl border border-gray-700 shadow-2xl overflow-hidden">
-            <div class="p-4 border-b border-gray-800 bg-black/30 flex items-center justify-between">
-              <div>
-                <div class="text-[10px] text-gray-400">无尽之塔</div>
-                <div class="text-lg font-black text-white">选择祝福</div>
-              </div>
-              <button class="text-gray-400 hover:text-white text-2xl px-2" data-close="1">×</button>
-            </div>
-            <div class="p-4">
-              <div class="text-xs text-gray-400 mb-3">本次祝福仅在当前战斗生效。</div>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="towerBlessingOptions"></div>
-            </div>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-      modal.querySelectorAll('[data-close]').forEach(el => {
-        el.addEventListener('click', () => modal.classList.add('hidden'));
-      });
-    }
+    const comp = window.__uiComponents;
+    if (!comp || typeof comp.openModal !== 'function') return;
 
     const blessings = [
       { id: 'atk10', name: '锋刃祝福', desc: '攻击 +10%', mods: { atkMul: 1.10 } },
@@ -235,29 +214,37 @@
       pool.splice(idx, 1);
     }
 
-    const wrap = modal.querySelector('#towerBlessingOptions');
-    wrap.innerHTML = '';
-    pick3.forEach(b => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'p-4 rounded-xl bg-black/25 border border-gray-800 hover:border-primary hover:bg-black/35 text-left';
-      btn.innerHTML = `
-        <div class="text-sm font-black text-primary">${b.name}</div>
-        <div class="text-xs text-gray-300 mt-2 leading-5">${b.desc}</div>
-        <div class="mt-3 text-[10px] text-gray-500">点击开始挑战</div>
-      `;
-      btn.addEventListener('click', () => {
-        window.__battleModifiers = { ...(b.mods || {}), source: 'tower', blessingId: b.id };
-        if (stage) {
-          stage.modifiers = { affixes: [{ name: `祝福：${b.name}` }] };
-          stage.towerBlessing = b.id;
-        }
-        modal.classList.add('hidden');
-        enterBattleUnified(stage.id);
-      });
-      wrap.appendChild(btn);
+    const body =
+      '<div class="text-xs text-gray-400 mb-3">本次祝福仅在当前战斗生效。</div>' +
+      '<div class="grid grid-cols-1 md:grid-cols-3 gap-3">' +
+      pick3.map((b, i) =>
+        '<button type="button" class="ui-opt" data-bless="' + i + '">' +
+        '<span class="ui-opt__name">' + b.name + '</span>' +
+        '<span class="ui-opt__desc">' + b.desc + '</span>' +
+        '<span class="ui-opt__hint">点击开始挑战</span>' +
+        '</button>').join('') +
+      '</div>';
+
+    comp.openModal({
+      title: '无尽之塔 · 选择祝福',
+      body,
+      actions: [{ label: '暂不挑战', tone: 'ghost' }],
+      onMount: (wrap, close) => {
+        wrap.querySelectorAll('[data-bless]').forEach(el => {
+          el.addEventListener('click', () => {
+            const b = pick3[Number(el.getAttribute('data-bless'))];
+            if (!b) return;
+            window.__battleModifiers = { ...(b.mods || {}), source: 'tower', blessingId: b.id };
+            if (stage) {
+              stage.modifiers = { affixes: [{ name: `祝福：${b.name}` }] };
+              stage.towerBlessing = b.id;
+            }
+            close();
+            enterBattleUnified(stage.id);
+          });
+        });
+      }
     });
-    modal.classList.remove('hidden');
   }
 
   function renderModeBar(container) {
@@ -269,15 +256,16 @@
     const dailyActive = mode === 'daily';
     const towerFloor = gameData.tower.floor || 1;
     const towerBest = gameData.tower.bestFloor || 0;
+    const towerSeason = gameData.tower.seasonNo || 1;
     const dailySum = (window.__daily && typeof window.__daily.summary === 'function')
       ? window.__daily.summary() : null;
     const rightInfo = dailyActive
       ? `<div class="text-[10px] text-gray-400 whitespace-nowrap">今日剩余 <span class="text-primary font-black">${dailySum ? dailySum.left : 0}</span>/${dailySum ? dailySum.max : 0}</div>`
       : (towerActive
-        ? `<div class="text-[10px] text-gray-400 whitespace-nowrap">当前层：<span class="text-primary font-black">${towerFloor}</span> · 最远：<span class="text-gray-200 font-black">${towerBest}</span></div>`
-        : `<div class="text-[10px] text-gray-400 whitespace-nowrap">主线进度：<span class="text-gray-200 font-black">${gameData.currentStage || '-'}</span></div>`);
+        ? `<div class="text-[10px] text-gray-400 whitespace-nowrap">第<span class="text-primary font-black">${towerSeason}</span>季 · 当前层：<span class="text-primary font-black">${towerFloor}</span> · 最远：<span class="text-gray-200 font-black">${towerBest}</span></div>`
+        : `<div class="text-[10px] text-gray-400 whitespace-nowrap">第 <span class="text-gray-200 font-black">${String(gameData.currentStage || '-').replace(/^stage_0*/, '')}</span> 关</div>`);
     const modeBtn = (key, label, active) =>
-      `<button class="px-3 py-2 rounded-lg border text-xs font-black ${active ? 'bg-primary/20 border-primary text-primary' : 'bg-gray-900 border-gray-700 text-white hover:bg-gray-800'}" data-mode="${key}">${label}</button>`;
+      `<button type="button" class="ui-btn ui-btn--sm ${active ? 'ui-btn--primary' : 'ui-btn--ghost'}" data-mode="${key}">${label}</button>`;
     bar.innerHTML = `
       <div class="glass-panel rounded-xl px-4 py-3 border border-gray-800">
         <div class="flex items-center justify-between gap-3">
@@ -286,7 +274,7 @@
             ${modeBtn('tower', '无尽塔', towerActive)}
             ${modeBtn('daily', '日常', dailyActive)}
           </div>
-          <div class="text-right">${rightInfo}</div>
+          <div class="text-right truncate min-w-0">${rightInfo}</div>
         </div>
       </div>
     `;
@@ -388,7 +376,7 @@
             </button>
             ${isCleared ? `<button class="ui-btn ui-btn--gold" data-sweep="${stage.id}"><i class="fa fa-forward mr-1"></i>扫荡</button>` : ''}
             ${isDevMode() ? `
-            <button class="px-4 py-2 rounded-lg text-xs font-black bg-gray-900 border border-gray-700 hover:bg-gray-800 ${!isUnlocked ? 'opacity-50 cursor-not-allowed' : ''}" ${!isUnlocked ? 'disabled' : ''} data-stage-debug="${stage.id}">
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" ${!isUnlocked ? 'disabled' : ''} data-stage-debug="${stage.id}">
               场景调试
             </button>` : ''}
           </div>
@@ -420,6 +408,91 @@
     });
   }
 
+  /** C10：赛季档案弹窗（当前赛季进度 + 重置 + 历史排位） */
+  function openSeasonModal() {
+    const comp = window.__uiComponents;
+    if (!comp || typeof comp.openModal !== 'function') return;
+    const towerApi = window.Game && window.Game.domain && window.Game.domain.tower;
+    if (!towerApi) return;
+    const s = towerApi.summary();
+    if (!s) return;
+
+    const fmtDate = (ts) => {
+      const d = new Date(ts || Date.now());
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    };
+    const rows = s.history.length
+      ? s.history.map(h => `
+          <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-black/25 border border-gray-800">
+            <div>
+              <span class="text-xs font-black text-white">第 ${h.seasonNo} 赛季</span>
+              <span class="ml-2 text-[10px] text-gray-500">${fmtDate(h.startedAt)} - ${fmtDate(h.endedAt)}</span>
+            </div>
+            <div class="text-right">
+              <span class="text-sm font-black text-primary">最远 ${h.bestFloor} 层</span>
+              <div class="text-[10px] text-gray-500">结算 钻石 +${h.rewardGems || 0}</div>
+            </div>
+          </div>`).join('')
+      : '<div class="text-xs text-gray-500 px-1 py-3 text-center">暂无历史赛季 —— 第一次重置后会在这里留下记录</div>';
+
+    const body = `
+      <div class="space-y-3">
+        <div class="px-3 py-3 rounded-lg bg-black/25 border border-gray-800">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-[10px] text-gray-400">当前赛季</div>
+              <div class="text-lg font-black text-white">第 <span class="text-primary">${s.seasonNo}</span> 赛季</div>
+            </div>
+            <div class="text-right">
+              <div class="text-[10px] text-gray-400">本季最远 / 当前层</div>
+              <div class="text-lg font-black text-yellow-400">${s.bestFloor} <span class="text-gray-500 text-xs">/ ${s.floor}</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="px-3 py-3 rounded-lg bg-black/25 border border-gray-800">
+          <div class="text-xs text-gray-300 leading-5">
+            重置后：本季最远层数 <b class="text-white">${s.bestFloor}</b> 归档进历史排位，进度回到第 1 层开新赛季，并结算
+            <b class="text-primary">钻石 +${s.reward.gems}</b>。
+            <span class="text-gray-500">（需本季最远 ≥ ${s.resetMin} 层；历史最高 ${towerApi.historyBest()} 层不受重置影响）</span>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <div class="text-xs font-bold text-gray-400">历史排位</div>
+          ${rows}
+        </div>
+      </div>
+    `;
+
+    const actions = [{ label: '关闭', tone: 'ghost' }];
+    if (s.canReset) {
+      actions.push({
+        label: `重置开新赛季（领钻石 +${s.reward.gems}）`,
+        tone: 'gold',
+        onClick: (close) => {
+          close();
+          comp.confirmModal({
+            title: '重置赛季',
+            body: `本季最远 ${s.bestFloor} 层将归档，进度清零回第 1 层，结算钻石 +${s.reward.gems}。确定重置？`,
+            okText: '重置',
+            okTone: 'gold',
+            onOk: () => {
+              const r = towerApi.resetSeason();
+              if (r.ok) {
+                comp.toast(`第 ${r.archived.seasonNo} 赛季结算：${(r.granted || []).join(' · ') || '已入账'}`, 'success');
+                if (typeof updateUI === 'function') updateUI();
+              } else {
+                comp.toast(r.reason === 'min_floor' ? `本季最远未达 ${s.resetMin} 层` : '重置失败', 'danger');
+              }
+            }
+          });
+        }
+      });
+    } else {
+      actions.push({ label: `最远 ${s.resetMin} 层可重置`, tone: 'ghost' });
+    }
+    comp.openModal({ title: '无尽之塔 · 赛季档案', body, actions });
+  }
+
   function renderTower(stagesList) {
     ensureTowerData();
     ensureTowerStages();
@@ -429,22 +502,24 @@
 
     const top = document.createElement('div');
     top.className = 'glass-panel rounded-xl p-4 border border-gray-800 mb-3';
+    const seasonNo = (gameData.tower.seasonNo) || 1;
     top.innerHTML = `
       <div class="flex items-center justify-between gap-3">
         <div>
-          <div class="text-xs text-gray-400">进度</div>
+          <div class="text-xs text-gray-400">第 <span class="text-primary font-black">${seasonNo}</span> 赛季 · 进度</div>
           <div class="text-lg font-black text-white">第 <span class="text-primary">${floor}</span> 层</div>
-          <div class="text-[10px] text-gray-500 mt-1">最远记录：${best}</div>
+          <div class="text-[10px] text-gray-500 mt-1">本季最远：${best}</div>
         </div>
         <div class="text-right">
           <div class="text-xs text-gray-400">建议战斗力</div>
           <div class="text-lg font-black text-yellow-400">${buildTowerStage(floor).recommendedPower.toLocaleString()}</div>
         </div>
       </div>
-      <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
+      <div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
         <button class="ui-btn ui-btn--primary" data-tower-challenge="1">挑战下一层</button>
-        <button class="py-2 rounded-lg font-black text-xs bg-gray-900 border border-gray-700 hover:bg-gray-800" data-tower-prev="1">查看上一页</button>
-        <button class="py-2 rounded-lg font-black text-xs bg-gray-900 border border-gray-700 hover:bg-gray-800" data-tower-next="1">查看下一页</button>
+        <button class="ui-btn ui-btn--ghost ui-btn--sm" data-tower-prev="1">查看上一页</button>
+        <button class="ui-btn ui-btn--ghost ui-btn--sm" data-tower-next="1">查看下一页</button>
+        <button class="ui-btn ui-btn--ghost ui-btn--sm" data-tower-season="1"><i class="fa fa-trophy mr-1 text-yellow-400"></i>赛季档案</button>
       </div>
     `;
     stagesList.appendChild(top);
@@ -532,6 +607,9 @@
     top.querySelector('[data-tower-next]').addEventListener('click', () => {
       gameData.tower.pageBase = Math.min(maxFloor - pageSize + 1, (gameData.tower.pageBase || 1) + pageSize);
       updateStagesList();
+    });
+    top.querySelector('[data-tower-season]').addEventListener('click', () => {
+      openSeasonModal();
     });
   }
 

@@ -117,8 +117,8 @@
     ensureMaterials();
     const costGold = calculateEnhanceCost(selectedEquipment.level, selectedEquipment.rarity);
     const costStone = Math.max(1, Math.ceil((selectedEquipment.level || 1) / 4) * getRarityCostMult(selectedEquipment.rarity));
-    if (gameData.player.gold < costGold) return alert('金币不足！');
-    if ((gameData.player.materials.enhanceStone || 0) < costStone) return alert('强化石不足！');
+    if (gameData.player.gold < costGold) return uiToast('金币不足！', 'danger');
+    if ((gameData.player.materials.enhanceStone || 0) < costStone) return uiToast('强化石不足！', 'danger');
     gameData.player.gold -= costGold;
     gameData.player.materials.enhanceStone -= costStone;
     const gain = Math.floor(55 * getRarityCostMult(selectedEquipment.rarity));
@@ -140,7 +140,7 @@
     if (typeof selectedEquipment === 'undefined' || !selectedEquipment) return;
     const cost = (window.__inventory && window.__inventory.calculateRefineCost) ? window.__inventory.calculateRefineCost(selectedEquipment.refine) : (selectedEquipment.refine + 1) * 100;
     if (gameData.player.gems < cost) {
-      alert('钻石不足！');
+      uiToast('钻石不足！', 'danger');
       return;
     }
     gameData.player.gems -= cost;
@@ -223,7 +223,7 @@
   function upgradeInscription() {
     if (typeof selectedInscription === 'undefined' || !selectedInscription) return;
     if (selectedInscription.level >= 10) {
-      alert('已达到最高等级！');
+      uiToast('已达到最高等级！', 'danger');
       return;
     }
     if (window.__inventory && typeof window.__inventory.ensureInscriptionInstance === 'function') window.__inventory.ensureInscriptionInstance(selectedInscription);
@@ -233,7 +233,7 @@
       ins !== selectedInscription && ins.level <= selectedInscription.level
     );
     if (availableMaterials.length < 1) {
-      alert('需要1个其他铭文作为升级材料！');
+      uiToast('需要1个其他铭文作为升级材料！', 'danger');
       return;
     }
 
@@ -246,7 +246,7 @@
       const expGain = (window.__inventory && window.__inventory.getInscriptionFeedExp) ? window.__inventory.getInscriptionFeedExp(material) : (50 * material.level);
       const dustCost = Math.max(1, Math.ceil(expGain / 45) * getRarityCostMult(selectedInscription.rarity));
       if ((gameData.player.materials.inscriptionDust || 0) < dustCost) {
-        alert('铭文粉尘不足！');
+        uiToast('铭文粉尘不足！', 'danger');
         gameData.inscriptions.push(material);
         return;
       }
@@ -270,7 +270,7 @@
     if (typeof selectedInscription === 'undefined' || !selectedInscription) return;
     if (typeof selectedCharacter === 'undefined' || !selectedCharacter) {
       switchPage('characters');
-      alert('请先在养成界面选择一个角色，再执行铭文镶嵌。');
+      uiToast('请先在养成界面选择一个角色，再执行铭文镶嵌。', 'danger');
       return;
     }
     const useFirst = confirm('镶嵌到铭文槽位 1？\n取消则镶嵌到槽位 2。');
@@ -280,7 +280,7 @@
     updateUI();
     selectCharacterToCultivate(selectedCharacter);
     document.getElementById('inscriptionDetailModal').classList.add('hidden');
-    alert('铭文镶嵌成功！');
+    uiToast('铭文镶嵌成功！', 'success');
   }
 
   const api = {
