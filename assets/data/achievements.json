@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "_note": "成就定义单一真相源（C8）。metric 是 domain/achievements.js 里已注册的度量键，改这里 = 改全站成就；数值单一入口是 domain/achievements.js。",
+  "groups": [
+    { "key": "collection", "name": "星海收藏", "icon": "fa-book", "tone": "primary", "desc": "扩充图鉴，收录更多伙伴" },
+    { "key": "growth",     "name": "成长之路", "icon": "fa-arrow-up", "tone": "accent", "desc": "把角色练到极限" },
+    { "key": "power",      "name": "战力阶梯", "icon": "fa-bolt", "tone": "gold", "desc": "整体战力的里程碑" },
+    { "key": "battle",     "name": "征战记录", "icon": "fa-shield", "tone": "danger", "desc": "主线与无尽塔的进度" },
+    { "key": "daily",      "name": "日常习惯", "icon": "fa-calendar-check-o", "tone": "primary", "desc": "把每日该做的事做完" }
+  ],
+  "achievements": [
+    { "id": "codex_01", "group": "collection", "name": "初见星海", "desc": "图鉴收录 10 名角色", "metric": "codexCount", "target": 10, "reward": { "gems": 100 } },
+    { "id": "codex_02", "group": "collection", "name": "群星渐聚", "desc": "图鉴收录 30 名角色", "metric": "codexCount", "target": 30, "reward": { "gems": 200, "gold": 20000 } },
+    { "id": "codex_03", "group": "collection", "name": "星海过半", "desc": "图鉴收录 50 名角色", "metric": "codexCount", "target": 50, "reward": { "gems": 400, "materials": { "lockCrystal": 30 } } },
+    { "id": "codex_04", "group": "collection", "name": "满编星海", "desc": "图鉴收录 80 名角色", "metric": "codexCount", "target": 80, "reward": { "gems": 800, "materials": { "lockCrystal": 80 } } },
+    { "id": "codex_05", "group": "collection", "name": "星海全图", "desc": "图鉴收录全部角色", "metric": "codexCount", "target": 99, "reward": { "gems": 2000, "materials": { "lockCrystal": 200 } } },
+    { "id": "codex_sur1", "group": "collection", "name": "神话初见", "desc": "收录 1 名 SUR 角色", "metric": "codexSur", "target": 1, "reward": { "gems": 200 } },
+    { "id": "codex_sur5", "group": "collection", "name": "神话收藏家", "desc": "收录 5 名 SUR 角色", "metric": "codexSur", "target": 5, "reward": { "gems": 600, "materials": { "lockCrystal": 60 } } },
+
+    { "id": "grow_lv30", "group": "growth", "name": "小有所成", "desc": "任意角色达到 30 级", "metric": "maxLevel", "target": 30, "reward": { "gold": 10000 } },
+    { "id": "grow_lv80", "group": "growth", "name": "精锐之师", "desc": "任意角色达到 80 级", "metric": "maxLevel", "target": 80, "reward": { "gold": 50000, "materials": { "enhanceStone": 100 } } },
+    { "id": "grow_star5", "group": "growth", "name": "五星锋芒", "desc": "任意角色升至 5 星", "metric": "maxStars", "target": 5, "reward": { "gems": 300 } },
+    { "id": "grow_star8", "group": "growth", "name": "满星荣耀", "desc": "任意角色升至 8 星", "metric": "maxStars", "target": 8, "reward": { "gems": 1000, "materials": { "lockCrystal": 100 } } },
+    { "id": "grow_awaken1", "group": "growth", "name": "觉醒时刻", "desc": "觉醒 1 名角色", "metric": "awakenCount", "target": 1, "reward": { "gems": 150 } },
+    { "id": "grow_awaken5", "group": "growth", "name": "全员觉醒", "desc": "觉醒 5 名角色", "metric": "awakenCount", "target": 5, "reward": { "gems": 500 } },
+
+    { "id": "power_1w", "group": "power", "name": "初露锋芒", "desc": "总战力达到 10,000", "metric": "totalPower", "target": 10000, "reward": { "gold": 8000 } },
+    { "id": "power_10w", "group": "power", "name": "一方强者", "desc": "总战力达到 100,000", "metric": "totalPower", "target": 100000, "reward": { "gems": 400 } },
+    { "id": "power_50w", "group": "power", "name": "传说之力", "desc": "总战力达到 500,000", "metric": "totalPower", "target": 500000, "reward": { "gems": 1200 } },
+
+    { "id": "battle_10", "group": "battle", "name": "初战告捷", "desc": "累计战斗胜利 10 次", "metric": "battleWins", "target": 10, "reward": { "gold": 5000 } },
+    { "id": "battle_100", "group": "battle", "name": "百战之师", "desc": "累计战斗胜利 100 次", "metric": "battleWins", "target": 100, "reward": { "gems": 300 } },
+    { "id": "battle_500", "group": "battle", "name": "身经百战", "desc": "累计战斗胜利 500 次", "metric": "battleWins", "target": 500, "reward": { "gems": 800 } },
+    { "id": "main_10", "group": "battle", "name": "星海行者", "desc": "主线通关 10 关", "metric": "mainCleared", "target": 10, "reward": { "gems": 200, "gold": 30000 } },
+    { "id": "main_30", "group": "battle", "name": "星海领航", "desc": "主线通关 30 关", "metric": "mainCleared", "target": 30, "reward": { "gems": 600 } },
+    { "id": "main_60", "group": "battle", "name": "星海传说", "desc": "主线通关 60 关", "metric": "mainCleared", "target": 60, "reward": { "gems": 1500 } },
+    { "id": "tower_20", "group": "battle", "name": "塔中常客", "desc": "无尽塔最远到 20 层", "metric": "towerBest", "target": 20, "reward": { "gold": 20000 } },
+    { "id": "tower_50", "group": "battle", "name": "登塔者", "desc": "无尽塔最远到 50 层", "metric": "towerBest", "target": 50, "reward": { "gems": 500 } },
+
+    { "id": "daily_gacha10", "group": "daily", "name": "召唤新手", "desc": "累计召唤 10 次", "metric": "gachaTotal", "target": 10, "reward": { "gems": 100 } },
+    { "id": "daily_gacha100", "group": "daily", "name": "召唤大师", "desc": "累计召唤 100 次", "metric": "gachaTotal", "target": 100, "reward": { "gems": 500 } },
+    { "id": "daily_sweep50", "group": "daily", "name": "效率至上", "desc": "累计扫荡 50 次", "metric": "sweeps", "target": 50, "reward": { "gold": 20000 } },
+    { "id": "daily_idle20", "group": "daily", "name": "挂机达人", "desc": "累计领取挂机收益 20 次", "metric": "idleClaims", "target": 20, "reward": { "gold": 15000 } },
+    { "id": "daily_levelup30", "group": "daily", "name": "勤学苦练", "desc": "累计升级 30 次", "metric": "levelUps", "target": 30, "reward": { "materials": { "inscriptionDust": 60 } } }
+  ]
+}

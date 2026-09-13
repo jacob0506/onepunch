@@ -13,35 +13,41 @@
   <meta name="apple-mobile-web-app-title" content="幻卡传说">
   
   <!-- Tailwind CSS v3 —— 已本地化，见 tools/vendor-cdn.mjs（原为 Tailwind Play CDN） -->
-  <script src="./assets/vendor/tailwind/tailwind.js?v=26"></script>
+  <script src="./assets/vendor/tailwind/tailwind.js?v=34"></script>
   <!-- Font Awesome 4.7 —— 已本地化，见 tools/vendor-cdn.mjs（原为 cdnjs 引用） -->
-  <link href="./assets/vendor/font-awesome/css/font-awesome.min.css?v=26" rel="stylesheet">
+  <link href="./assets/vendor/font-awesome/css/font-awesome.min.css?v=34" rel="stylesheet">
+
+  <!-- 设计 Token（B4，2026-09-12）：全站颜色的唯一真相源，改这里 = 换肤 -->
+  <link href="./assets/css/tokens.css?v=34" rel="stylesheet">
+  <link href="./assets/css/components.css?v=41" rel="stylesheet">
 
   <!-- 站点图标 / iOS 主屏图标（本地素材，见 tools/gen-brand.mjs） -->
   <link rel="icon" type="image/svg+xml" href="./assets/brand/favicon.svg">
   <link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png">
   
   <script>
+    // 颜色全部引用 assets/css/tokens.css 的设计 Token（B4）——改 token 即全站换肤。
+    // primary/secondary/accent 走 RGB 三通道，支持 bg-primary/20 等透明度语法。
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            primary: '#4A90E2',
-            secondary: '#50E3C2',
-            accent: '#F5A623',
+            primary: 'rgb(var(--c-primary-rgb) / <alpha-value>)',
+            secondary: 'rgb(var(--c-secondary-rgb) / <alpha-value>)',
+            accent: 'rgb(var(--c-accent-rgb) / <alpha-value>)',
             rarity: {
-              r: '#7FB5FF',
-              sr: '#B18AFF',
-              ssr: '#FFD700',
-              ur: '#FF6B6B',
-              sur: '#FF00FF'
+              r: 'var(--c-rarity-r)',
+              sr: 'var(--c-rarity-sr)',
+              ssr: 'var(--c-rarity-ssr)',
+              ur: 'var(--c-rarity-ur)',
+              sur: 'var(--c-rarity-sur)'
             },
             class: {
-              warrior: '#FF5722',
-              mage: '#9C27B0',
-              assassin: '#795548',
-              archer: '#4CAF50',
-              healer: '#2196F3'
+              warrior: 'var(--c-class-warrior)',
+              mage: 'var(--c-class-mage)',
+              assassin: 'var(--c-class-assassin)',
+              archer: 'var(--c-class-archer)',
+              healer: 'var(--c-class-healer)'
             }
           },
           fontFamily: {
@@ -108,87 +114,97 @@
   
   <style type="text/tailwindcss">
     @layer utilities {
-      /* 调试日志样式 */
+      /* 调试日志样式（颜色 = tokens.css） */
       #mobile-logger {
         position: fixed;
         bottom: 100px;
         left: 10px;
         right: 10px;
         height: 150px;
-        background: rgba(0, 0, 0, 0.8);
-        color: #00ff00;
+        background: var(--c-log-bg);
+        color: var(--c-log-text);
         font-family: monospace;
-        font-size: 10px;
+        font-size: var(--text-xs);
         overflow-y: auto;
         z-index: 9999;
         padding: 5px;
-        border: 1px solid #333;
+        border: 1px solid var(--c-log-border);
         pointer-events: none;
         display: none;
       }
-      .log-error { color: #ff4444; }
-      .log-warn { color: #ffbb33; }
-      
+      .log-error { color: var(--c-danger); }
+      .log-warn { color: var(--c-warning); }
+
       /* 专业游戏 UI 字体与基础样式 */
       .text-shadow-hero { text-shadow: 0 0 15px rgba(255, 255, 255, 0.4), 0 4px 8px rgba(0, 0, 0, 0.8); }
-      .text-glow-sur { text-shadow: 0 0 10px #FF00FF, 0 0 20px #FF00FF; }
-      .text-glow-ur { text-shadow: 0 0 10px #FF6B6B, 0 0 20px #FF6B6B; }
-      .text-glow-ssr { text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700; }
-      
-      /* 按钮高级质感 */
-      .btn-game-primary {
-        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
-        border: 2px solid #5DA9FF;
-        box-shadow: 0 4px 0 #2A5F96, 0 8px 15px rgba(0,0,0,0.4);
-        transition: all 0.1s active;
+      /* 通用文字光晕 / 阴影 —— 此前 .text-glow（标题）与 .text-shadow-lg（角色名）
+         只有类名没有样式，属静默失效，check-classes 抓到后补回 */
+      .text-glow { text-shadow: 0 0 12px rgba(var(--c-primary-rgb) / 0.75), 0 0 26px rgba(var(--c-primary-rgb) / 0.35); }
+      .text-shadow-lg { text-shadow: 0 2px 6px rgba(0, 0, 0, 0.75), 0 0 18px rgba(0, 0, 0, 0.45); }
+      .text-glow-sur { text-shadow: 0 0 10px var(--c-rarity-sur), 0 0 20px var(--c-rarity-sur); }
+      .text-glow-ur { text-shadow: 0 0 10px var(--c-rarity-ur), 0 0 20px var(--c-rarity-ur); }
+      .text-glow-ssr { text-shadow: 0 0 10px var(--c-rarity-ssr), 0 0 20px var(--c-rarity-ssr); }
+
+      /* 按钮质感统一到组件库：assets/css/components.css 的 .ui-btn--primary / .ui-btn--gold
+         （原 .btn-game-primary / .btn-game-gold 全仓已无引用，B6 删除） */
+
+      /* 底部导航按钮 —— 此前只有类名、没有样式（check-classes 抓到），非选中态无颜色与反馈 */
+      .footer-btn {
+        gap: 2px;
+        color: var(--c-text-dim);
+        cursor: pointer;
+        transition: color var(--dur-fast) var(--ease-game), transform var(--dur-fast) var(--ease-game);
       }
-      .btn-game-primary:active {
-        transform: translateY(2px);
-        box-shadow: 0 2px 0 #2A5F96, 0 4px 8px rgba(0,0,0,0.4);
+      .footer-btn:active { transform: scale(0.94); }
+      .footer-btn.text-primary { color: var(--c-primary); }
+
+      /* 养成页立绘区背景光晕 —— 同上，补回"类名存在但样式丢失"呼吸动画 */
+      .cultivate-bg-anim::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background: radial-gradient(circle at 50% 45%, rgba(var(--c-primary-rgb) / 0.18), transparent 65%);
+        animation: cultivateAura 5.5s ease-in-out infinite;
       }
-      
-      .btn-game-gold {
-        background: linear-gradient(135deg, #F5A623 0%, #D48806 100%);
-        border: 2px solid #FFD17B;
-        box-shadow: 0 4px 0 #A66B04, 0 8px 15px rgba(0,0,0,0.4);
-      }
-      .btn-game-gold:active {
-        transform: translateY(2px);
-        box-shadow: 0 2px 0 #A66B04, 0 4px 8px rgba(0,0,0,0.4);
+      @keyframes cultivateAura {
+        0%, 100% { opacity: 0.45; }
+        50%      { opacity: 1; }
       }
 
       /* 角色边框炫光特效 (静置) */
       .portrait-frame-sur {
         box-shadow: inset 0 0 50px rgba(255, 0, 255, 0.3), 0 0 30px rgba(255, 0, 255, 0.5);
-        border: 4px solid #FF00FF;
+        border: 4px solid var(--c-rarity-sur);
         background: radial-gradient(circle at center, rgba(255, 0, 255, 0.1) 0%, transparent 70%);
       }
       .portrait-frame-ur {
         box-shadow: inset 0 0 40px rgba(255, 107, 107, 0.3), 0 0 20px rgba(255, 107, 107, 0.4);
-        border: 4px solid #FF6B6B;
+        border: 4px solid var(--c-rarity-ur);
         background: radial-gradient(circle at center, rgba(255, 107, 107, 0.1) 0%, transparent 70%);
       }
       .portrait-frame-ssr {
         box-shadow: inset 0 0 30px rgba(255, 215, 0, 0.2), 0 0 15px rgba(255, 215, 0, 0.3);
-        border: 4px solid #FFD700;
+        border: 4px solid var(--c-rarity-ssr);
         background: radial-gradient(circle at center, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
       }
-      
+
       /* 移除动画，保持静置美观 */
       .portrait-static {
         filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.5));
-        transition: transform 0.3s ease-out;
+        transition: transform var(--dur-base) var(--ease-out-soft);
       }
-      
+
       .glass-panel {
-        background: rgba(15, 23, 42, 0.8);
+        background: var(--c-surface);
         backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--c-border-faint);
+        box-shadow: var(--shadow-panel);
       }
 
       .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-      .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--c-border-strong); border-radius: var(--radius-sm); }
     }
   </style>
 
@@ -214,12 +230,12 @@
       left: 0;
       z-index: 200;
       padding: 1px 8px 2px;
-      background: #dc2626;
-      color: #fff;
-      font-size: 10px;
+      background: var(--c-danger-strong);
+      color: var(--c-text-hi);
+      font-size: var(--text-xs);
       font-weight: 900;
       letter-spacing: 2px;
-      border-radius: 0 0 8px 0;
+      border-radius: 0 0 var(--radius-md) 0;
       box-shadow: 0 2px 10px rgba(220, 38, 38, 0.6);
       pointer-events: none;
     }
@@ -236,7 +252,7 @@
   <!-- 游戏容器 -->
   <div class="relative z-10 container mx-auto px-4 py-6 max-w-6xl">
     <!-- 顶部状态栏 -->
-    <header class="glass-effect rounded-xl p-3 md:p-4 mb-4 md:mb-6 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0">
+    <header class="ui-panel rounded-xl p-3 md:p-4 mb-4 md:mb-6 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0">
       <div class="flex items-center w-full md:w-auto justify-center md:justify-start">
         <img src="./assets/brand/logo.svg" 
              alt="游戏Logo" 
@@ -256,11 +272,15 @@
           <i class="fa fa-money text-lg md:text-2xl mr-1 md:mr-2 text-yellow-500"></i>
           <span id="playerGold" class="font-bold text-sm md:text-base">5000</span>
         </div>
+        <!-- B9：静音开关（状态由 audio/engine.js 同步） -->
+        <button id="audioToggleBtn" type="button" class="ui-btn ui-btn--sm ui-btn--ghost ml-2" title="静音">
+          <i class="fa fa-volume-up"></i>
+        </button>
       </div>
     </header>
 
     <!-- 主内容区域 -->
-    <main class="glass-effect rounded-xl p-6 mb-6 min-h-[60vh]">
+    <main class="ui-panel rounded-xl p-6 mb-6 min-h-[60vh]">
       <!-- 页面内容 -->
       <div class="page-content">
         <!-- 首页 -->
@@ -268,7 +288,7 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- 左侧信息 -->
             <div class="md:col-span-2">
-              <div class="glass-effect rounded-xl p-4 mb-6">
+              <div class="ui-panel rounded-xl p-4 mb-6">
                 <h2 class="text-xl font-bold mb-4 flex items-center">
                   <i class="fa fa-trophy text-yellow-400 mr-2"></i>
                   游戏进度
@@ -287,18 +307,35 @@
                     <p id="characterCount" class="text-lg font-bold">5/20</p>
                   </div>
                   <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3">
-                    <h3 class="text-sm text-gray-400">离线收益</h3>
-                    <p id="offlineRewards" class="text-lg font-bold text-green-400">
-                      <i class="fa fa-money mr-1"></i>2,500
-                    </p>
+                    <h3 class="text-sm text-gray-400">已挂机</h3>
+                    <p id="idleElapsed" class="text-lg font-bold">-</p>
                   </div>
                 </div>
-                <button id="claimOfflineRewards" class="btn-primary mt-4 w-full">
-                  <i class="fa fa-gift mr-2"></i>领取离线收益
-                </button>
               </div>
 
-              <div class="glass-effect rounded-xl p-4">
+              <!-- 挂机收益（C1/C3）：数值单源 domain/idle.js，界面 ui/idle.js -->
+              <div id="idlePanel" class="ui-panel rounded-xl p-4 mb-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                  <i class="fa fa-hourglass-half text-primary mr-2"></i>
+                  挂机收益
+                  <span id="idleRateHint" class="ml-auto text-[10px] font-normal text-gray-400">上限 12 小时</span>
+                </h2>
+                <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3 mb-3">
+                  <div class="text-[10px] text-gray-400">挂机关卡</div>
+                  <div id="idleStageName" class="text-sm font-bold truncate">-</div>
+                </div>
+                <div id="idleRewardLines" class="space-y-1 text-xs mb-3"></div>
+                <button id="claimOfflineRewards" class="ui-btn ui-btn--primary w-full">
+                  <i class="fa fa-gift mr-2"></i><span id="claimIdleLabel">领取挂机收益</span>
+                </button>
+                <div class="mt-3 grid grid-cols-3 gap-2">
+                  <button id="idleSweep1" class="ui-btn ui-btn--sm ui-btn--ghost">扫荡 x1</button>
+                  <button id="idleSweep5" class="ui-btn ui-btn--sm ui-btn--ghost">扫荡 x5</button>
+                  <button id="idleSweep10" class="ui-btn ui-btn--sm ui-btn--ghost">扫荡 x10</button>
+                </div>
+              </div>
+
+              <div class="ui-panel rounded-xl p-4">
                 <h2 class="text-xl font-bold mb-4 flex items-center">
                   <i class="fa fa-fire text-red-400 mr-2"></i>
                   推荐关卡
@@ -309,7 +346,7 @@
                       <h3 id="recommendedStageName" class="font-bold">-</h3>
                       <p id="recommendedStagePower" class="text-sm text-gray-400">推荐战斗力: -</p>
                     </div>
-                    <button id="recommendedStageBtn" class="btn-primary">
+                    <button id="recommendedStageBtn" class="ui-btn ui-btn--primary">
                       前往挑战
                     </button>
                   </div>
@@ -319,31 +356,17 @@
 
             <!-- 右侧信息 -->
             <div>
-              <div class="glass-effect rounded-xl p-4 mb-6">
+              <!-- 今日目标（C5）：数值在 domain/goals.js，渲染在 ui/goals.js。
+                   取代了此前写死的两个假任务（按钮只会 switchPage，没有进度也没有领取）。 -->
+              <div id="dailyGoalsPanel" class="ui-panel rounded-xl p-4 mb-6">
                 <h2 class="text-xl font-bold mb-4 flex items-center">
                   <i class="fa fa-calendar text-blue-400 mr-2"></i>
-                  每日任务
+                  今日目标
+                  <span id="dailyGoalsCount" class="ml-auto text-[10px] font-normal text-gray-400">0/0</span>
                 </h2>
-                <div class="space-y-3">
-                  <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3 flex justify-between items-center">
-                    <div>
-                      <h3 class="font-medium">完成1次抽卡</h3>
-                      <p class="text-xs text-gray-400">奖励: <i class="fa fa-diamond text-yellow-400"></i>100</p>
-                    </div>
-                    <button class="btn-primary text-sm py-1 px-3" onclick="switchPage('gacha')">
-                      去完成
-                    </button>
-                  </div>
-                  <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3 flex justify-between items-center">
-                    <div>
-                      <h3 class="font-medium">升级1个角色</h3>
-                      <p class="text-xs text-gray-400">奖励: <i class="fa fa-money text-yellow-500"></i>500</p>
-                    </div>
-                    <button class="btn-primary text-sm py-1 px-3" onclick="switchPage('characters')">
-                      去完成
-                    </button>
-                  </div>
-                </div>
+                <div id="dailyGoalsBar" class="mb-3"></div>
+                <div id="dailyGoalList" class="space-y-3"></div>
+                <button id="dailyClaimAllBtn" class="ui-btn ui-btn--gold w-full mt-3" disabled>暂无可领取</button>
               </div>
             </div>
           </div>
@@ -367,8 +390,8 @@
                 <div class="absolute -top-2 -right-2 bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-black shadow-lg border-2 border-white">1</div>
               </div>
               <h3 class="text-2xl font-black mb-6 tracking-tight">单次召唤</h3>
-              <button id="singleGacha" class="btn-game-primary w-full py-4 rounded-xl font-black text-lg flex items-center justify-center space-x-3 group-hover:scale-105 transition-transform">
-                <i class="fa fa-diamond text-sm"></i>
+              <button id="singleGacha" class="ui-btn ui-btn--primary ui-btn--lg ui-btn--block group-hover:scale-105 transition-transform">
+                <i class="fa fa-diamond"></i>
                 <span>200 召唤</span>
               </button>
             </div>
@@ -384,8 +407,8 @@
               </div>
               <h3 class="text-2xl font-black mb-2 tracking-tight">十连召唤</h3>
               <p class="text-xs text-yellow-500 mb-6 font-bold">必得 SR 或以上英雄！</p>
-              <button id="tenGacha" class="btn-game-gold w-full py-4 rounded-xl font-black text-lg flex items-center justify-center space-x-3 group-hover:scale-105 transition-transform">
-                <i class="fa fa-diamond text-sm"></i>
+              <button id="tenGacha" class="ui-btn ui-btn--gold ui-btn--lg ui-btn--block group-hover:scale-105 transition-transform">
+                <i class="fa fa-diamond"></i>
                 <span>1800 召唤</span>
               </button>
             </div>
@@ -393,11 +416,11 @@
 
           <!-- 抽卡结果区域 -->
           <div id="gachaResult" class="hidden mt-8">
-            <div class="glass-effect rounded-xl p-6">
-              <h3 class="text-xl font-bold mb-4 text-center">召唤结果</h3>
+            <div class="ui-panel ui-panel--loose">
+              <h3 class="text-xl font-black mb-4 text-center">召唤结果</h3>
               <div id="gachaCards" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4"></div>
               <div class="text-center mt-6">
-                <button id="continueGacha" class="btn-primary" onclick="document.getElementById('gachaResult').classList.add('hidden')">继续</button>
+                <button id="continueGacha" class="ui-btn ui-btn--primary">继续</button>
               </div>
             </div>
           </div>
@@ -439,52 +462,53 @@
                   </div>
                 </div>
 
-                <!-- 移动端专用的顶部名称 -->
+                <!-- 移动端专用的顶部名称（TD-21：镜像点，数据由 data-bind 单写） -->
                 <div class="absolute top-4 left-4 md:hidden z-10">
-                  <h3 id="cultivateNameMobile" class="text-4xl font-black text-white text-shadow-lg tracking-tight">---</h3>
+                  <h3 data-bind="cultivate:name" class="text-4xl font-black text-white text-shadow-lg tracking-tight">---</h3>
                 </div>
               </div>
 
               <!-- 左侧：属性面板 -->
               <div class="order-2 md:order-1 col-span-12 md:col-span-3 space-y-4">
-                <div class="glass-effect rounded-xl p-4 border border-gray-800 md:block hidden">
-                  <h3 id="cultivateName" class="text-xl font-black mb-1">---</h3>
+                <div class="ui-panel rounded-xl p-4 border border-gray-800 md:block hidden">
+                  <!-- TD-21：桌面 + 移动的同名数据一律用 data-bind 声明镜像，JS 只写一次 -->
+                  <h3 data-bind="cultivate:name" class="text-xl font-black mb-1">---</h3>
                   <div id="cultivateRarity" class="text-xl font-black mb-4 tracking-widest">---</div>
-                  <div id="cultivateLevel" class="text-sm font-black text-gray-300 mb-3">Lv.1</div>
-                  <div id="cultivatePower" class="mb-4">
+                  <div data-bind="cultivate:level" class="text-sm font-black text-gray-300 mb-3">Lv.1</div>
+                  <div class="mb-4">
                     <div class="text-[10px] text-gray-500 uppercase">当前战力</div>
-                    <div class="text-2xl font-black text-accent">0</div>
+                    <div data-bind="cultivate:power" class="text-2xl font-black text-accent">0</div>
                   </div>
                   <div class="grid grid-cols-2 gap-2 text-xs">
                     <div class="bg-black bg-opacity-40 p-2 rounded">
                       <div class="text-gray-500">系别</div>
-                      <div id="cultivateFaction" class="font-bold">---</div>
+                      <div data-bind="cultivate:faction" class="font-bold">---</div>
                     </div>
                     <div class="bg-black bg-opacity-40 p-2 rounded">
                       <div class="text-gray-500">定位</div>
-                      <div id="cultivateClass" class="font-bold">---</div>
+                      <div data-bind="cultivate:class" class="font-bold">---</div>
                     </div>
                   </div>
                 </div>
-                
-                <!-- 移动端战力简报 -->
-                <div class="md:hidden flex justify-between items-center glass-effect rounded-xl p-4 border border-gray-800">
+
+                <!-- 移动端战力简报（TD-21：与上面共享 data-bind，JS 零双写） -->
+                <div class="md:hidden flex justify-between items-center ui-panel rounded-xl p-4 border border-gray-800">
                   <div>
                     <div class="text-[10px] text-gray-500 uppercase">当前战力</div>
-                    <div id="cultivatePowerMobile" class="text-2xl font-black text-accent">0</div>
-                    <div id="cultivateLevelMobile" class="text-[10px] font-black text-gray-300 mt-1">Lv.1</div>
+                    <div data-bind="cultivate:power" class="text-2xl font-black text-accent">0</div>
+                    <div data-bind="cultivate:level" class="text-[10px] font-black text-gray-300 mt-1">Lv.1</div>
                   </div>
                   <div class="text-right">
-                    <div id="cultivateClassMobile" class="text-xs font-bold text-primary">---</div>
-                    <div id="cultivateFactionMobile" class="text-[10px] text-gray-500">---</div>
+                    <div data-bind="cultivate:class" class="text-xs font-bold text-primary">---</div>
+                    <div data-bind="cultivate:faction" class="text-[10px] text-gray-500">---</div>
                   </div>
                 </div>
 
-                <div class="glass-effect rounded-xl p-4 border border-gray-800">
+                <div class="ui-panel rounded-xl p-4 border border-gray-800">
                   <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">核心属性</h4>
                   <div id="cultivateStats" class="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-2 text-xs"></div>
                 </div>
-                <div class="glass-effect rounded-xl p-4 border border-gray-800">
+                <div class="ui-panel rounded-xl p-4 border border-gray-800">
                   <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">技能</h4>
                   <div id="cultivateSkills" class="flex space-x-2"></div>
                 </div>
@@ -492,24 +516,37 @@
 
               <!-- 右侧：养成操作 -->
               <div class="order-3 md:order-3 col-span-12 md:col-span-3 space-y-4">
-                <div class="glass-effect rounded-xl p-4 border border-gray-800">
-                  <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">快速养成</h4>
-                  <div class="grid grid-cols-3 md:grid-cols-1 gap-2">
-                    <button id="quickLevelUp" class="w-full py-2 bg-primary hover:bg-opacity-80 rounded font-bold text-sm">等级</button>
-                    <button id="quickStarUp" class="w-full py-2 bg-yellow-600 hover:bg-yellow-500 rounded font-bold text-sm">升星</button>
-                    <button id="quickSkillUp" class="w-full py-2 bg-blue-600 hover:bg-blue-500 rounded font-bold text-sm">技能</button>
+                <!-- C4：一键操作集（数值在 domain/quick_ops.js，界面在 ui/quick_ops.js） -->
+                <div class="ui-panel rounded-xl p-4 border border-gray-800">
+                  <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">一键操作</h4>
+                  <div class="grid grid-cols-3 gap-2">
+                    <button id="quickEquipBtn" class="ui-btn ui-btn--primary ui-btn--sm w-full" title="用背包里的闲置装备，给当前角色配最优搭配">穿戴</button>
+                    <button id="quickFormationBtn" class="ui-btn ui-btn--gold ui-btn--sm w-full" title="自动上阵战力最高的 6 名角色">上阵</button>
+                    <button id="quickEquipAllBtn" class="ui-btn ui-btn--ghost ui-btn--sm w-full" title="全员卸下后按战力从高到低重新分配装备">全员</button>
                   </div>
                 </div>
-                <div class="glass-effect rounded-xl p-4 border border-gray-800">
+                <div class="ui-panel rounded-xl p-4 border border-gray-800">
+                  <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">快速养成</h4>
+                  <div class="grid grid-cols-3 md:grid-cols-1 gap-2">
+                    <button id="quickLevelUp" class="ui-btn ui-btn--primary ui-btn--sm w-full">一键升级</button>
+                    <button id="quickStarUp" class="ui-btn ui-btn--gold ui-btn--sm w-full">一键升星</button>
+                    <button id="quickSkillUp" class="ui-btn ui-btn--ghost ui-btn--sm w-full">技能 +1</button>
+                  </div>
+                </div>
+                <div class="ui-panel rounded-xl p-4 border border-gray-800">
                   <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">上阵设置（最多6人）</h4>
                   <div id="cultivateFormationSlots" class="grid grid-cols-6 gap-1 mb-3"></div>
                   <div id="cultivateFormationHint" class="text-[10px] text-gray-500 mb-3">选择一个角色后，可加入/移除上阵</div>
+                  <!-- C6：羁绊面板（数值 domain/bonds.js，渲染 ui/bonds.js） -->
+                  <div id="cultivateBondPanel" class="mb-3"></div>
+                  <!-- C9：职业克制一览（数值 domain/counters.js，渲染 ui/cultivate.js） -->
+                  <div id="cultivateCounterPanel" class="mb-3"></div>
                   <div class="grid grid-cols-2 gap-2">
-                    <button id="toggleFormationBtn" class="w-full py-2 bg-gray-800 hover:bg-gray-700 rounded font-bold text-xs">加入上阵</button>
-                    <button id="resetCharacterBtn" class="w-full py-2 bg-red-900 hover:bg-red-800 rounded font-bold text-xs text-red-100">角色还原</button>
+                    <button id="toggleFormationBtn" class="ui-btn ui-btn--ghost ui-btn--sm w-full">加入上阵</button>
+                    <button id="resetCharacterBtn" class="ui-btn ui-btn--danger ui-btn--sm w-full">角色还原</button>
                   </div>
                 </div>
-                <div class="glass-effect rounded-xl p-4 border border-gray-800">
+                <div class="ui-panel rounded-xl p-4 border border-gray-800">
                   <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">装备槽位</h4>
                   <div class="grid grid-cols-5 md:grid-cols-3 gap-2 mb-4">
                     <div data-slot="weapon" class="cultivate-slot bg-gray-900 rounded border border-gray-800 aspect-square flex items-center justify-center cursor-pointer hover:border-primary"><i class="fa fa-gavel text-gray-700"></i></div>
@@ -557,11 +594,17 @@
               <h2 class="text-2xl font-black mb-1">冒险挑战</h2>
               <p class="text-gray-400 text-sm">通关上一关解锁下一关，已解锁关卡可随时重复挑战</p>
             </div>
-            <div id="stagesList" class="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y space-y-4 px-4 pb-8 custom-scrollbar" style="-webkit-overflow-scrolling: touch;"></div>
+            <div id="stagesList" class="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y space-y-4 px-4 pb-40 custom-scrollbar" style="-webkit-overflow-scrolling: touch;"></div>
           </div>
           <button id="lastBattleReportBtn" class="hidden fixed bottom-28 right-3 z-[90] md:right-6 glass-panel border border-gray-800 rounded-full px-4 py-3 text-[12px] font-black hover:bg-gray-800">
             上次战报
           </button>
+        </section>
+
+        <!-- 图鉴与成就页面（C8）：数值 domain/codex.js + domain/achievements.js，
+             渲染 ui/codex.js → #codexRoot（页内两个子 tab：角色图鉴 / 成就） -->
+        <section id="codex" class="page hidden">
+          <div id="codexRoot"></div>
         </section>
       </div>
     </main>
@@ -572,7 +615,7 @@
       <div id="itemPickerModal" class="fixed inset-0 z-[60] hidden">
         <div class="absolute inset-0 bg-black bg-opacity-80" onclick="this.parentElement.classList.add('hidden')"></div>
         <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-md">
-          <div class="glass-effect rounded-xl p-6 border border-gray-700 shadow-2xl">
+          <div class="ui-panel rounded-xl p-6 border border-gray-700 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
               <h3 id="itemPickerTitle" class="text-xl font-bold text-primary">选择物品</h3>
               <button id="closeItemPicker" class="text-gray-400 hover:text-white text-2xl">×</button>
@@ -589,7 +632,7 @@
       <div id="backpackModal" class="fixed inset-0 z-[75] hidden">
         <div id="backpackModalBg" class="absolute inset-0 bg-black bg-opacity-75"></div>
         <div class="absolute inset-x-0 top-4 bottom-4 mx-auto w-11/12 max-w-4xl">
-          <div class="glass-effect rounded-2xl border border-gray-700 shadow-2xl overflow-hidden h-full flex flex-col">
+          <div class="ui-panel rounded-2xl border border-gray-700 shadow-2xl overflow-hidden h-full flex flex-col">
             <div class="flex items-center justify-between p-4 border-b border-gray-800 bg-black/30">
               <div class="min-w-0">
                 <div class="text-[10px] text-gray-400">角色培养</div>
@@ -615,7 +658,7 @@
       <div id="skillDetailModal" class="fixed inset-0 z-[70] hidden">
         <div class="absolute inset-0 bg-black bg-opacity-60" onclick="this.parentElement.classList.add('hidden')"></div>
         <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80">
-          <div class="glass-effect rounded-xl p-5 border border-primary shadow-2xl">
+          <div class="ui-panel rounded-xl p-5 border border-primary shadow-2xl">
             <h3 id="skillPopupName" class="text-lg font-bold text-primary mb-1">技能名称</h3>
             <div id="skillPopupLevel" class="text-xs text-gray-500 mb-3">等级: 1</div>
             <p id="skillPopupDesc" class="text-sm text-gray-300 leading-relaxed mb-4">技能描述...</p>
@@ -627,7 +670,7 @@
       <div id="awakenModal" class="fixed inset-0 z-[80] hidden">
         <div class="absolute inset-0 bg-black bg-opacity-70" onclick="this.parentElement.classList.add('hidden')"></div>
         <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-md">
-          <div class="glass-effect rounded-xl p-6 border border-yellow-700 shadow-2xl">
+          <div class="ui-panel rounded-xl p-6 border border-yellow-700 shadow-2xl">
             <div class="flex justify-between items-center mb-3">
               <div>
                 <div class="text-[10px] text-gray-400">觉醒</div>
@@ -653,7 +696,7 @@
       <div id="attributeDetailModal" class="fixed inset-0 z-[70] hidden">
         <div class="absolute inset-0 bg-black bg-opacity-60" onclick="this.parentElement.classList.add('hidden')"></div>
         <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80">
-          <div class="glass-effect rounded-xl p-5 border border-accent shadow-2xl">
+          <div class="ui-panel rounded-xl p-5 border border-accent shadow-2xl">
             <h3 class="text-lg font-bold text-accent mb-4 border-b border-accent pb-2">详细属性面板</h3>
             <div id="detailedStatsList" class="space-y-2 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
               <!-- 动态填充 -->
@@ -667,51 +710,39 @@
       <div id="battleResultModal" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-black bg-opacity-90" onclick="closeBattleModal()"></div>
         <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-2xl">
-          <div class="glass-effect rounded-xl p-6 border border-gray-700 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <div class="text-center mb-6">
-              <h3 id="battleResultTitle" class="text-3xl font-black text-green-400">胜利</h3>
-              <p id="battleResultStage" class="text-gray-400 italic">关卡名称</p>
+          <div class="ui-panel rounded-xl p-6 border border-gray-700 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="text-center mb-5">
+              <div id="battleResultTitle" class="ui-result-title" data-outcome="win">胜利</div>
+              <p id="battleResultStage" class="text-gray-400 italic text-sm">关卡名称</p>
             </div>
-            <div class="grid grid-cols-2 gap-6 mb-6">
-              <div class="bg-black bg-opacity-40 p-4 rounded-lg">
-                <h4 class="font-bold mb-2 text-primary">获得奖励</h4>
-                <div class="text-sm space-y-1">
-                  <div class="flex justify-between"><span>经验:</span><span id="battleResultExp" class="text-blue-400">+0</span></div>
-                  <div class="flex justify-between"><span>金币:</span><span id="battleResultGold" class="text-yellow-500">+0</span></div>
-                  <div id="battleResultItems" class="mt-2 space-y-1"></div>
-                </div>
+            <div class="grid grid-cols-2 gap-3 mb-5">
+              <div class="ui-result-block">
+                <div class="ui-result-block__title">获得奖励</div>
+                <div class="ui-result-row"><span>经验</span><span id="battleResultExp" class="ui-result-row__val" data-tone="exp">+0</span></div>
+                <div class="ui-result-row"><span>金币</span><span id="battleResultGold" class="ui-result-row__val" data-tone="gold">+0</span></div>
+                <div id="battleResultItems" class="mt-2"></div>
               </div>
-              <div class="bg-black bg-opacity-40 p-4 rounded-lg text-sm">
-                <h4 class="font-bold mb-2 text-secondary">战斗统计</h4>
-                <div class="flex justify-between"><span>回合:</span><span id="battleResultRounds">0</span></div>
-                <div class="flex justify-between"><span>伤害:</span><span id="battleResultMaxDamage">0</span></div>
-                <div class="flex justify-between"><span>治疗:</span><span id="battleResultHealing">0</span></div>
+              <div class="ui-result-block">
+                <div class="ui-result-block__title">战斗统计</div>
+                <div class="ui-result-row"><span>回合</span><span id="battleResultRounds" class="ui-result-row__val">0</span></div>
+                <div class="ui-result-row"><span>伤害</span><span id="battleResultMaxDamage" class="ui-result-row__val">0</span></div>
+                <div class="ui-result-row"><span>治疗</span><span id="battleResultHealing" class="ui-result-row__val">0</span></div>
               </div>
             </div>
             <div class="flex justify-between items-center mb-2">
               <div id="battleStatusText" class="text-[10px] text-gray-400">准备战斗...</div>
-              <div class="flex space-x-2">
-                <button id="battleSpeed1" class="px-2 py-1 rounded bg-gray-800 text-[10px] font-bold">x1</button>
-                <button id="battleSpeed2" class="px-2 py-1 rounded bg-gray-800 text-[10px] font-bold text-primary">x2</button>
-                <button id="battleSpeed4" class="px-2 py-1 rounded bg-gray-800 text-[10px] font-bold">x4</button>
-                <button id="battleSkipBtn" class="px-2 py-1 rounded bg-red-900 text-red-200 text-[10px] font-bold">跳过</button>
-                <button id="battleFoldBtn" class="px-2 py-1 rounded bg-gray-800 text-[10px] font-bold">折叠</button>
+              <div class="flex gap-1.5">
+                <button id="battleSpeed1" class="ui-btn ui-btn--sm ui-btn--ghost">x1</button>
+                <button id="battleSpeed2" class="ui-btn ui-btn--sm ui-btn--primary">x2</button>
+                <button id="battleSpeed4" class="ui-btn ui-btn--sm ui-btn--ghost">x4</button>
+                <button id="battleSkipBtn" class="ui-btn ui-btn--sm ui-btn--danger">跳过</button>
+                <button id="battleFoldBtn" class="ui-btn ui-btn--sm ui-btn--ghost">折叠</button>
               </div>
             </div>
-            <div id="battleTurnBar" class="flex gap-2 overflow-x-auto overflow-y-hidden pb-2 mb-2 custom-scrollbar"></div>
-            <div id="battleHud" class="grid grid-cols-2 gap-3 mb-3">
-              <div class="bg-black bg-opacity-40 rounded p-2">
-                <div class="text-[10px] text-gray-400 font-bold mb-2">我方</div>
-                <div id="battleTeamPanel" class="space-y-2"></div>
-              </div>
-              <div class="bg-black bg-opacity-40 rounded p-2">
-                <div class="text-[10px] text-gray-400 font-bold mb-2">敌方</div>
-                <div id="battleEnemyPanel" class="space-y-2"></div>
-              </div>
-            </div>
+            <!-- B7：旧引擎的 #battleTurnBar / #battleHud 面板已删除（A1 退役后永远空白，renderBattleHud 有判空守卫） -->
             <div id="battleLogs" class="bg-black bg-opacity-60 rounded p-3 h-44 overflow-y-auto text-[10px] font-mono mb-6 custom-scrollbar"></div>
             <div class="text-center">
-              <button id="continueBattle" class="btn-primary px-12">离开</button>
+              <button id="continueBattle" class="ui-btn ui-btn--primary px-12">离开</button>
             </div>
           </div>
         </div>
@@ -726,18 +757,19 @@
         <div class="absolute inset-0 flex flex-col" style="padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);">
           <div class="px-2 pt-2 pb-2 md:px-3 md:pt-3 md:pb-3 border-b border-gray-800 bg-black/35 backdrop-blur-md">
             <div class="flex items-center justify-between gap-3">
-              <button class="px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-xs font-black" onclick="closeBattleSceneDebug()">返回</button>
-              <div class="flex-1">
+              <button class="ui-btn ui-btn--sm ui-btn--ghost" onclick="closeBattleSceneDebug()">返回</button>
+              <div class="flex-1 min-w-0">
                 <div id="battleSceneDebugStageName" class="text-sm font-black text-white truncate">---</div>
-                <div class="flex gap-3 text-[10px] text-gray-400 font-bold">
-                  <div>回合 <span id="battleSceneDebugRound">1</span></div>
-                  <div>能量 <span id="battleSceneDebugEnergy">6</span></div>
+                <div class="flex gap-2 mt-0.5">
+                  <span class="ui-tag" data-tone="primary">回合 <span id="battleSceneDebugRound">1</span></span>
+                  <span class="ui-tag" data-tone="accent">能量 <span id="battleSceneDebugEnergy">6</span></span>
                 </div>
               </div>
-              <button id="battleSceneDebugRunBtn" class="px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-xs font-black" onclick="toggleBattleSceneDebugRun()">开始</button>
+              <button id="battleSceneDebugRunBtn" class="ui-btn ui-btn--sm ui-btn--primary" onclick="toggleBattleSceneDebugRun()">开始</button>
             </div>
             <div class="mt-2 flex flex-wrap items-center gap-2">
-              <button id="battleSceneDebugAutoBtn" class="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-700 text-[10px] font-black">手动</button>
+              <button id="battleSceneDebugAutoBtn" class="ui-btn ui-btn--sm ui-btn--ghost">手动</button>
+              <button id="battleSceneDebugUltBtn" class="ui-btn ui-btn--sm ui-btn--ghost hidden">大招·自动</button>
               <div class="flex items-center gap-2 text-[10px] text-gray-400 font-bold">
                 <span>速度</span>
                 <select id="battleSceneDebugSpeed" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-[10px] font-black text-white">
@@ -746,7 +778,7 @@
                   <option value="4">x4</option>
                 </select>
               </div>
-              <button class="ml-auto px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-700 text-[10px] font-black" onclick="battleSceneDebugStep()">推进</button>
+              <button class="ui-btn ui-btn--sm ui-btn--ghost ml-auto" onclick="battleSceneDebugStep()">推进</button>
             </div>
           </div>
 
@@ -754,15 +786,16 @@
             <div id="battleSceneDebugFeed" class="bg-black/50 border border-gray-800 rounded-lg p-2 h-16 md:h-20 overflow-y-auto text-[10px] font-mono custom-scrollbar backdrop-blur-md"></div>
           </div>
 
+          <!-- B7：手机端上下对峙（grid-rows-2 各占一半），桌面端左右对峙 —— 一屏看全敌我 -->
           <div class="flex-1 min-h-0 px-2 pb-3 pt-2 md:px-3 md:pb-4 md:pt-3">
-            <div class="h-full grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div class="bg-black/35 border border-gray-800 rounded-xl p-3 flex flex-col min-h-0 backdrop-blur-md">
-                <div class="text-[10px] text-gray-400 font-black -mt-1 mb-1">我方阵容</div>
-                <div id="battleSceneDebugPlayerGrid" class="grid grid-cols-3 grid-rows-2 gap-2 place-items-center flex-1 min-h-0"></div>
+            <div class="h-full grid grid-rows-2 md:grid-rows-1 md:grid-cols-2 gap-2 md:gap-3">
+              <div class="bg-black/35 border border-gray-800 rounded-xl p-2 md:p-3 flex flex-col min-h-0 backdrop-blur-md">
+                <div class="text-[10px] text-gray-400 font-black mb-1">我方阵容</div>
+                <div id="battleSceneDebugPlayerGrid" class="grid grid-cols-3 grid-rows-2 gap-1.5 md:gap-2 flex-1 min-h-0"></div>
               </div>
-              <div class="bg-black/35 border border-gray-800 rounded-xl p-3 flex flex-col min-h-0 backdrop-blur-md">
-                <div class="text-[10px] text-gray-400 font-black -mt-1 mb-1 text-right">敌方阵容</div>
-                <div id="battleSceneDebugEnemyGrid" class="grid grid-cols-3 grid-rows-2 gap-2 place-items-center flex-1 min-h-0"></div>
+              <div class="bg-black/35 border border-gray-800 rounded-xl p-2 md:p-3 flex flex-col min-h-0 backdrop-blur-md">
+                <div class="text-[10px] text-gray-400 font-black mb-1 text-right">敌方阵容</div>
+                <div id="battleSceneDebugEnemyGrid" class="grid grid-cols-3 grid-rows-2 gap-1.5 md:gap-2 flex-1 min-h-0"></div>
               </div>
             </div>
           </div>
@@ -772,32 +805,48 @@
               <div id="battleSceneDebugActionHint" class="text-[10px] text-gray-300 font-black mb-2 truncate">---</div>
               <div class="flex gap-2 items-center">
                 <div id="battleSceneDebugActionButtons" class="flex-1 flex gap-2 overflow-x-auto overflow-y-hidden custom-scrollbar"></div>
-                <button id="battleSceneDebugActionCancel" class="px-4 py-2 rounded-lg bg-gray-900 border border-gray-700 text-xs font-black flex-shrink-0">取消</button>
+                <button id="battleSceneDebugActionCancel" class="ui-btn ui-btn--sm ui-btn--ghost flex-shrink-0">取消</button>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- B7：战斗反馈层 —— 伤害/治疗飘字 + 技能特写横幅。
+             独立于九宫格 render（每次 render 都重建 grid，飘字挂这里才不会被抹掉），
+             pointer-events-none 保证不挡点击。 -->
+        <div id="battleFloatLayer" class="pointer-events-none absolute inset-0 z-[5] overflow-hidden"></div>
+        <div id="battleCastLayer" class="pointer-events-none absolute inset-0 z-[6] overflow-hidden"></div>
       </div>
     </div>
 
     <!-- 底部导航栏 -->
-    <footer class="glass-effect rounded-xl p-2 md:p-4">
+    <footer class="ui-panel rounded-xl p-2 md:p-4">
+      <!-- C5：红点统一走 domain/reddot.js → ui/reddot.js，按钮只要标 data-dot="页面id" -->
       <div class="flex justify-around">
-        <button class="footer-btn flex flex-col items-center text-primary" data-target="home">
+        <button class="footer-btn relative flex flex-col items-center text-primary" data-target="home">
+          <span id="idleRedDot" class="ui-dot hidden" data-dot="home"></span>
           <i class="fa fa-home text-xl md:text-2xl mb-1"></i>
           <span class="text-[10px] md:text-xs">首页</span>
         </button>
-        <button class="footer-btn flex flex-col items-center" data-target="gacha">
+        <button class="footer-btn relative flex flex-col items-center" data-target="gacha">
+          <span class="ui-dot hidden" data-dot="gacha"></span>
           <i class="fa fa-gift text-xl md:text-2xl mb-1"></i>
           <span class="text-[10px] md:text-xs">抽卡</span>
         </button>
-        <button class="footer-btn flex flex-col items-center" data-target="characters">
+        <button class="footer-btn relative flex flex-col items-center" data-target="characters">
+          <span class="ui-dot hidden" data-dot="characters"></span>
           <i class="fa fa-users text-xl md:text-2xl mb-1"></i>
           <span class="text-[10px] md:text-xs">养成</span>
         </button>
-        <button class="footer-btn flex flex-col items-center" data-target="stages">
+        <button class="footer-btn relative flex flex-col items-center" data-target="stages">
+          <span class="ui-dot hidden" data-dot="stages"></span>
           <i class="fa fa-bolt text-xl md:text-2xl mb-1"></i>
           <span class="text-[10px] md:text-xs">战斗</span>
+        </button>
+        <button class="footer-btn relative flex flex-col items-center" data-target="codex">
+          <span class="ui-dot hidden" data-dot="codex"></span>
+          <i class="fa fa-book text-xl md:text-2xl mb-1"></i>
+          <span class="text-[10px] md:text-xs">图鉴</span>
         </button>
       </div>
     </footer>
@@ -811,16 +860,17 @@
     </button>
   </div>
   <div id="mobileNavPanel" class="hidden md:hidden fixed z-[121] right-3 top-1/2 -translate-y-1/2 w-44 glass-panel rounded-xl border border-gray-800 overflow-hidden">
-    <button class="w-full px-4 py-3 text-left text-sm font-black hover:bg-gray-800" data-mobile-nav="home">首页</button>
-    <button class="w-full px-4 py-3 text-left text-sm font-black hover:bg-gray-800" data-mobile-nav="gacha">抽卡</button>
-    <button class="w-full px-4 py-3 text-left text-sm font-black hover:bg-gray-800" data-mobile-nav="characters">养成</button>
-    <button class="w-full px-4 py-3 text-left text-sm font-black hover:bg-gray-800" data-mobile-nav="stages">战斗</button>
+    <button class="w-full px-4 py-3 text-left text-sm font-black hover:bg-gray-800 relative" data-mobile-nav="home">首页<span class="ui-dot hidden" data-dot="home"></span></button>
+    <button class="w-full px-4 py-3 text-left text-sm font-black hover:bg-gray-800 relative" data-mobile-nav="gacha">抽卡<span class="ui-dot hidden" data-dot="gacha"></span></button>
+    <button class="w-full px-4 py-3 text-left text-sm font-black hover:bg-gray-800 relative" data-mobile-nav="characters">养成<span class="ui-dot hidden" data-dot="characters"></span></button>
+    <button class="w-full px-4 py-3 text-left text-sm font-black hover:bg-gray-800 relative" data-mobile-nav="stages">战斗<span class="ui-dot hidden" data-dot="stages"></span></button>
+    <button class="w-full px-4 py-3 text-left text-sm font-black hover:bg-gray-800 relative" data-mobile-nav="codex">图鉴<span class="ui-dot hidden" data-dot="codex"></span></button>
   </div>
   <div id="debugMenu" class="fixed bottom-20 md:bottom-24 right-4 md:right-6 z-[100]">
     <button id="debugToggle" class="w-10 h-10 md:w-12 md:h-12 bg-red-600 rounded-full flex items-center justify-center shadow-2xl border-2 border-white animate-pulse hover:scale-110 transition-transform">
       <span class="text-xl md:text-2xl">👁️</span>
     </button>
-    <div id="debugPanel" class="hidden absolute bottom-16 right-0 w-80 glass-effect rounded-xl p-4 border-2 border-red-500 shadow-2xl max-h-[70vh] overflow-y-auto">
+    <div id="debugPanel" class="hidden absolute bottom-16 right-0 w-80 ui-panel rounded-xl p-4 border-2 border-red-500 shadow-2xl max-h-[70vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4 border-b border-red-500 pb-2">
         <h3 class="text-red-500 font-black tracking-widest">管理员的禁忌之书</h3>
         <button id="closeDebug" class="text-gray-400 hover:text-white">×</button>
@@ -894,7 +944,10 @@
   <script src="./assets/js/app/bridge.js"></script>
   <script src="./assets/js/app/data/loader.js"></script>
   <script src="./assets/js/app/ui/materials.js"></script>
-  <script src="./assets/js/app/ui/navigation.js"></script>
+  <script src="./assets/js/app/ui/components.js?v=34"></script>
+  <script src="./assets/js/app/audio/engine.js?v=44"></script>
+  <script src="./assets/js/app/ui/idle.js?v=34"></script>
+  <script src="./assets/js/app/ui/navigation.js?v=44"></script>
   <script src="./assets/js/app/ui/stages.js"></script>
   <script src="./assets/js/app/ui/cultivate.js"></script>
   <script src="./assets/js/app/ui/modals.js"></script>
@@ -902,28 +955,46 @@
   <script src="./assets/js/app/domain/character.js"></script>
   <script src="./assets/js/app/domain/inventory.js"></script>
   <script src="./assets/js/app/domain/progression.js"></script>
+  <script src="./assets/js/app/domain/idle.js?v=34"></script>
+  <script src="./assets/js/app/domain/goals.js?v=36"></script>
+  <script src="./assets/js/app/domain/reddot.js?v=36"></script>
+  <script src="./assets/js/app/domain/quick_ops.js?v=40"></script>
+  <script src="./assets/js/app/domain/bonds.js?v=38"></script>
+  <script src="./assets/js/app/domain/counters.js?v=41"></script>
+  <script src="./assets/js/app/domain/daily.js?v=38"></script>
+  <!-- C8：图鉴与成就。stats 是累计计数（成就的历史指标），codex 是收集记录，
+       achievements 读前两者 + 现算状态得出进度。三者都是纯数值单源，无 DOM。 -->
+  <script src="./assets/js/app/domain/stats.js?v=39"></script>
+  <script src="./assets/js/app/domain/codex.js?v=39"></script>
+  <script src="./assets/js/app/domain/achievements.js?v=39"></script>
   <script src="./assets/js/app/battle/report.js"></script>
   <script src="./assets/js/app/battle/vfx.js"></script>
   <script src="./assets/js/app/battle/boss_mechanics.js"></script>
-  <script src="./assets/js/app/battle/rewards.js?v=26"></script>
-  <script src="./assets/js/app/battle/scene.js?v=26"></script>
+  <script src="./assets/js/app/battle/rewards.js?v=34"></script>
+  <script src="./assets/js/app/battle/scene.js?v=44"></script>
   <script src="./assets/js/app/ui/item_picker.js"></script>
   <script src="./assets/js/app/ui/inventory.js"></script>
   <script src="./assets/js/app/ui/offline.js"></script>
-  <script src="./assets/js/app/ui/gacha.js"></script>
+  <script src="./assets/js/app/ui/gacha.js?v=44"></script>
   <!-- ── P5（2026-09-12）从内联主脚本搬出的 9 个模块 ──────────────────────
        它们加载早于下面的内联脚本，并各自把函数名逐个挂到 window，
        因此内联与 HTML onclick 的调用点全部零改动。
        注意：这些文件加载时**只做函数定义**，不读写内联顶层的 let/const（会命中 TDZ）。 -->
-  <script src="./assets/js/app/data/bootstrap.js?v=26"></script>
-  <script src="./assets/js/app/data/characters.js?v=26"></script>
-  <script src="./assets/js/app/data/stage_expand.js?v=26"></script>
-  <script src="./assets/js/app/domain/character_ops.js?v=26"></script>
-  <script src="./assets/js/app/ui/home.js?v=26"></script>
-  <script src="./assets/js/app/ui/character_view.js?v=26"></script>
-  <script src="./assets/js/app/battle/loadout_text.js?v=26"></script>
-  <script src="./assets/js/app/battle/fallback_hud.js?v=26"></script>
-  <script src="./assets/js/app/debug/cheats.js?v=26"></script>
+  <script src="./assets/js/app/data/bootstrap.js?v=41"></script>
+  <script src="./assets/js/app/data/characters.js?v=34"></script>
+  <script src="./assets/js/app/data/stage_expand.js?v=34"></script>
+  <script src="./assets/js/app/domain/character_ops.js?v=34"></script>
+  <script src="./assets/js/app/ui/home.js?v=34"></script>
+  <script src="./assets/js/app/ui/quick_ops.js?v=35"></script>
+  <script src="./assets/js/app/ui/reddot.js?v=36"></script>
+  <script src="./assets/js/app/ui/goals.js?v=36"></script>
+  <script src="./assets/js/app/ui/bonds.js?v=37"></script>
+  <script src="./assets/js/app/ui/daily.js?v=38"></script>
+  <script src="./assets/js/app/ui/codex.js?v=39"></script>
+  <script src="./assets/js/app/ui/character_view.js?v=34"></script>
+  <script src="./assets/js/app/battle/loadout_text.js?v=34"></script>
+  <script src="./assets/js/app/battle/fallback_hud.js?v=34"></script>
+  <script src="./assets/js/app/debug/cheats.js?v=34"></script>
 
   <!-- 游戏数据 -->
   <script>
@@ -1039,6 +1110,14 @@
     let stagesData = [];
     // 材料数据
     let materialsData = [];
+    // 羁绊数据（C6，assets/data/bonds.json；加载失败时保持 null = 无羁绊）
+    let bondsData = null;
+    // 日常副本配置（C7，assets/data/dailies.json；加载失败时 domain/daily.js 用内置兜底）
+    let dailiesData = null;
+    // 成就定义（C8，assets/data/achievements.json；加载失败时 domain/achievements.js 用内置兜底）
+    let achievementsData = null;
+    // 职业克制环（C9，assets/data/counters.json；加载失败时 domain/counters.js 用内置同值兜底）
+    let countersData = null;
 
     // 当前选中的角色/装备/铭文
     let selectedCharacter = null;
@@ -1127,7 +1206,7 @@
             window.location.reload();
           });
 
-          navigator.serviceWorker.register('service-worker.js?v=26')
+          navigator.serviceWorker.register('service-worker.js?v=34')
             .then(reg => {
               console.log('Service Worker: Registered');
               if (reg && typeof reg.update === 'function') reg.update();

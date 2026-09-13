@@ -111,6 +111,10 @@
         updateUI();
         selectCharacterToCultivate(selectedCharacter);
         saveGameProgress();
+        // C5：升级次数计入今日目标（一键升级连升 N 级就记 N 次）
+        if (typeof window.bumpGoal === 'function') window.bumpGoal('levelup', leveledCount);
+        if (typeof window.renderDailyGoals === 'function') window.renderDailyGoals();
+        if (typeof window.refreshRedDots === 'function') window.refreshRedDots();
       }
     }
 

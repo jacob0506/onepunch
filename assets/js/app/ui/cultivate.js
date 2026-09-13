@@ -54,30 +54,23 @@
       portraitContainer.classList.add(`portrait-frame-${char.rarity.toLowerCase()}`);
     }
 
-    const nameEl = document.getElementById('cultivateName');
-    if (nameEl) nameEl.textContent = char.name;
+    // ── TD-21（2026-09-13）：桌面 + 移动双 DOM 双写清零 ──
+    // 元素侧用 data-bind="cultivate:xxx" 声明镜像点（index.html），
+    // 这里每个数据只写一次；新增镜像点 = HTML 加一个 data-bind，零 JS 改动。
+    const bindText = (key, value) => {
+      document.querySelectorAll('[data-bind="' + key + '"]').forEach(el => { el.textContent = value; });
+    };
+    bindText('cultivate:name', char.name);
+    bindText('cultivate:level', `Lv.${char.level || 1}`);
+    bindText('cultivate:power', powerValue.toLocaleString());
+    bindText('cultivate:class', getClassName(char.class));
+    bindText('cultivate:faction', (typeof getFactionName === 'function') ? getFactionName(char.faction) : (char.faction || '未知'));
 
     const rarityEl = document.getElementById('cultivateRarity');
     if (rarityEl) {
       rarityEl.textContent = char.rarity;
       rarityEl.className = `text-xl font-black mb-4 tracking-widest text-rarity-${char.rarity.toLowerCase()}`;
     }
-
-    const levelEl = document.getElementById('cultivateLevel');
-    if (levelEl) levelEl.textContent = `Lv.${char.level || 1}`;
-
-    const powerEl = document.querySelector('#cultivatePower div:last-child');
-    if (powerEl) powerEl.textContent = powerValue.toLocaleString();
-
-    const factionEl = document.getElementById('cultivateFaction');
-    // 走中文映射；单一实现：core/names.js（FACTION_NAMES）
-    if (factionEl) factionEl.textContent = (typeof getFactionName === 'function') ? getFactionName(char.faction) : (char.faction || '未知');
-
-    const classEl = document.getElementById('cultivateClass');
-    if (classEl) classEl.textContent = getClassName(char.class);
-
-    const nameMobile = document.getElementById('cultivateNameMobile');
-    if (nameMobile) nameMobile.textContent = char.name;
 
     const rarityLarge = document.getElementById('cultivateRarityLarge');
     if (rarityLarge) {
@@ -87,18 +80,6 @@
 
     const starsLarge = document.getElementById('cultivateStarsLarge');
     if (starsLarge) starsLarge.innerHTML = getStarsHtml(char.stars);
-
-    const powerMobile = document.getElementById('cultivatePowerMobile');
-    if (powerMobile) powerMobile.textContent = powerValue.toLocaleString();
-
-    const levelMobile = document.getElementById('cultivateLevelMobile');
-    if (levelMobile) levelMobile.textContent = `Lv.${char.level || 1}`;
-
-    const classMobile = document.getElementById('cultivateClassMobile');
-    if (classMobile) classMobile.textContent = getClassName(char.class);
-
-    const factionMobile = document.getElementById('cultivateFactionMobile');
-    if (factionMobile) factionMobile.textContent = (typeof getFactionName === 'function') ? getFactionName(char.faction) : (char.faction || '未知');
 
     const rarityRank = { R: 1, SR: 2, SSR: 3, UR: 4, SUR: 5 };
     const awakenBtn = document.getElementById('awakenBtn');
@@ -191,6 +172,73 @@
     return gameData.formation.includes(charId);
   }
 
+  /* ── C9：职业克制一览（数值 domain/counters.js；面板挂 #cultivateCounterPanel）── */
+
+  function counterUiComp() {
+    return (window.__uiComponents || (window.Game && window.Game.ui && window.Game.ui.components) || null);
+  }
+
+  function counterEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function counterClassName(k) {
+    try { if (typeof getClassName === 'function') return getClassName(k) || k; } catch (e) { /* ignore */ }
+    return k;
+  }
+
+  function renderClassCounterPanel() {
+    const el = document.getElementById('cultivateCounterPanel');
+    if (!el) return;
+    const api = (window.__counters || (window.Game && window.Game.domain && window.Game.domain.counters) || null);
+    if (!api || typeof api.ring !== 'function') { el.innerHTML = ''; return; }
+    const ring = api.ring();
+    if (!ring.length) { el.innerHTML = ''; return; }
+
+    const chips = ring.map(r =>
+      `<button type="button" class="ui-btn ui-btn--ghost ui-btn--sm ui-counter__chip" data-from="${counterEsc(r.from)}">` +
+      `${counterEsc(counterClassName(r.from))}<span class="ui-counter__arrow">→</span>${counterEsc(counterClassName(r.to))}` +
+      `</button>`
+    ).join('');
+    el.innerHTML =
+      `<div class="ui-counter">` +
+      `<div class="ui-counter__head"><span class="ui-counter__title">职业克制</span>` +
+      `<span class="ui-counter__pct">克制伤害 +${api.pct()}%</span></div>` +
+      `<div class="ui-counter__chips">${chips}</div>` +
+      `</div>`;
+
+    el.querySelectorAll('.ui-counter__chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ui = counterUiComp();
+        const key = btn.getAttribute('data-from');
+        const tbl = api.table();
+        const info = tbl[key] || { counters: [], weakTo: [] };
+        const list = arr => arr.map(k => counterEsc(counterClassName(k))).join('、') || '—';
+        const rows = ring.map(r =>
+          `<div class="ui-counter__row${r.from === key || r.to === key ? ' ui-counter__row--hit' : ''}">` +
+          `<span>${counterEsc(counterClassName(r.from))}</span>` +
+          `<span class="ui-counter__arrow">→</span>` +
+          `<span>${counterEsc(counterClassName(r.to))}</span>` +
+          `<span class="ui-counter__rel">${counterEsc(r.text || '')}</span>` +
+          `</div>`
+        ).join('');
+        if (ui && typeof ui.openModal === 'function') {
+          ui.openModal({
+            title: `职业克制 · ${counterClassName(key)}`,
+            body:
+              `<div class="ui-result-block">` +
+              `<div class="ui-result-row"><span>克制</span><span class="ui-result-row__val" data-tone="good">${list(info.counters)}（伤害 +${api.pct()}%）</span></div>` +
+              `<div class="ui-result-row"><span>被克</span><span class="ui-result-row__val" data-tone="bad">${list(info.weakTo)}（伤害 -${api.pct()}%）</span></div>` +
+              `</div>` +
+              `<div class="ui-counter__rows">${rows}</div>`,
+            actions: [{ label: '好的', tone: 'primary' }]
+          });
+        }
+      });
+    });
+  }
+
   function renderCultivateFormationUI() {
     ensureFormation();
     const slotsEl = document.getElementById('cultivateFormationSlots');
@@ -220,6 +268,11 @@
 
     const activeCount = ids.filter(Boolean).length;
     hintEl.textContent = `已上阵 ${activeCount}/6（点击已上阵头像可移除）`;
+
+    // C6：上阵阵容一变，羁绊面板跟着重算（数值在 domain/bonds.js，这里只负责喊一声）
+    if (typeof renderBonds === 'function') renderBonds();
+    // C9：克制环是静态数据，理论上只需渲一次；挂在这里是因为面板与羁绊同区，首次进页就有
+    renderClassCounterPanel();
 
     if (!selectedCharacter) {
       toggleBtn.textContent = '加入上阵';

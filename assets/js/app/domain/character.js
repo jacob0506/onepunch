@@ -273,11 +273,14 @@
   function calculateCharacterSpeed(char) {
     return calculateTotalStats(char).speed;
   }
+  /** 战力公式（单源）。任何"临时改了属性的战力"（如 C6 羁绊加持）都必须走这里，别再抄一遍。 */
+  function powerFromStats(s) {
+    if (!s) return 0;
+    return (s.attack || 0) + (s.defense || 0) + (s.health || 0) / 10 + (s.speed || 0);
+  }
+
   function calculateCharacterPower(char) {
-    return calculateCharacterAttack(char) +
-      calculateCharacterDefense(char) +
-      calculateCharacterHealth(char) / 10 +
-      calculateCharacterSpeed(char);
+    return powerFromStats(calculateTotalStats(char));
   }
 
   const api = {
@@ -286,7 +289,8 @@
     calculateCharacterDefense,
     calculateCharacterHealth,
     calculateCharacterSpeed,
-    calculateCharacterPower
+    calculateCharacterPower,
+    powerFromStats
   };
 
   if (window.Game && window.Game.domain) window.Game.domain.character = api;

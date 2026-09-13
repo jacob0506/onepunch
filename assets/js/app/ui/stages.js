@@ -194,7 +194,7 @@
       modal.innerHTML = `
         <div class="absolute inset-0 bg-black/75" data-close="1"></div>
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-xl">
-          <div class="glass-effect rounded-2xl border border-gray-700 shadow-2xl overflow-hidden">
+          <div class="ui-panel rounded-2xl border border-gray-700 shadow-2xl overflow-hidden">
             <div class="p-4 border-b border-gray-800 bg-black/30 flex items-center justify-between">
               <div>
                 <div class="text-[10px] text-gray-400">无尽之塔</div>
@@ -266,18 +266,27 @@
     ensureTowerData();
     const mainActive = mode === 'main';
     const towerActive = mode === 'tower';
+    const dailyActive = mode === 'daily';
     const towerFloor = gameData.tower.floor || 1;
     const towerBest = gameData.tower.bestFloor || 0;
+    const dailySum = (window.__daily && typeof window.__daily.summary === 'function')
+      ? window.__daily.summary() : null;
+    const rightInfo = dailyActive
+      ? `<div class="text-[10px] text-gray-400 whitespace-nowrap">今日剩余 <span class="text-primary font-black">${dailySum ? dailySum.left : 0}</span>/${dailySum ? dailySum.max : 0}</div>`
+      : (towerActive
+        ? `<div class="text-[10px] text-gray-400 whitespace-nowrap">当前层：<span class="text-primary font-black">${towerFloor}</span> · 最远：<span class="text-gray-200 font-black">${towerBest}</span></div>`
+        : `<div class="text-[10px] text-gray-400 whitespace-nowrap">主线进度：<span class="text-gray-200 font-black">${gameData.currentStage || '-'}</span></div>`);
+    const modeBtn = (key, label, active) =>
+      `<button class="px-3 py-2 rounded-lg border text-xs font-black ${active ? 'bg-primary/20 border-primary text-primary' : 'bg-gray-900 border-gray-700 text-white hover:bg-gray-800'}" data-mode="${key}">${label}</button>`;
     bar.innerHTML = `
       <div class="glass-panel rounded-xl px-4 py-3 border border-gray-800">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2">
-            <button class="px-3 py-2 rounded-lg border text-xs font-black ${mainActive ? 'bg-primary/20 border-primary text-primary' : 'bg-gray-900 border-gray-700 text-white hover:bg-gray-800'}" data-mode="main">主线</button>
-            <button class="px-3 py-2 rounded-lg border text-xs font-black ${towerActive ? 'bg-primary/20 border-primary text-primary' : 'bg-gray-900 border-gray-700 text-white hover:bg-gray-800'}" data-mode="tower">无尽塔</button>
+            ${modeBtn('main', '主线', mainActive)}
+            ${modeBtn('tower', '无尽塔', towerActive)}
+            ${modeBtn('daily', '日常', dailyActive)}
           </div>
-          <div class="text-right">
-            ${towerActive ? `<div class="text-[10px] text-gray-400">当前层：<span class="text-primary font-black">${towerFloor}</span> · 最远：<span class="text-gray-200 font-black">${towerBest}</span></div>` : `<div class="text-[10px] text-gray-400">主线进度：<span class="text-gray-200 font-black">${gameData.currentStage || '-'}</span></div>`}
-          </div>
+          <div class="text-right">${rightInfo}</div>
         </div>
       </div>
     `;
@@ -322,7 +331,7 @@
       const isRecommended = totalPower >= stage.recommendedPower;
 
       cardElement.id = `stageCard_${stage.id}`;
-      cardElement.className = `glass-panel rounded-xl p-4 md:p-6 border border-gray-800 ${isUnlocked ? 'card-hover' : 'opacity-60'}`;
+      cardElement.className = `glass-panel rounded-xl p-4 md:p-6 border border-gray-800 ${isUnlocked ? 'ui-hover' : 'opacity-60'}`;
       cardElement.innerHTML = `
         <div class="flex justify-between items-center mb-3">
           <div>
@@ -374,9 +383,10 @@
         
         <div class="text-center">
           <div class="flex justify-center gap-2">
-            <button class="btn-primary ${!isUnlocked ? 'opacity-50 cursor-not-allowed' : ''}" ${!isUnlocked ? 'disabled' : ''} data-stage="${stage.id}">
+            <button class="ui-btn ui-btn--primary ${!isUnlocked ? 'opacity-50 cursor-not-allowed' : ''}" ${!isUnlocked ? 'disabled' : ''} data-stage="${stage.id}">
               ${isUnlocked ? (isCleared ? '再次挑战' : '挑战') : '通关上一关解锁'}
             </button>
+            ${isCleared ? `<button class="ui-btn ui-btn--gold" data-sweep="${stage.id}"><i class="fa fa-forward mr-1"></i>扫荡</button>` : ''}
             ${isDevMode() ? `
             <button class="px-4 py-2 rounded-lg text-xs font-black bg-gray-900 border border-gray-700 hover:bg-gray-800 ${!isUnlocked ? 'opacity-50 cursor-not-allowed' : ''}" ${!isUnlocked ? 'disabled' : ''} data-stage-debug="${stage.id}">
               场景调试
@@ -390,6 +400,14 @@
         if (!isUnlocked) return;
         enterBattleUnified(stage.id);
       });
+
+      // 扫荡（C2）：已通关关卡一键结算，走 ui/idle.js 的组件弹窗
+      const sweepBtn = cardElement.querySelector('[data-sweep]');
+      if (sweepBtn) {
+        sweepBtn.addEventListener('click', () => {
+          if (typeof openSweepModal === 'function') openSweepModal(stage, 5);
+        });
+      }
 
       const debugBtn = cardElement.querySelector('[data-stage-debug]');
       if (debugBtn) {
@@ -424,7 +442,7 @@
         </div>
       </div>
       <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
-        <button class="btn-primary" data-tower-challenge="1">挑战下一层</button>
+        <button class="ui-btn ui-btn--primary" data-tower-challenge="1">挑战下一层</button>
         <button class="py-2 rounded-lg font-black text-xs bg-gray-900 border border-gray-700 hover:bg-gray-800" data-tower-prev="1">查看上一页</button>
         <button class="py-2 rounded-lg font-black text-xs bg-gray-900 border border-gray-700 hover:bg-gray-800" data-tower-next="1">查看下一页</button>
       </div>
@@ -454,7 +472,7 @@
       const status = isCleared ? '已通关' : (f === floor ? '当前挑战' : (isUnlocked ? '已解锁' : '未解锁'));
 
       const card = document.createElement('div');
-      card.className = `glass-panel rounded-xl p-4 border border-gray-800 ${isUnlocked ? 'card-hover' : 'opacity-60'}`;
+      card.className = `glass-panel rounded-xl p-4 border border-gray-800 ${isUnlocked ? 'ui-hover' : 'opacity-60'}`;
       card.innerHTML = `
         <div class="flex justify-between items-center mb-3">
           <div>
@@ -489,7 +507,7 @@
           </div>
         </div>
         <div class="text-center">
-          <button class="btn-primary ${!isUnlocked ? 'opacity-50 cursor-not-allowed' : ''}" ${!isUnlocked ? 'disabled' : ''} data-tower-floor="${f}">
+          <button class="ui-btn ui-btn--primary ${!isUnlocked ? 'opacity-50 cursor-not-allowed' : ''}" ${!isUnlocked ? 'disabled' : ''} data-tower-floor="${f}">
             ${!isUnlocked ? '通关前置层解锁' : (isCleared ? '再次挑战' : '挑战')}
           </button>
         </div>
@@ -523,6 +541,10 @@
     stagesList.innerHTML = '';
     renderModeBar(stagesList);
     if (mode === 'tower') renderTower(stagesList);
+    else if (mode === 'daily') {
+      // C7：界面在 ui/daily.js（数值在 domain/daily.js）
+      if (typeof window.renderDailyPanel === 'function') window.renderDailyPanel(stagesList);
+    }
     else renderMainStages(stagesList);
   }
 

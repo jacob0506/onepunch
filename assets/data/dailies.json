@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "runsPerDay": 2,
+  "_note": "runsPerDay = 每个副本每天可用次数（跨日自动重置）。难度档奖励倍率与推荐战力倍率都在这里调，改 JSON 即可，界面与数值同源。",
+  "tiers": [
+    { "key": "junior", "name": "初级", "desc": "轻松热身", "powerMul": 0.80, "rewardMul": 1.0 },
+    { "key": "senior", "name": "中级", "desc": "主力难度", "powerMul": 1.00, "rewardMul": 2.2 },
+    { "key": "elite",  "name": "高级", "desc": "战力不够别碰", "powerMul": 1.28, "rewardMul": 4.0 }
+  ],
+  "dungeons": [
+    {
+      "key": "gold",
+      "name": "黄金矿脉",
+      "icon": "fa-money",
+      "tone": "gold",
+      "desc": "金币定向产出，附带少量经验",
+      "reward": { "goldMul": 2.6, "expMul": 0.30 }
+    },
+    {
+      "key": "exp",
+      "name": "经验秘境",
+      "icon": "fa-star",
+      "tone": "exp",
+      "desc": "经验定向产出，附带少量金币",
+      "reward": { "expMul": 3.0, "goldMul": 0.20 }
+    },
+    {
+      "key": "material",
+      "name": "材料矿坑",
+      "icon": "fa-cubes",
+      "tone": "material",
+      "desc": "强化石 / 铭文粉尘稳定产出",
+      "reward": {
+        "expMul": 0.35,
+        "goldMul": 0.35,
+        "matsBase": { "enhanceStone": 10, "inscriptionDust": 6 }
+      }
+    },
+    {
+      "key": "boss",
+      "name": "深渊讨伐",
+      "icon": "fa-bullseye",
+      "tone": "boss",
+      "desc": "装备 / 铭文随机掉落，必掉锁定核心",
+      "reward": {
+        "expMul": 0.60,
+        "goldMul": 0.60,
+        "lootFromStage": true,
+        "matsBase": { "lockCrystal": 1 }
+      }
+    }
+  ]
+}

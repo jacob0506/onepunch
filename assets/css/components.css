@@ -1,0 +1,1238 @@
+/* ════════════════════════════════════════════════════════════════
+   幻卡传说 · UI 组件库（Stage 1 · B5）
+   ────────────────────────────────────────────────────────────────
+   依赖 tokens.css（必须先加载）。全部颜色/圆角/阴影/动效引用 token，
+   本文件禁止出现硬编码色值（docs/07 铁律 13）。
+
+   约定：
+   · 类名前缀 .ui-，变体用 BEM 风格（.ui-btn--gold / .ui-btn--sm）。
+   · 稀有度/职业/语义色统一走 data-rarity / data-class / data-tone
+     属性选择器，JS 侧不需要拼颜色。
+   · ★ 新界面只用这里的组件搭（B5 验收）—— 不要再手写玻璃面板/按钮。
+   · 配套 JS 工厂见 assets/js/app/ui/components.js（Game.ui.components）。
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── 按钮 ─────────────────────────────────────────────────────── */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--radius-lg);
+  font-weight: 900;
+  font-size: var(--text-base);
+  line-height: 1.2;
+  color: var(--c-text-hi);
+  border: 2px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-fast) var(--ease-game),
+              box-shadow var(--dur-fast) var(--ease-game),
+              filter var(--dur-fast) var(--ease-game);
+}
+.ui-btn:active { transform: translateY(2px); }
+.ui-btn:disabled,
+.ui-btn[aria-disabled="true"] {
+  filter: grayscale(0.8) brightness(0.6);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ui-btn--primary {
+  background: linear-gradient(135deg, var(--c-primary) 0%, var(--c-primary-deep) 100%);
+  border-color: var(--c-primary-light);
+  box-shadow: 0 4px 0 var(--c-primary-shadow), var(--shadow-btn);
+}
+.ui-btn--primary:active { box-shadow: 0 2px 0 var(--c-primary-shadow), var(--shadow-btn-active); }
+
+.ui-btn--gold {
+  background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent-deep) 100%);
+  border-color: var(--c-accent-light);
+  box-shadow: 0 4px 0 var(--c-accent-shadow), var(--shadow-btn);
+}
+.ui-btn--gold:active { box-shadow: 0 2px 0 var(--c-accent-shadow), var(--shadow-btn-active); }
+
+.ui-btn--danger {
+  background: linear-gradient(135deg, var(--c-danger) 0%, var(--c-danger-strong) 100%);
+  border-color: var(--c-danger);
+  box-shadow: 0 4px 0 var(--c-danger-strong), var(--shadow-btn);
+}
+
+/* 幽灵按钮：透明底 + 描边，用于次级操作 */
+.ui-btn--ghost {
+  background: transparent;
+  border-color: var(--c-border-strong);
+  color: var(--c-text-dim);
+  box-shadow: none;
+}
+.ui-btn--ghost:active { background: rgba(var(--c-primary-rgb) / 0.15); }
+
+/* 尺寸 */
+.ui-btn--sm { padding: 5px 12px; font-size: var(--text-sm); border-radius: var(--radius-md); border-width: 1px; }
+.ui-btn--lg { padding: 16px 32px; font-size: var(--text-xl); border-radius: var(--radius-xl); }
+.ui-btn--block { display: flex; width: 100%; }
+
+/* ── 玻璃面板 ─────────────────────────────────────────────────── */
+.ui-panel {
+  background: var(--c-surface);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--c-border-faint);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-panel);
+}
+.ui-panel--tight { padding: 12px; }
+.ui-panel--pad { padding: 16px; }
+.ui-panel--loose { padding: 24px; }
+
+/* 面板色调描边（选中态 / 警示态） */
+.ui-panel--tone-primary { border-color: var(--c-primary); box-shadow: 0 0 18px rgba(var(--c-primary-rgb) / 0.35), var(--shadow-panel); }
+.ui-panel--tone-accent  { border-color: var(--c-accent);  box-shadow: 0 0 18px rgba(var(--c-accent-rgb) / 0.35), var(--shadow-panel); }
+.ui-panel--tone-danger  { border-color: var(--c-danger);  box-shadow: 0 0 18px rgba(var(--c-danger-rgb) / 0.35), var(--shadow-panel); }
+
+/* ── 卡牌（角色 / 敌人）─────────────────────────────────────── */
+.ui-card {
+  position: relative;
+  border-radius: var(--radius-xl);
+  border: 2px solid var(--c-border-faint);
+  background: var(--c-surface);
+  overflow: hidden;
+  transition: transform var(--dur-base) var(--ease-out-soft),
+              box-shadow var(--dur-base) var(--ease-out-soft);
+}
+.ui-card--tappable { cursor: pointer; }
+.ui-card--tappable:active { transform: scale(0.97); }
+
+/* 稀有度边框 + 炫光（data-rarity="r|sr|ssr|ur|sur"）
+   —— 通用属性选择器：.ui-card / .ui-panel / 任意容器都能用。
+   （此前背包页写的 .rarity-border-* 类从未定义过，属静默失效，本次统一到此。） */
+[data-rarity] { border-width: 3px; }
+[data-rarity="r"]   { border-color: var(--c-rarity-r);   box-shadow: 0 0 12px rgba(var(--c-rarity-r-rgb) / 0.25); }
+[data-rarity="sr"]  { border-color: var(--c-rarity-sr);  box-shadow: 0 0 14px rgba(var(--c-rarity-sr-rgb) / 0.3); }
+[data-rarity="ssr"] { border-color: var(--c-rarity-ssr); box-shadow: 0 0 16px rgba(var(--c-rarity-ssr-rgb) / 0.3); }
+[data-rarity="ur"]  { border-color: var(--c-rarity-ur);  box-shadow: 0 0 20px rgba(var(--c-rarity-ur-rgb) / 0.4); }
+[data-rarity="sur"] { border-color: var(--c-rarity-sur); box-shadow: 0 0 26px rgba(var(--c-rarity-sur-rgb) / 0.5); }
+
+/* 桌面端悬停反馈（触屏交给 :active 承担，避免误触发）
+   —— 只改 transform / brightness，不覆盖稀有度光晕与描边 */
+@media (hover: hover) {
+  .ui-hover {
+    transition: transform var(--dur-base) var(--ease-out-soft),
+                filter var(--dur-base) var(--ease-out-soft);
+  }
+  .ui-hover:hover { transform: translateY(-3px); filter: brightness(1.08); }
+}
+
+/* 卡牌选中态（编队/选角场景） */
+.ui-card--selected { outline: 3px solid var(--c-primary); outline-offset: -1px; }
+.ui-card--disabled { filter: grayscale(0.9) brightness(0.55); pointer-events: none; }
+
+/* 卡牌内部结构（自带布局，不依赖 Tailwind —— 独立页面也能用） */
+.ui-card__media { position: relative; }
+.ui-card__img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: center top;
+  background: rgba(0, 0, 0, 0.3);
+}
+/* 正方形变体（列表网格用） */
+.ui-card__img--square, .ui-card__ph--square { aspect-ratio: 1 / 1; }
+.ui-card__ph {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--c-text-dim);
+  font-size: 28px;
+}
+.ui-card__flag { position: absolute; top: 6px; }
+.ui-card__flag--tl { left: 6px; }
+.ui-card__flag--tr { right: 6px; }
+.ui-card__body { padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+.ui-card__row { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+/* 名字最多两行：抽卡结果里「XXX碎片」常超 4 字，单行会被截断成"…" */
+.ui-card__name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-all;
+}
+.ui-card__lv { font-size: var(--text-xs); color: var(--c-text-dim); flex-shrink: 0; }
+.ui-card__power { font-size: var(--text-xs); color: var(--c-accent); }
+
+/* 卡面遮罩层（获得态 / 碎片转化 / 锁定态）—— 覆盖整块图区 */
+.ui-card__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.62);
+}
+/* 图区压暗（配合遮罩表达"非获得"语义） */
+.ui-card__img--dim { opacity: 0.6; filter: grayscale(1); }
+
+/* 转化标记（"已拥有 +N 碎片转化"） */
+.ui-card__convert {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--c-primary);
+  background: rgba(0, 0, 0, 0.85);
+  text-align: center;
+  line-height: 1.15;
+}
+.ui-card__convert-label { font-size: var(--text-xs); font-weight: 700; color: var(--c-primary); }
+.ui-card__convert-value { font-size: var(--text-lg); font-weight: 900; color: var(--c-text-hi); }
+.ui-card__convert-hint  { font-size: 10px; color: var(--c-text-dim); }
+
+/* 入场弹跳（抽卡结果逐个登场） */
+@keyframes ui-card-pop {
+  0%   { opacity: 0; transform: scale(0.6) translateY(14px); }
+  60%  { opacity: 1; transform: scale(1.06) translateY(0); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.ui-card--pop { animation: ui-card-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* ── 标签 / 徽章 ─────────────────────────────────────────────── */
+.ui-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1.5;
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border-faint);
+  color: var(--c-text-dim);
+  white-space: nowrap;
+}
+/* data-tone 取值：稀有度 / 职业 / success|danger|warning|info|primary|accent */
+.ui-tag[data-tone="r"]       { color: var(--c-rarity-r);   border-color: var(--c-rarity-r); }
+.ui-tag[data-tone="sr"]      { color: var(--c-rarity-sr);  border-color: var(--c-rarity-sr); }
+.ui-tag[data-tone="ssr"]     { color: var(--c-rarity-ssr); border-color: var(--c-rarity-ssr); }
+.ui-tag[data-tone="ur"]      { color: var(--c-rarity-ur);  border-color: var(--c-rarity-ur); }
+.ui-tag[data-tone="sur"]     { color: var(--c-rarity-sur); border-color: var(--c-rarity-sur); }
+.ui-tag[data-tone="warrior"] { color: var(--c-class-warrior); border-color: var(--c-class-warrior); }
+.ui-tag[data-tone="mage"]    { color: var(--c-class-mage);    border-color: var(--c-class-mage); }
+.ui-tag[data-tone="assassin"]{ color: var(--c-class-assassin);border-color: var(--c-class-assassin); }
+.ui-tag[data-tone="archer"]  { color: var(--c-class-archer);  border-color: var(--c-class-archer); }
+.ui-tag[data-tone="healer"]  { color: var(--c-class-healer);  border-color: var(--c-class-healer); }
+.ui-tag[data-tone="primary"] { color: var(--c-primary); border-color: var(--c-primary); }
+.ui-tag[data-tone="accent"]  { color: var(--c-accent);  border-color: var(--c-accent); }
+.ui-tag[data-tone="success"] { color: var(--c-success); border-color: var(--c-success); }
+.ui-tag[data-tone="danger"]  { color: var(--c-danger);  border-color: var(--c-danger); }
+.ui-tag[data-tone="warning"] { color: var(--c-warning); border-color: var(--c-warning); }
+.ui-tag[data-tone="info"]    { color: var(--c-info);    border-color: var(--c-info); }
+
+/* 实底填充变体（如"MAX"角标） */
+.ui-tag--fill { background: currentColor; }
+.ui-tag--fill > * { color: var(--c-surface-solid); }
+
+/* ── 红点 / 气泡数字 ─────────────────────────────────────────── */
+.ui-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c-danger-strong);
+  box-shadow: 0 0 6px rgba(var(--c-danger-rgb) / 0.8);
+  pointer-events: none;
+}
+.ui-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--c-danger-strong);
+  color: var(--c-text-hi);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 8px rgba(var(--c-danger-rgb) / 0.8);
+  pointer-events: none;
+}
+/* 宿主需要 position:relative 才能挂红点 */
+.ui-has-dot { position: relative; }
+
+/* ── 进度条 ──────────────────────────────────────────────────── */
+.ui-progress {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--c-border-faint);
+  overflow: hidden;
+}
+.ui-progress__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--c-primary);
+  transition: width var(--dur-base) var(--ease-out-soft);
+}
+.ui-progress__fill[data-tone="accent"]  { background: var(--c-accent); }
+.ui-progress__fill[data-tone="success"] { background: var(--c-success); }
+.ui-progress__fill[data-tone="danger"]  { background: var(--c-danger); }
+.ui-progress__fill[data-tone="info"]    { background: var(--c-info); }
+/* 已结束（如已领取的目标）：灰掉，避免和"进行中"抢注意力 */
+.ui-progress__fill[data-tone="muted"]   { background: var(--c-text-dim); }
+/* 条纹高光（经验条质感） */
+.ui-progress__fill--striped {
+  background-image: linear-gradient(45deg,
+    rgba(255, 255, 255, 0.18) 25%, transparent 25%,
+    transparent 50%, rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.18) 75%, transparent 75%, transparent);
+  background-size: 12px 12px;
+}
+.ui-progress--slim { height: 6px; }
+
+/* ── 列表项 ──────────────────────────────────────────────────── */
+.ui-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--c-border-faint);
+  background: rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-game),
+              border-color var(--dur-fast) var(--ease-game);
+}
+.ui-list-item:active { background: rgba(var(--c-primary-rgb) / 0.12); border-color: var(--c-primary); }
+.ui-list-item__main { flex: 1; min-width: 0; }
+.ui-list-item__title { font-weight: 700; color: var(--c-text-hi); }
+.ui-list-item__sub { font-size: var(--text-sm); color: var(--c-text-dim); }
+.ui-list-item--disabled { filter: grayscale(0.8) brightness(0.6); pointer-events: none; }
+
+/* ── 今日目标行（C5）───────────────────────────────────────────
+   结构由 ui/goals.js 渲染；不依赖 Tailwind，独立页面也能用。 */
+.ui-goal {
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--c-border-faint);
+  background: rgba(0, 0, 0, 0.25);
+  transition: border-color var(--dur-fast) var(--ease-game),
+              background var(--dur-fast) var(--ease-game);
+}
+/* 有奖励可领：金色描边 + 微亮底，第一眼就能扫到 */
+.ui-goal--ready {
+  border-color: rgba(var(--c-accent-rgb) / 0.55);
+  background: rgba(var(--c-accent-rgb) / 0.08);
+}
+/* 已领取：整行降透明度（链接式"完结"语义） */
+.ui-goal--done { opacity: 0.62; }
+.ui-goal__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ui-goal__name { font-weight: 700; font-size: var(--text-sm); color: var(--c-text-hi); }
+.ui-goal__check { margin-left: 6px; font-size: var(--text-xs); color: var(--c-success); }
+.ui-goal__count { font-size: var(--text-xs); color: var(--c-text-dim); font-variant-numeric: tabular-nums; }
+.ui-goal__bar { margin: 7px 0; }
+.ui-goal__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ui-goal__reward { font-size: var(--text-xs); color: var(--c-text-dim); display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.ui-goal__sep { margin: 0 4px; opacity: 0.5; }
+.ui-goal__btn { flex-shrink: 0; }
+
+/* ── 星星 ────────────────────────────────────────────────────── */
+.ui-stars { display: inline-flex; gap: 2px; }
+.ui-star { color: var(--c-text-dim); opacity: 0.45; font-size: inherit; line-height: 1; }
+.ui-star--on {
+  color: var(--c-rarity-ssr);
+  opacity: 1;
+  text-shadow: 0 0 6px rgba(var(--c-rarity-ssr-rgb) / 0.6);
+}
+
+/* ── 弹窗 ────────────────────────────────────────────────────── */
+.ui-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--dur-base) var(--ease-game),
+              visibility var(--dur-base);
+}
+.ui-modal--open { opacity: 1; visibility: visible; }
+.ui-modal__dialog {
+  width: 100%;
+  max-width: 420px;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-panel);
+  transform: translateY(14px) scale(0.97);
+  transition: transform var(--dur-base) var(--ease-game);
+}
+.ui-modal--open .ui-modal__dialog { transform: translateY(0) scale(1); }
+.ui-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--c-border-faint);
+  font-weight: 900;
+  font-size: var(--text-lg);
+}
+.ui-modal__close {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  color: var(--c-text-dim);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+.ui-modal__close:active { background: rgba(var(--c-danger-rgb) / 0.2); color: var(--c-danger); }
+.ui-modal__body { padding: 16px; overflow-y: auto; }
+.ui-modal__footer {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--c-border-faint);
+}
+.ui-modal__footer > * { flex: 1; }
+
+/* ── 轻提示（toast）────────────────────────────────────────── */
+.ui-toast-wrap {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 160;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  width: max-content;
+  max-width: 86vw;
+}
+.ui-toast {
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border-strong);
+  color: var(--c-text-hi);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  box-shadow: var(--shadow-panel);
+  animation: ui-toast-in var(--dur-base) var(--ease-game);
+}
+.ui-toast[data-tone="success"] { border-color: var(--c-success); color: var(--c-success); }
+.ui-toast[data-tone="danger"]  { border-color: var(--c-danger);  color: var(--c-danger); }
+.ui-toast[data-tone="warning"] { border-color: var(--c-warning); color: var(--c-warning); }
+.ui-toast--out { animation: ui-toast-out var(--dur-base) var(--ease-game) forwards; }
+
+@keyframes ui-toast-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ui-toast-out {
+  from { opacity: 1; }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+
+/* ── 分隔线 ──────────────────────────────────────────────────── */
+.ui-divider {
+  height: 1px;
+  margin: 12px 0;
+  background: linear-gradient(90deg, transparent, var(--c-border-strong), transparent);
+  border: none;
+}
+
+/* ── 战斗单位卡（B7）───────────────────────────────────────────
+   战斗场景九宫格里的每个单位。容器高度由宿主 grid 决定（h-full），
+   内部：图区自适应 + 底部信息条（名字 / 分色血条 / 血量数字）。
+   状态类：--actor（当前行动，呼吸）/--target（可选目标，脉冲）/--dead。 */
+.ui-bt {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--c-border-faint);
+  background: rgba(0, 0, 0, 0.25);
+  transition: box-shadow var(--dur-fast) var(--ease-game),
+              opacity var(--dur-fast) var(--ease-game);
+}
+.ui-bt__img { max-width: 92%; max-height: 92%; object-fit: contain; }
+/* 占位头像（无立绘时的首字圆底） */
+.ui-bt__ph {
+  width: 72%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--c-border-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xl);
+  font-weight: 900;
+  color: var(--c-text-hi);
+}
+.ui-bt__info {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  pointer-events: none;
+}
+.ui-bt__name {
+  font-size: 9px;
+  line-height: 1.15;
+  font-weight: 900;
+  color: var(--c-text-hi);
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-all;
+}
+/* 血条：data-hp="ok|mid|low" 分色（>50 绿 / 20-50 黄 / <20 红） */
+.ui-bt__hp {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid var(--c-border-faint);
+  overflow: hidden;
+}
+.ui-bt__hpfill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--c-success);
+  transition: width var(--dur-base) var(--ease-game);
+}
+.ui-bt__hp[data-hp="mid"] .ui-bt__hpfill { background: var(--c-warning); }
+.ui-bt__hp[data-hp="low"] .ui-bt__hpfill { background: var(--c-danger); }
+/* 血量数字叠在血条上（带描影保证可读） */
+.ui-bt__hpnum {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 900;
+  color: var(--c-text-hi);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
+  letter-spacing: -0.02em;
+}
+/* 当前行动者：主色呼吸 */
+@keyframes ui-bt-breath {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(var(--c-primary-rgb) / 0.9), 0 0 10px rgba(var(--c-primary-rgb) / 0.35); }
+  50%      { box-shadow: 0 0 0 2px rgba(var(--c-primary-rgb) / 0.9), 0 0 20px rgba(var(--c-primary-rgb) / 0.7); }
+}
+.ui-bt--actor { animation: ui-bt-breath 1.4s var(--ease-game) infinite; }
+/* 行动角标（右上角 ▶） */
+.ui-bt__mark {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 9px;
+  color: var(--c-primary-light, var(--c-primary));
+  text-shadow: 0 0 6px rgba(var(--c-primary-rgb) / 0.9);
+  pointer-events: none;
+}
+/* 可选目标：警示色脉冲 */
+@keyframes ui-bt-target {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(var(--c-warning-rgb) / 0.95); }
+  50%      { box-shadow: 0 0 0 2px rgba(var(--c-warning-rgb) / 0.95), 0 0 16px rgba(var(--c-warning-rgb) / 0.8); }
+}
+.ui-bt--target { animation: ui-bt-target 0.9s var(--ease-game) infinite; cursor: pointer; }
+/* 待机侧压暗（选择目标时非相关单位） */
+.ui-bt--dim { opacity: 0.55; }
+/* 死亡：灰化 + 倒下遮罩 */
+.ui-bt--dead { filter: grayscale(1) brightness(0.45); }
+.ui-bt__deadmark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 900;
+  color: var(--c-danger);
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+/* 受击闪白 */
+.ui-bt--hit { animation: ui-bt-hit 0.35s linear; }
+@keyframes ui-bt-hit {
+  0% { filter: brightness(2.2); }
+  100% { filter: brightness(1); }
+}
+/* 战斗日志分级着色（pushBattleSceneDebugFeed 按关键词打 data-tone） */
+.ui-feed__line { padding: 1px 0; color: var(--c-text-dim); }
+.ui-feed__line[data-tone="damage"]  { color: var(--c-danger); }
+.ui-feed__line[data-tone="heal"]    { color: var(--c-success); }
+.ui-feed__line[data-tone="buff"]    { color: var(--c-info); }
+.ui-feed__line[data-tone="system"]  { color: var(--c-warning); font-weight: 700; }
+
+/* ── 战斗飘字（B7）─────────────────────────────────────────────
+   挂在 #battleFloatLayer 上，坐标由 scene.js 按单位卡 rect 计算。
+   独立于九宫格渲染，不会被 renderBattleSceneDebug 的 innerHTML 重建抹掉。 */
+@keyframes ui-float-rise {
+  0%   { opacity: 0; transform: translate(-50%, 6px) scale(0.7); }
+  18%  { opacity: 1; transform: translate(-50%, -4px) scale(1.15); }
+  32%  { transform: translate(-50%, -8px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -46px) scale(0.95); }
+}
+.ui-float {
+  position: absolute;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--c-danger);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 10px rgba(var(--c-danger-rgb) / 0.5);
+  white-space: nowrap;
+  animation: ui-float-rise 0.95s var(--ease-out-soft) forwards;
+}
+/* 暴击：更大 + 金色 + 更粗描边 */
+.ui-float--crit {
+  font-size: 21px;
+  color: var(--c-warning);
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.95), 0 0 14px rgba(var(--c-warning-rgb) / 0.8);
+}
+.ui-float--heal   { color: var(--c-success); text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 10px rgba(var(--c-success-rgb) / 0.6); }
+.ui-float--shield { color: var(--c-info);    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 10px rgba(var(--c-info-rgb) / 0.6); }
+.ui-float--dodge  { color: var(--c-warning); font-size: 13px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9); }
+.ui-float--immune { color: var(--c-vfx-purple); font-size: 13px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9); }
+
+/* ── 战斗结算弹窗（B7 切片 3）─────────────────────────────────
+   DOM 在 index.html #battleResultModal；动态行由 battle/fallback_hud.js 生成。 */
+.ui-result-title {
+  font-size: var(--text-2xl);
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+}
+.ui-result-title[data-outcome="win"]  { color: var(--c-success); text-shadow: 0 0 14px rgba(var(--c-success-rgb) / 0.4); }
+.ui-result-title[data-outcome="lose"] { color: var(--c-danger);  text-shadow: 0 0 14px rgba(var(--c-danger-rgb) / 0.4); }
+/* 结算子面板（奖励 / 统计） */
+.ui-result-block {
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--c-border-faint);
+}
+.ui-result-block__title {
+  font-size: var(--text-sm);
+  font-weight: 900;
+  color: var(--c-primary-light);
+  margin-bottom: 8px;
+}
+/* 一行「标签 : 数值」 */
+.ui-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--text-sm);
+  padding: 2px 0;
+}
+.ui-result-row__val { font-weight: 900; color: var(--c-text-hi); }
+.ui-result-row__val[data-tone="exp"]   { color: var(--c-info); }
+.ui-result-row__val[data-tone="gold"]  { color: var(--c-accent); }
+.ui-result-row__val[data-tone="mat"]   { color: var(--c-success); }
+/* 数值行里的次级说明（如「/1,500 每分」） */
+.ui-result-row__sub { font-size: var(--text-xs); color: var(--c-text-dim); margin-left: 6px; font-weight: 400; }
+/* 掉落行（装备 / 铭文 / 材料） */
+.ui-result-drop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: var(--text-sm);
+}
+.ui-result-drop__img { width: 24px; height: 24px; object-fit: contain; flex-shrink: 0; }
+.ui-result-drop__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-result-drop__qty { font-weight: 900; color: var(--c-text-hi); flex-shrink: 0; }
+.ui-result-empty { font-size: var(--text-sm); color: var(--c-text-dim); padding: 4px 0; }
+
+/* ── 技能特写横幅（B7）─────────────────────────────────────────
+   施放技能时中央横滑过场：立绘 + 「技能名 · 角色名」。 */
+@keyframes ui-cast-in {
+  0%   { opacity: 0; transform: translateX(-40px) skewX(-8deg); }
+  22%  { opacity: 1; transform: translateX(0) skewX(-8deg); }
+  78%  { opacity: 1; transform: translateX(0) skewX(-8deg); }
+  100% { opacity: 0; transform: translateX(40px) skewX(-8deg); }
+}
+@keyframes ui-cast-sweep {
+  0%   { transform: translateX(-110%); }
+  100% { transform: translateX(110%); }
+}
+.ui-cast {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 38%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(var(--c-primary-rgb) / 0.35) 22%, rgba(var(--c-primary-rgb) / 0.35) 78%, rgba(0, 0, 0, 0) 100%);
+  animation: ui-cast-in 0.85s var(--ease-out-soft) forwards;
+  overflow: hidden;
+}
+.ui-cast__img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.8));
+}
+.ui-cast__text { display: flex; flex-direction: column; line-height: 1.15; }
+.ui-cast__skill {
+  font-size: var(--text-xl);
+  font-weight: 900;
+  color: var(--c-text-hi);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95);
+}
+.ui-cast__who {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--c-primary-light);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+}
+/* 横扫高光 */
+.ui-cast__sweep {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  animation: ui-cast-sweep 0.85s var(--ease-out-soft) forwards;
+}
+
+/* ── 羁绊面板（C6） ──────────────────────────────────────────────
+   养成页「上阵设置」下方。徽章用汉字首字 + 配色，不依赖字体图标。
+   配色由 .ui-bond__badge[data-kind] 决定：
+     class:warrior|mage|archer|healer|assassin → 职业 token
+     class:tank                                → info（无 tank 职业 token）
+     faction                                   → accent
+     story                                     → rarity-ur（金色，最稀有）
+   ──────────────────────────────────────────────────────────────── */
+.ui-bond__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.ui-bond__head-label {
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--c-text-dim);
+}
+.ui-bond__power {
+  font-size: 10px;
+  color: var(--c-text-dim);
+  white-space: nowrap;
+}
+.ui-bond__power > b {
+  margin-left: 4px;
+  font-size: var(--text-xs);
+  font-weight: 900;
+  color: var(--c-accent);
+}
+
+.ui-bond {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--c-border-faint);
+  transition: border-color var(--dur-fast) var(--ease-out-soft);
+}
+.ui-bond--on {
+  background: rgba(var(--c-accent-rgb) / 0.10);
+  border-color: rgba(var(--c-accent-rgb) / 0.42);
+}
+.ui-bond--off {
+  background: rgba(0, 0, 0, 0.20);
+}
+.ui-bond--off .ui-bond__badge { opacity: 0.55; filter: saturate(0.35); }
+
+.ui-bond__badge {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  border: 1px solid currentColor;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  line-height: 1;
+}
+.ui-bond__badge[data-kind="warrior"]  { color: var(--c-class-warrior); }
+.ui-bond__badge[data-kind="mage"]     { color: var(--c-class-mage); }
+.ui-bond__badge[data-kind="archer"]   { color: var(--c-class-archer); }
+.ui-bond__badge[data-kind="healer"]   { color: var(--c-class-healer); }
+.ui-bond__badge[data-kind="assassin"] { color: var(--c-class-assassin); }
+.ui-bond__badge[data-kind="tank"]     { color: var(--c-info); }
+.ui-bond__badge[data-kind="faction"]  { color: var(--c-accent); }
+.ui-bond__badge[data-kind="story"]    { color: var(--c-rarity-ur); }
+
+.ui-bond__main { flex: 1; min-width: 0; }
+.ui-bond__title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 900;
+  color: var(--c-text-hi);
+}
+.ui-bond--off .ui-bond__title { color: var(--c-text-dim); }
+.ui-bond__tier {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--c-text-dim);
+}
+.ui-bond__extra { font-weight: 400; }
+.ui-bond__text {
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--c-text-dim);
+  overflow-wrap: break-word;
+}
+.ui-bond--on .ui-bond__text { color: var(--c-text-hi); opacity: 0.85; }
+
+.ui-bond__empty {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px dashed var(--c-border-faint);
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--c-text-dim);
+}
+.ui-bond__sep {
+  margin: 8px 0 5px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--c-text-dim);
+  opacity: 0.75;
+}
+
+/* ── 日常副本（C7） ──────────────────────────────────────────────
+   战斗页第三种模式。每张副本卡自带难度切换，配色由 data-tone 决定：
+     gold → warning（金）   exp → primary
+     material → info        boss → danger
+   ──────────────────────────────────────────────────────────────── */
+.ui-daily__top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--c-border-faint);
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 10px;
+  color: var(--c-text-dim);
+  text-align: center;
+}
+.ui-daily__top > i { opacity: 0.7; }
+
+.ui-daily {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--c-border-faint);
+  background: var(--c-surface);
+}
+
+.ui-daily__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ui-daily__icon {
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: var(--text-xs);
+}
+.ui-daily__icon[data-tone="gold"]     { color: var(--c-warning); }
+.ui-daily__icon[data-tone="exp"]      { color: var(--c-primary); }
+.ui-daily__icon[data-tone="material"] { color: var(--c-info); }
+.ui-daily__icon[data-tone="boss"]     { color: var(--c-danger); }
+
+.ui-daily__name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: 900;
+  color: var(--c-text-hi);
+}
+.ui-daily__left {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--c-accent-rgb) / 0.45);
+  background: rgba(var(--c-accent-rgb) / 0.12);
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--c-accent);
+}
+.ui-daily__left.is-empty {
+  border-color: rgba(var(--c-danger-rgb) / 0.45);
+  background: rgba(var(--c-danger-rgb) / 0.12);
+  color: var(--c-danger);
+}
+.ui-daily__desc {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--c-text-dim);
+}
+
+.ui-daily__tiers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.ui-daily__tier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  border-radius: 9px;
+  border: 1px solid var(--c-border-faint);
+  background: rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out-soft), background var(--dur-fast) var(--ease-out-soft);
+}
+.ui-daily__tier:hover { border-color: var(--c-border-strong); }
+.ui-daily__tier.is-active {
+  border-color: rgba(var(--c-accent-rgb) / 0.55);
+  background: rgba(var(--c-accent-rgb) / 0.12);
+}
+.ui-daily__tier-name { font-size: var(--text-xs); font-weight: 900; color: var(--c-text-hi); }
+.ui-daily__tier.is-active .ui-daily__tier-name { color: var(--c-accent); }
+.ui-daily__tier-pow { font-size: 10px; color: var(--c-success); }
+.ui-daily__tier-pow.is-low { color: var(--c-warning); }
+
+.ui-daily__body { margin-top: 8px; }
+.ui-daily__pow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--c-text-dim);
+}
+.ui-daily__pow > b { font-size: var(--text-xs); font-weight: 900; }
+.ui-daily__pow > b.is-ok { color: var(--c-success); }
+.ui-daily__pow > b.is-low { color: var(--c-warning); }
+.ui-daily__mine { margin-left: auto; }
+.ui-daily__rewards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 5px;
+}
+.ui-daily__rw { font-size: 10px; color: var(--c-text-dim); white-space: nowrap; }
+.ui-daily__rw > i { margin-right: 3px; }
+.ui-daily__rw[data-tone="gold"] { color: var(--c-warning); }
+.ui-daily__rw[data-tone="exp"]  { color: var(--c-primary); }
+.ui-daily__rw[data-tone="mat"]  { color: var(--c-info); }
+.ui-daily__rw[data-tone="loot"] { color: var(--c-accent); }
+
+.ui-daily__acts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.ui-daily__tip {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--c-text-dim);
+  text-align: center;
+}
+
+/* ── 图鉴与成就（C8） ────────────────────────────────────────────
+   页内两个子 tab：角色图鉴（网格 + 收集率）/ 成就（分组列表）。
+   未收录角色用 .ui-card__img--dim 压暗（复用组件库既有变体），
+   本文件只补「角标 / 筛选 / 概览条 / 成就行」这几组专属结构。
+   ──────────────────────────────────────────────────────────────── */
+
+/* 子 tab */
+.ui-codex__tabs { display: flex; gap: 6px; flex: 0 0 auto; }
+.ui-codex__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--c-border-faint);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--c-text-dim);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out-soft), color var(--dur-fast) var(--ease-out-soft);
+}
+.ui-codex__tab:hover { border-color: var(--c-border-strong); }
+.ui-codex__tab.is-active {
+  border-color: rgba(var(--c-primary-rgb) / 0.6);
+  background: rgba(var(--c-primary-rgb) / 0.14);
+  color: var(--c-primary);
+}
+
+/* 收集率 / 成就进度 概览 */
+.ui-codex__sum {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ui-codex__sum-main { flex: 1; min-width: 0; }
+.ui-codex__sum-label { font-size: 10px; color: var(--c-text-dim); }
+.ui-codex__sum-pct {
+  font-size: var(--text-2xl);
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--c-text-hi);
+}
+.ui-codex__sum-pct > span { font-size: var(--text-sm); margin-left: 2px; }
+.ui-codex__sum-count {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--c-text-dim);
+}
+.ui-codex__sum-missing { font-size: var(--text-xs); color: var(--c-text-dim); }
+.ui-codex__sum-missing > b { color: var(--c-accent); }
+.ui-codex__bar { margin-top: 8px; }
+
+.ui-codex__rars { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.ui-codex__rar {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--c-border-faint);
+  background: var(--c-surface-solid);
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--c-text-dim);
+}
+.ui-codex__rar > b { color: var(--c-text-hi); }
+.ui-codex__rar-total { opacity: 0.6; }
+.ui-codex__rar[data-rarity="r"]   { border-color: var(--c-rarity-r);   color: var(--c-rarity-r); }
+.ui-codex__rar[data-rarity="sr"]  { border-color: var(--c-rarity-sr);  color: var(--c-rarity-sr); }
+.ui-codex__rar[data-rarity="ssr"] { border-color: var(--c-rarity-ssr); color: var(--c-rarity-ssr); }
+.ui-codex__rar[data-rarity="ur"]  { border-color: var(--c-rarity-ur);  color: var(--c-rarity-ur); }
+.ui-codex__rar[data-rarity="sur"] { border-color: var(--c-rarity-sur); color: var(--c-rarity-sur); }
+
+/* 筛选 */
+.ui-codex__filters { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.ui-codex__filter-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.ui-codex__chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--c-border-faint);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--c-text-dim);
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out-soft), color var(--dur-fast) var(--ease-out-soft);
+}
+.ui-codex__chip:hover { border-color: var(--c-border-strong); }
+.ui-codex__chip.is-active {
+  border-color: rgba(var(--c-accent-rgb) / 0.55);
+  background: rgba(var(--c-accent-rgb) / 0.12);
+  color: var(--c-accent);
+}
+
+/* 角色网格 */
+.ui-codex__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 8px;
+}
+.ui-codex__flag { margin-top: 4px; font-size: 9px; font-weight: 900; }
+.ui-codex__own  { color: var(--c-success); }
+.ui-codex__lock { color: var(--c-text-dim); }
+.ui-codex__empty {
+  padding: 24px 12px;
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--c-text-dim);
+}
+
+/* 角色详情（弹窗内） */
+.ui-codex__detail-top { display: flex; gap: 12px; align-items: flex-start; }
+.ui-codex__detail-img {
+  flex: 0 0 92px;
+  width: 92px;
+  height: 92px;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--c-border-faint);
+  background: rgba(0, 0, 0, 0.3);
+}
+.ui-codex__detail-img.is-dim { filter: grayscale(1) brightness(0.7); }
+.ui-codex__detail-meta { flex: 1; min-width: 0; }
+.ui-codex__detail-name { font-size: var(--text-lg); font-weight: 900; color: var(--c-text-hi); }
+.ui-codex__detail-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.ui-codex__detail-sub { margin-top: 8px; font-size: 10px; line-height: 1.6; color: var(--c-text-dim); }
+.ui-codex__skill {
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.22);
+  margin-bottom: 6px;
+}
+.ui-codex__skill:last-child { margin-bottom: 0; }
+.ui-codex__skill-name { font-size: var(--text-xs); font-weight: 900; color: var(--c-primary); }
+.ui-codex__skill-name > i { margin-right: 4px; opacity: 0.8; }
+.ui-codex__skill-desc { margin-top: 3px; font-size: 10px; line-height: 1.5; color: var(--c-text-dim); }
+
+/* 奖励标签（图鉴/成就共用） */
+.ui-codex__rw { margin-right: 10px; font-size: 10px; white-space: nowrap; color: var(--c-text-dim); }
+.ui-codex__rw > i { margin-right: 3px; }
+.ui-codex__rw[data-tone="gold"] { color: var(--c-warning); }
+.ui-codex__rw[data-tone="gem"]  { color: var(--c-accent); }
+.ui-codex__rw[data-tone="mat"]  { color: var(--c-info); }
+.ui-codex__noreward { font-size: 10px; color: var(--c-text-dim); }
+
+/* 成就分组 + 单条 */
+.ui-achieve__group { margin-bottom: 16px; }
+.ui-achieve__group-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: var(--text-xs);
+  font-weight: 900;
+  color: var(--c-text-hi);
+}
+.ui-achieve__group-head > i { opacity: 0.85; }
+.ui-achieve__group-name { flex: 1; min-width: 0; }
+.ui-achieve__group-head[data-tone="primary"] > i { color: var(--c-primary); }
+.ui-achieve__group-head[data-tone="accent"]  > i { color: var(--c-accent); }
+.ui-achieve__group-head[data-tone="gold"]    > i { color: var(--c-warning); }
+.ui-achieve__group-head[data-tone="danger"]  > i { color: var(--c-danger); }
+.ui-achieve__group-count {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--c-text-dim);
+}
+/* 组内成就列表（自带纵向间距，不依赖 Tailwind 的 space-y-*） */
+.ui-achieve__list { display: flex; flex-direction: column; gap: 12px; }
+
+.ui-achieve {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--c-border-faint);
+  background: var(--c-surface);
+}
+.ui-achieve--ready {
+  border-color: rgba(var(--c-accent-rgb) / 0.5);
+  background: rgba(var(--c-accent-rgb) / 0.06);
+}
+.ui-achieve--done { opacity: 0.72; }
+.ui-achieve__head { display: flex; align-items: center; gap: 8px; }
+.ui-achieve__name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: 900;
+  color: var(--c-text-hi);
+}
+.ui-achieve__check { margin-left: 6px; color: var(--c-success); }
+.ui-achieve__count { flex: 0 0 auto; font-size: 10px; font-weight: 900; color: var(--c-text-dim); }
+.ui-achieve__desc { margin-top: 2px; font-size: 10px; color: var(--c-text-dim); }
+.ui-achieve__bar { margin-top: 6px; }
+.ui-achieve__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+.ui-achieve__reward { flex: 1; min-width: 0; }
+.ui-achieve__btn { flex: 0 0 auto; }
+
+/* ── C9 职业克制一览（cultivate.js renderClassCounterPanel）────────── */
+.ui-counter { padding: 10px 12px; border: 1px solid var(--c-border-faint); border-radius: 12px; background: var(--c-surface); }
+.ui-counter__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.ui-counter__title { font-size: var(--text-xs); font-weight: 900; color: var(--c-text-hi); }
+.ui-counter__pct { font-size: 10px; font-weight: 700; color: var(--c-info); }
+.ui-counter__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ui-counter__chip { gap: 4px; }
+.ui-counter__arrow { color: var(--c-text-dim); }
+.ui-counter__rows { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.ui-counter__row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 8px;
+  font-size: var(--text-xs); color: var(--c-text-hi);
+  background: var(--c-surface-solid);
+}
+.ui-counter__row--hit { outline: 1px solid var(--c-primary); }
+.ui-counter__row .ui-counter__arrow { flex: 0 0 auto; }
+.ui-counter__rel { flex: 1; text-align: right; font-size: 10px; color: var(--c-text-dim); }
+
+

@@ -30,6 +30,10 @@
           inscriptionsData = loaded.inscriptionsData;
           stagesData = loaded.stagesData;
           materialsData = loaded.materialsData || [];
+          bondsData = loaded.bondsData || null;
+          dailiesData = loaded.dailiesData || null;
+          achievementsData = loaded.achievementsData || null;
+          countersData = loaded.countersData || null;
           normalizeCharacterSkills(charactersData);
           if (!Array.isArray(stagesData)) stagesData = [];
           if (stagesData.length < 50) {
@@ -48,6 +52,24 @@
       updateUI();
       bindEvents();
       checkOfflineRewards();
+      // 放置闭环（C1/C3）：挂机面板 + 定时刷新 + 红点
+      if (typeof initIdle === 'function') initIdle();
+      // 一键操作集（C4）：穿戴 / 上阵 / 全员配装 / 升级
+      if (typeof initQuickOps === 'function') initQuickOps();
+      // 今日目标（C5）：跨日重置 + 面板渲染（必须在 renderIdlePanel 之后，红点才拿得到最新挂机态）
+      if (typeof ensureDailyGoals === 'function') ensureDailyGoals();
+      if (typeof initDailyGoals === 'function') initDailyGoals();
+      // 日常副本（C7）：次数状态 + 副本 stage 注入 stagesData（战斗入口按 id 查找）
+      if (window.__daily) {
+        window.__daily.ensureDailyState();
+        window.__daily.ensureDailyStages();
+      }
+      // 红点框架（C5）：统一广播，5s 轮询
+      if (typeof initRedDot === 'function') initRedDot();
+      // 图鉴与成就（C8）：同步收录记录（只增不减）+ 渲染 + 注册「有成就可领」红点。
+      // ⚠️ 必须在 initRedDot 之后：initCodex 里注册的 achievements 规则要靠它开轮询。
+      if (typeof initCodex === 'function') initCodex();
+      saveGameProgress();
       populateDebugCharSelect();
     }
 
@@ -137,7 +159,23 @@
           stagesData = expandStagesTo50(stagesData);
           console.log(`关卡数据不足，已自动扩展到 ${stagesData.length} 关`);
         }
-        
+
+        // 加载羁绊数据（C6）—— 失败不致命，只是本次无羁绊
+        try {
+          const bondsResponse = await fetch('assets/data/bonds.json');
+          if (bondsResponse.ok) bondsData = await bondsResponse.json();
+        } catch (e) {
+          console.warn('羁绊数据加载失败，本次运行无羁绊');
+        }
+
+        // 加载职业克制环（C9）—— 失败不致命，domain/counters.js 走内置同值兜底
+        try {
+          const countersResponse = await fetch('assets/data/counters.json');
+          if (countersResponse.ok) countersData = await countersResponse.json();
+        } catch (e) {
+          console.warn('克制数据加载失败，本次运行用内置克制环');
+        }
+
         console.log("所有游戏数据加载成功");
       } catch (error) {
         console.error("加载游戏数据失败:", error.message);

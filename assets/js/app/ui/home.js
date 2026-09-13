@@ -55,6 +55,9 @@
         selectCharacterToCultivate(selectedCharacter);
       }
       renderCultivateFormationUI();
+
+      // 挂机面板（C1/C3）：推关 / 变强后速率会变，顺带刷新
+      if (typeof renderIdlePanel === 'function') renderIdlePanel();
     }
 
     function updateHomeRecommendedStage() {
@@ -121,9 +124,14 @@
       if (unequipItemBtn) unequipItemBtn.addEventListener('click', unequipItem);
 
       // 迭代4: 养成按钮事件
+      // C4：改用静默版一键升级（domain/quick_ops.autoLevelUp），
+      //     不再走 levelUpCharacter(true) —— 后者在金币不足时会弹 alert。
       const quickLevelUpBtn = document.getElementById('quickLevelUp');
-      if (quickLevelUpBtn) quickLevelUpBtn.addEventListener('click', () => levelUpCharacter(true)); 
-      
+      if (quickLevelUpBtn) quickLevelUpBtn.addEventListener('click', () => {
+        if (typeof runAutoLevelUp === 'function') runAutoLevelUp();
+        else levelUpCharacter(true);
+      });
+
       const quickStarUpBtn = document.getElementById('quickStarUp');
       if (quickStarUpBtn) quickStarUpBtn.addEventListener('click', () => ascendCharacter(true));
       

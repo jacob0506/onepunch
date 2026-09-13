@@ -4,8 +4,10 @@
     const style = document.createElement('style');
     style.id = 'battleReportStyles';
     style.textContent = `
-      @keyframes battlePulseCrit { 0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(248,113,113,0)); } 45% { transform: scale(1.08); filter: drop-shadow(0 0 10px rgba(248,113,113,0.55)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(248,113,113,0)); } }
-      @keyframes battlePulseGood { 0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(52,211,153,0)); } 45% { transform: scale(1.06); filter: drop-shadow(0 0 10px rgba(52,211,153,0.45)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(52,211,153,0)); } }
+      /* 注意：这 3 个 keyframes 与 battle/vfx.js 重复（历史上两份，内容一致，后注入者覆盖，暂无害）。
+         B4 特效色已 token 化（assets/css/tokens.css）；合并两份样式是后续清理项。 */
+      @keyframes battlePulseCrit { 0% { transform: scale(1); filter: drop-shadow(0 0 0 rgb(var(--c-danger-rgb) / 0)); } 45% { transform: scale(1.08); filter: drop-shadow(0 0 10px rgb(var(--c-danger-rgb) / 0.55)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgb(var(--c-danger-rgb) / 0)); } }
+      @keyframes battlePulseGood { 0% { transform: scale(1); filter: drop-shadow(0 0 0 rgb(var(--c-success-rgb) / 0)); } 45% { transform: scale(1.06); filter: drop-shadow(0 0 10px rgb(var(--c-success-rgb) / 0.45)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgb(var(--c-success-rgb) / 0)); } }
       @keyframes battleScreenShake { 0% { transform: translate3d(0,0,0); } 15% { transform: translate3d(-1px, 1px, 0); } 30% { transform: translate3d(2px, -1px, 0); } 45% { transform: translate3d(-2px, 0, 0); } 60% { transform: translate3d(2px, 1px, 0); } 75% { transform: translate3d(-1px, -1px, 0); } 100% { transform: translate3d(0,0,0); } }
       .battle-crit { display:inline-block; animation: battlePulseCrit 520ms ease-out 1; }
       .battle-good { display:inline-block; animation: battlePulseGood 520ms ease-out 1; }

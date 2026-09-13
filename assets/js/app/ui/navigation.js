@@ -1,5 +1,7 @@
 (() => {
   function switchPage(target) {
+    // B9：页面切换 → 回主城 BGM（战斗页由 scene.js 自己切战斗 BGM，战斗关闭时也会切回 city）
+    if (window.Game && Game.audio) Game.audio.setBgm('city');
     document.querySelectorAll('.page').forEach(page => {
       if (page.id === target) {
         page.classList.remove('hidden');
@@ -26,6 +28,9 @@
       }
     } else if (target === 'stages') {
       if (typeof updateStagesList === 'function') updateStagesList();
+    } else if (target === 'codex') {
+      // C8：图鉴页每次进入都重渲（收集率/成就进度是当前状态的函数，现算最准）
+      if (typeof window.renderCodexPage === 'function') window.renderCodexPage();
     }
 
     window.scrollTo(0, 0);

@@ -4,11 +4,12 @@
     const style = document.createElement('style');
     style.id = 'battleVfxStyles';
     style.textContent = `
-      @keyframes battlePulseCrit { 0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(248,113,113,0)); } 45% { transform: scale(1.08); filter: drop-shadow(0 0 10px rgba(248,113,113,0.55)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(248,113,113,0)); } }
-      @keyframes battlePulseGood { 0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(52,211,153,0)); } 45% { transform: scale(1.06); filter: drop-shadow(0 0 10px rgba(52,211,153,0.45)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(52,211,153,0)); } }
+      /* 特效色引用 assets/css/tokens.css 的设计 Token（B4）——改 token 即换色 */
+      @keyframes battlePulseCrit { 0% { transform: scale(1); filter: drop-shadow(0 0 0 rgb(var(--c-danger-rgb) / 0)); } 45% { transform: scale(1.08); filter: drop-shadow(0 0 10px rgb(var(--c-danger-rgb) / 0.55)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgb(var(--c-danger-rgb) / 0)); } }
+      @keyframes battlePulseGood { 0% { transform: scale(1); filter: drop-shadow(0 0 0 rgb(var(--c-success-rgb) / 0)); } 45% { transform: scale(1.06); filter: drop-shadow(0 0 10px rgb(var(--c-success-rgb) / 0.45)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgb(var(--c-success-rgb) / 0)); } }
       @keyframes battleScreenShake { 0% { transform: translate3d(0,0,0); } 15% { transform: translate3d(-1px, 1px, 0); } 30% { transform: translate3d(2px, -1px, 0); } 45% { transform: translate3d(-2px, 0, 0); } 60% { transform: translate3d(2px, 1px, 0); } 75% { transform: translate3d(-1px, -1px, 0); } 100% { transform: translate3d(0,0,0); } }
-      @keyframes battleFlashRed { 0% { box-shadow: inset 0 0 0 rgba(0,0,0,0); } 25% { box-shadow: inset 0 0 120px rgba(248,113,113,0.28); } 100% { box-shadow: inset 0 0 0 rgba(0,0,0,0); } }
-      @keyframes battleFlashPurple { 0% { box-shadow: inset 0 0 0 rgba(0,0,0,0); } 25% { box-shadow: inset 0 0 120px rgba(168,85,247,0.26); } 100% { box-shadow: inset 0 0 0 rgba(0,0,0,0); } }
+      @keyframes battleFlashRed { 0% { box-shadow: inset 0 0 0 rgba(0,0,0,0); } 25% { box-shadow: inset 0 0 120px rgb(var(--c-danger-rgb) / 0.28); } 100% { box-shadow: inset 0 0 0 rgba(0,0,0,0); } }
+      @keyframes battleFlashPurple { 0% { box-shadow: inset 0 0 0 rgba(0,0,0,0); } 25% { box-shadow: inset 0 0 120px rgb(var(--c-vfx-purple-rgb) / 0.26); } 100% { box-shadow: inset 0 0 0 rgba(0,0,0,0); } }
       @keyframes battleSlam { 0% { transform: translate3d(0,0,0) scale(1); } 35% { transform: translate3d(0, 1px, 0) scale(1.01); } 100% { transform: translate3d(0,0,0) scale(1); } }
       .battle-crit { display:inline-block; animation: battlePulseCrit 520ms ease-out 1; }
       .battle-good { display:inline-block; animation: battlePulseGood 520ms ease-out 1; }

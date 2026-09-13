@@ -1,0 +1,149 @@
+{
+  "version": 2,
+  "_note": "羁绊唯一数据源（C6/C9）。改这里即可增删羁绊，养成页面板与战斗加成自动同步。bonus 的属性名必须在 attrWhitelist 内，写错会静默失效 —— tools/check-bonds.mjs 会拦。百分比类字段（atkPercent/defPercent/hpPercent）在战斗里按 (1 + x/100) 乘算，其余为加算。职业羁绊的 count:1 档即 C9 的「光环」：上阵任意 1 名该职业角色就给全队保底加成（取最高档、不叠加），凑 2 人升级为正式羁绊档。",
+  "attrWhitelist": {
+    "atkPercent": "攻击",
+    "defPercent": "防御",
+    "hpPercent": "生命",
+    "speed": "速度",
+    "critRate": "暴击率",
+    "critDmg": "暴击伤害",
+    "dodgeRate": "闪避率",
+    "blockRate": "格挡率",
+    "lifesteal": "吸血",
+    "penetration": "无视防御",
+    "effectHit": "效果命中",
+    "tenacity": "效果抵抗",
+    "dmgReduc": "免伤"
+  },
+  "classTierCounts": [1, 2, 4, 6],
+  "classBonds": {
+    "warrior": {
+      "name": "战士",
+      "badge": "战",
+      "tiers": [
+        { "count": 1, "bonus": { "atkPercent": 4 } },
+        { "count": 2, "bonus": { "atkPercent": 8 } },
+        { "count": 4, "bonus": { "atkPercent": 16, "critRate": 6 } },
+        { "count": 6, "bonus": { "atkPercent": 26, "critRate": 12, "critDmg": 20 } }
+      ]
+    },
+    "mage": {
+      "name": "法师",
+      "badge": "法",
+      "tiers": [
+        { "count": 1, "bonus": { "atkPercent": 4 } },
+        { "count": 2, "bonus": { "atkPercent": 8 } },
+        { "count": 4, "bonus": { "atkPercent": 16, "effectHit": 10 } },
+        { "count": 6, "bonus": { "atkPercent": 26, "effectHit": 18, "penetration": 10 } }
+      ]
+    },
+    "archer": {
+      "name": "弓手",
+      "badge": "弓",
+      "tiers": [
+        { "count": 1, "bonus": { "critRate": 3 } },
+        { "count": 2, "bonus": { "critRate": 6 } },
+        { "count": 4, "bonus": { "critRate": 12, "critDmg": 16 } },
+        { "count": 6, "bonus": { "critRate": 20, "critDmg": 32, "atkPercent": 10 } }
+      ]
+    },
+    "tank": {
+      "name": "守卫",
+      "badge": "盾",
+      "tiers": [
+        { "count": 1, "bonus": { "hpPercent": 5, "defPercent": 4 } },
+        { "count": 2, "bonus": { "hpPercent": 10, "defPercent": 8 } },
+        { "count": 4, "bonus": { "hpPercent": 20, "defPercent": 16, "dmgReduc": 6 } },
+        { "count": 6, "bonus": { "hpPercent": 32, "defPercent": 26, "dmgReduc": 12 } }
+      ]
+    },
+    "healer": {
+      "name": "祭司",
+      "badge": "疗",
+      "tiers": [
+        { "count": 1, "bonus": { "hpPercent": 5 } },
+        { "count": 2, "bonus": { "hpPercent": 10 } },
+        { "count": 4, "bonus": { "hpPercent": 18, "tenacity": 12 } },
+        { "count": 6, "bonus": { "hpPercent": 30, "tenacity": 22, "dmgReduc": 8 } }
+      ]
+    },
+    "assassin": {
+      "name": "刺客",
+      "badge": "刺",
+      "tiers": [
+        { "count": 1, "bonus": { "critRate": 3, "penetration": 3 } },
+        { "count": 2, "bonus": { "critRate": 6, "penetration": 6 } },
+        { "count": 4, "bonus": { "critRate": 12, "penetration": 12, "dodgeRate": 6 } },
+        { "count": 6, "bonus": { "critRate": 20, "penetration": 22, "dodgeRate": 12 } }
+      ]
+    }
+  },
+  "factionTierCounts": [2, 3],
+  "factionBonds": {
+    "knight": { "name": "骑士团", "badge": "骑", "attr": "defPercent", "values": [8, 16] },
+    "void": { "name": "虚空", "badge": "虚", "attr": "atkPercent", "values": [7, 15] },
+    "light": { "name": "圣光", "badge": "光", "attr": "hpPercent", "values": [9, 18] },
+    "dragon": { "name": "龙裔", "badge": "龙", "attr": "hpPercent", "values": [9, 18] },
+    "star": { "name": "星海", "badge": "星", "attr": "effectHit", "values": [8, 16] },
+    "abyss": { "name": "深渊", "badge": "渊", "attr": "critRate", "values": [5, 11] },
+    "tech": { "name": "科技", "badge": "科", "attr": "atkPercent", "values": [7, 15] },
+    "nature": { "name": "自然", "badge": "自", "attr": "hpPercent", "values": [9, 18] },
+    "war": { "name": "战争", "badge": "戎", "attr": "atkPercent", "values": [7, 15] },
+    "beast": { "name": "兽群", "badge": "兽", "attr": "dodgeRate", "values": [5, 11] },
+    "god": { "name": "神域", "badge": "神", "attr": "critDmg", "values": [10, 22] },
+    "time": { "name": "时之砂", "badge": "时", "attr": "speed", "values": [5, 11] },
+    "sun": { "name": "烈日", "badge": "阳", "attr": "atkPercent", "values": [7, 15] },
+    "fire": { "name": "烈焰", "badge": "焰", "attr": "critRate", "values": [5, 11] },
+    "dark": { "name": "暗影", "badge": "暗", "attr": "penetration", "values": [7, 15] },
+    "earth": { "name": "大地", "badge": "地", "attr": "defPercent", "values": [8, 16] },
+    "wind": { "name": "疾风", "badge": "风", "attr": "speed", "values": [5, 11] },
+    "thunder": { "name": "雷霆", "badge": "雷", "attr": "critDmg", "values": [10, 22] },
+    "water": { "name": "潮汐", "badge": "潮", "attr": "dmgReduc", "values": [5, 11] },
+    "rogue": { "name": "游侠", "badge": "游", "attr": "critRate", "values": [5, 11] },
+    "ice": { "name": "寒霜", "badge": "冰", "attr": "dmgReduc", "values": [5, 11] },
+    "moon": { "name": "月华", "badge": "月", "attr": "lifesteal", "values": [4, 9] }
+  },
+  "storyBonds": [
+    {
+      "id": "tech_alliance",
+      "name": "机械同盟",
+      "badge": "机",
+      "members": ["char_sur_007", "char_ur_010", "char_ur_019"],
+      "bonus": { "atkPercent": 12, "effectHit": 10 },
+      "desc": "维克托、辛德拉、阿尔法同在：全队攻击 +12%、效果命中 +10%"
+    },
+    {
+      "id": "holy_oath",
+      "name": "圣光誓约",
+      "badge": "圣",
+      "members": ["char_sr_002", "char_ssr_003", "char_sur_003"],
+      "bonus": { "hpPercent": 14, "dmgReduc": 6 },
+      "desc": "圣歌侍从、艾琳、加百列同在：全队生命 +14%、免伤 +6%"
+    },
+    {
+      "id": "star_chorus",
+      "name": "星海共歌",
+      "badge": "歌",
+      "members": ["char_sr_012", "char_sur_005", "char_ur_001"],
+      "bonus": { "critDmg": 18, "effectHit": 10 },
+      "desc": "星尘术士、莉莉丝、夜同在：全队暴击伤害 +18%、效果命中 +10%"
+    },
+    {
+      "id": "void_whisper",
+      "name": "虚空低语",
+      "badge": "语",
+      "members": ["char_ssr_016", "char_sur_001"],
+      "bonus": { "atkPercent": 10, "penetration": 10 },
+      "desc": "诺亚与卡修斯同在：全队攻击 +10%、无视防御 +10%"
+    },
+    {
+      "id": "bedrock_pact",
+      "name": "磐石同盟",
+      "badge": "磐",
+      "members": ["char_ssr_005", "char_sr_005", "char_sur_008"],
+      "bonus": { "defPercent": 14, "dmgReduc": 7 },
+      "desc": "涟、齿轮守望者、盖亚同在：全队防御 +14%、免伤 +7%"
+    }
+  ]
+}

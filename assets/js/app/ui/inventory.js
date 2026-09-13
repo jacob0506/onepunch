@@ -56,7 +56,8 @@
     filteredEquipment.forEach(item => {
       if (window.__inventory && typeof window.__inventory.ensureEquipmentInstance === 'function') window.__inventory.ensureEquipmentInstance(item);
       const cardElement = document.createElement('div');
-      cardElement.className = `glass-effect rounded-lg overflow-hidden card-hover cursor-pointer rarity-border-${item.rarity.toLowerCase()}`;
+      cardElement.className = 'ui-panel ui-hover rounded-lg overflow-hidden cursor-pointer';
+      cardElement.dataset.rarity = String(item.rarity || '').toLowerCase();
       cardElement.innerHTML = `
         <div class="p-3 flex flex-col items-center">
           <div class="w-24 h-24 mb-3">
@@ -176,7 +177,8 @@
     filteredInscriptions.forEach(ins => {
       if (window.__inventory && typeof window.__inventory.ensureInscriptionInstance === 'function') window.__inventory.ensureInscriptionInstance(ins);
       const cardElement = document.createElement('div');
-      cardElement.className = `glass-effect rounded-lg overflow-hidden card-hover cursor-pointer rarity-border-${ins.rarity.toLowerCase()}`;
+      cardElement.className = 'ui-panel ui-hover rounded-lg overflow-hidden cursor-pointer';
+      cardElement.dataset.rarity = String(ins.rarity || '').toLowerCase();
       cardElement.innerHTML = `
         <div class="p-3 flex flex-col items-center">
           <div class="w-16 h-16 mb-2">

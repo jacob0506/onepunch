@@ -20,14 +20,27 @@
   'use strict';
 
 
+    // B7：结算标题走组件（胜负靠 data-outcome 表达，组件库里配色）
+    function setBattleResultOutcome(isWin) {
+      const el = document.getElementById('battleResultTitle');
+      if (!el) return;
+      el.textContent = isWin ? '战斗胜利!' : '战斗失败!';
+      el.className = 'ui-result-title';
+      el.dataset.outcome = isWin ? 'win' : 'lose';
+    }
+
     function setBattleSpeed(multiplier) {
       battleRuntime.speed = multiplier;
       const b1 = document.getElementById('battleSpeed1');
       const b2 = document.getElementById('battleSpeed2');
       const b4 = document.getElementById('battleSpeed4');
-      if (b1) b1.classList.toggle('text-primary', multiplier === 1);
-      if (b2) b2.classList.toggle('text-primary', multiplier === 2);
-      if (b4) b4.classList.toggle('text-primary', multiplier === 4);
+      // B7：选中速度用组件变体（primary 实底 / ghost 描边），不再靠文字颜色表达
+      const btns = [[b1, 1], [b2, 2], [b4, 4]];
+      btns.forEach(([b, m]) => {
+        if (!b) return;
+        b.classList.toggle('ui-btn--primary', multiplier === m);
+        b.classList.toggle('ui-btn--ghost', multiplier !== m);
+      });
     }
 
     function closeBattleModal() {
@@ -47,8 +60,7 @@
       if (!lastBattleRecord) return;
       battleRuntime.historyMode = true;
       const record = lastBattleRecord;
-      document.getElementById('battleResultTitle').textContent = record.isWin ? '战斗胜利!' : '战斗失败!';
-      document.getElementById('battleResultTitle').className = record.isWin ? 'text-2xl font-bold text-green-400' : 'text-2xl font-bold text-red-400';
+      setBattleResultOutcome(record.isWin);
       document.getElementById('battleResultStage').textContent = record.stageName;
       document.getElementById('battleResultRounds').textContent = record.rounds;
       document.getElementById('battleResultMaxDamage').textContent = record.maxDamage;
@@ -192,8 +204,7 @@
 
     function showBattleResult(stage, result, keepLogs = false) {
       // 更新战斗结果UI
-      document.getElementById('battleResultTitle').textContent = result.isWin ? '战斗胜利!' : '战斗失败!';
-      document.getElementById('battleResultTitle').className = result.isWin ? 'text-2xl font-bold text-green-400' : 'text-2xl font-bold text-red-400';
+      setBattleResultOutcome(result.isWin);
       document.getElementById('battleResultStage').textContent = stage.name;
       document.getElementById('battleResultRounds').textContent = result.rounds;
       document.getElementById('battleResultMaxDamage').textContent = result.maxDamage;
@@ -215,6 +226,12 @@
       const itemsContainer = document.getElementById('battleResultItems');
       itemsContainer.innerHTML = '';
       const isTowerStage = stage && (stage.isTower || (typeof stage.id === 'string' && stage.id.startsWith('tower_')));
+      // C7：日常副本 stage 也住在 stagesData 里，但**绝不能走主线推进分支**
+      //     （否则会把 currentStage 设成副本 id，直接废掉主线进度）
+      const isDailyStage = stage && (
+        stage.isDaily === true ||
+        (typeof stage.id === 'string' && stage.id.startsWith('daily_'))
+      );
       
       if (result.isWin) {
         // 获得经验和金币
@@ -233,40 +250,36 @@
           checkCharacterLevelUp(char);
         });
         
-        const renderMaterialRow = (name, iconUrl, count) => {
+        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        // B7：掉落行统一走组件（.ui-result-drop + .ui-tag 稀有度）
+        const dropRow = (name, iconUrl, rarity, count) => {
           const el = document.createElement('div');
-          el.className = 'flex items-center mt-2';
-          const img = iconUrl ? `<img src="${iconUrl}" alt="${name}" class="w-6 h-6 mr-2">` : `<i class="fa fa-cube mr-2 text-gray-400"></i>`;
-          el.innerHTML = `${img}<span>${name}</span><span class="ml-2 text-primary text-xs">x${count}</span>`;
-          el.querySelectorAll('img').forEach(im => { im.onerror = () => { im.replaceWith(Object.assign(document.createElement('i'), { className: 'fa fa-cube mr-2 text-gray-400' })); }; });
+          el.className = 'ui-result-drop';
+          const r = rarity ? String(rarity).toLowerCase() : '';
+          el.innerHTML = (iconUrl ? `<img class="ui-result-drop__img" src="${esc(iconUrl)}" alt="">`
+            : `<i class="fa fa-cube ui-result-drop__img" style="display:flex;align-items:center;justify-content:center;color:var(--c-text-dim)"></i>`)
+            + `<span class="ui-result-drop__name">${esc(name)}</span>`
+            + (r ? `<span class="ui-tag" data-tone="${esc(r)}">${esc(rarity)}</span>` : '')
+            + (count != null ? `<span class="ui-result-row__val">x${esc(count)}</span>` : '');
+          el.querySelectorAll('img').forEach(im => {
+            im.onerror = () => { im.replaceWith(Object.assign(document.createElement('i'), { className: 'fa fa-cube ui-result-drop__img', style: 'display:flex;align-items:center;justify-content:center;color:var(--c-text-dim)' })); };
+          });
           return el;
         };
+        const renderMaterialRow = (name, iconUrl, count) => dropRow(name, iconUrl, '', count);
 
         // 添加获得的物品
         if (result.rewards.items.length > 0) {
           result.rewards.items.forEach(item => {
-            const itemElement = document.createElement('div');
-            itemElement.className = 'flex items-center mt-2';
-            
             if (equipmentData.some(e => e.id === item.id)) {
               // 是装备
               gameData.equipment.push(item);
-              itemElement.innerHTML = `
-                <img src="${item.imageUrl}" alt="${item.name}" class="w-6 h-6 mr-2">
-                <span>${item.name}</span>
-                <span class="ml-2 text-rarity-${item.rarity.toLowerCase()} text-xs">${item.rarity}</span>
-              `;
+              itemsContainer.appendChild(dropRow(item.name, item.imageUrl, item.rarity, null));
             } else if (inscriptionsData.some(i => i.id === item.id)) {
               // 是铭文
               gameData.inscriptions.push(item);
-              itemElement.innerHTML = `
-                <img src="${item.imageUrl}" alt="${item.name}" class="w-6 h-6 mr-2">
-                <span>${item.name}</span>
-                <span class="ml-2 text-rarity-${item.rarity.toLowerCase()} text-xs">${item.rarity}</span>
-              `;
+              itemsContainer.appendChild(dropRow(item.name, item.imageUrl, item.rarity, null));
             }
-            
-            itemsContainer.appendChild(itemElement);
           });
         }
 
@@ -281,7 +294,7 @@
         }
 
         if (result.rewards.items.length === 0 && matEntries.length === 0) {
-          itemsContainer.innerHTML = '<div class="text-gray-400">未获得物品</div>';
+          itemsContainer.innerHTML = '<div class="ui-result-empty">未获得物品</div>';
         }
         
         if (isTowerStage) {
@@ -294,6 +307,12 @@
           gameData.tower.floor = Math.max(gameData.tower.floor || 1, f + 1);
           if (gameData.tower.floor > 200) gameData.tower.floor = 200;
           window.__battleModifiers = null;
+        } else if (isDailyStage) {
+          // C7：日常副本 —— 胜利才扣次数（失败不扣，避免"打不过还亏次数"），
+          //     主线进度不受影响。次数与跨日重置都在 domain/daily.js。
+          if (window.__daily && typeof window.__daily.consume === 'function') {
+            window.__daily.consume(stage.dailyKey);
+          }
         } else {
           const unlockedIndex = Math.max(0, stagesData.findIndex(s => s.id === gameData.currentStage));
           const clearedIndex = stagesData.findIndex(s => s.id === stage.id);
@@ -303,7 +322,7 @@
           }
         }
       } else {
-        itemsContainer.innerHTML = '<div class="text-gray-400">失败无奖励</div>';
+        itemsContainer.innerHTML = '<div class="ui-result-empty">失败无奖励</div>';
         if (isTowerStage) window.__battleModifiers = null;
       }
 
@@ -343,8 +362,9 @@
   window.renderBattleHud = renderBattleHud;
   window.startBattle = startBattle;
   window.showBattleResult = showBattleResult;
+  window.setBattleResultOutcome = setBattleResultOutcome;
 
-  const api = { setBattleSpeed, closeBattleModal, updateLastBattleReportButton, openLastBattleReport, skipBattle, toggleBattleFold, battleDelayMs, appendBattleLog, renderBattleHud, startBattle, showBattleResult };
+  const api = { setBattleSpeed, closeBattleModal, updateLastBattleReportButton, openLastBattleReport, skipBattle, toggleBattleFold, battleDelayMs, appendBattleLog, renderBattleHud, startBattle, showBattleResult, setBattleResultOutcome };
   const segs = 'Game.battle.fallbackHud'.split('.');
   let host = window;
   for (const s of segs) { host[s] = host[s] || {}; host = host[s]; }

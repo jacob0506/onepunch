@@ -33,6 +33,10 @@
   let battleSceneDebugCoreState = { active: false, ownerId: 'char_sur_007', spent: 0, threshold: 0, triggers: 0, enhancedPct: 0.2, thresholdPct: 0.7, energyPerTurn: 3, fieldTurns: 2 };
   let battleSceneDebugCatLinkState = { active: false, catId: 'char_sur_010', roundFollowUpUsed: false };
   let battleSceneDebugRainFlowerBondState = 'none';
+/** C6：本场战斗生效的羁绊汇总（进战斗时算一次，逐单位套用；不进 calculateTotalStats） */
+let battleSceneDebugBondTotal = null;
+/** C6：本场生效的羁绊清单（用于开场播报） */
+let battleSceneDebugBondActive = [];
 
   function battleSceneDebugStep() {
     if (!battleSceneDebugState) return;
@@ -200,6 +204,11 @@ function battleSceneDebugApplyShellUI() {
       try {
         ensureFormation();
         const ids = gameData.formation.filter(Boolean);
+        // C6：羁绊是"队伍层面"的加成 —— 进战斗时算一次，逐单位套用（不动 calculateTotalStats）
+        const bondInfo = (window.__bonds && typeof window.__bonds.formationInfo === 'function')
+          ? window.__bonds.formationInfo() : null;
+        battleSceneDebugBondTotal = bondInfo ? bondInfo.total : null;
+        battleSceneDebugBondActive = (bondInfo && bondInfo.active) ? bondInfo.active : [];
         const picked = ids.map(id => gameData.characters.find(c => c.id === id)).filter(Boolean).slice(0, 6);
         const player = [];
         for (let i = 0; i < 6; i++) {
@@ -208,7 +217,7 @@ function battleSceneDebugApplyShellUI() {
             player.push(null);
             continue;
           }
-          const stats = calculateTotalStats(c);
+          const stats = battleSceneDebugApplyBonds(calculateTotalStats(c));
           const skills = Array.isArray(c.skills) ? JSON.parse(JSON.stringify(c.skills)) : [];
           const passiveText = battleSceneDebugGetLoadoutPassiveText(c);
           const passiveRuntime = battleSceneDebugParsePassiveText(passiveText);
@@ -327,6 +336,7 @@ function battleSceneDebugApplyShellUI() {
           stageName: stage.name,
           round: 1,
           auto: false,
+          manualUlt: false,  // C9 切片 3：自动模式下大招时机由玩家手动决策（true 时能量够会暂停等待指挥）
           speed: 2,
           energy: 2,
           player,
@@ -351,6 +361,11 @@ function battleSceneDebugApplyShellUI() {
         document.getElementById('battleSceneDebug').classList.remove('hidden');
         renderBattleSceneDebug();
         pushBattleSceneDebugFeed(`进入战斗场景调试：${stage.name}`);
+        // C6：开场播报生效羁绊（加成上面已逐单位套好）
+        if (battleSceneDebugBondActive.length) {
+          const names = battleSceneDebugBondActive.map(b => `${b.name}·${b.need}`).join(' + ');
+          pushBattleSceneDebugFeed(`羁绊生效：${names}`);
+        }
         battleSceneDebugSyncControls();
         battleSceneDebugInitRound(true);
         if (battleSceneDebugState && !battleSceneDebugState.auto) setTimeout(() => battleSceneDebugStep(), 0);
@@ -373,6 +388,16 @@ function battleSceneDebugApplyShellUI() {
           };
         }
         const sel = document.getElementById('battleSceneDebugSpeed');
+        // C9 切片 3：大招手动开关（混合模式）
+        const ultBtn = document.getElementById('battleSceneDebugUltBtn');
+        if (ultBtn) {
+          ultBtn.onclick = () => {
+            if (!battleSceneDebugState) return;
+            battleSceneDebugState.manualUlt = !battleSceneDebugState.manualUlt;
+            pushBattleSceneDebugFeed(`大招时机：${battleSceneDebugState.manualUlt ? '手动（能量够时暂停等你指挥）' : '自动（AI 代放技能）'}`);
+            battleSceneDebugSyncControls();
+          };
+        }
         if (sel) {
           sel.onchange = () => {
             if (!battleSceneDebugState) return;
@@ -381,6 +406,8 @@ function battleSceneDebugApplyShellUI() {
             battleSceneDebugSyncControls();
           };
         }
+        // B9：进战斗 → 切战斗 BGM
+        if (window.Game && Game.audio) Game.audio.setBgm('battle');
       } catch (e) {
         console.error(e);
         try { document.getElementById('battleSceneDebug').classList.add('hidden'); } catch (_) {}
@@ -391,6 +418,8 @@ function battleSceneDebugApplyShellUI() {
     }
 
     function closeBattleSceneDebug() {
+      // B9：战斗结束/退出 → 回主城 BGM
+      if (window.Game && Game.audio) Game.audio.setBgm('city');
       const runBtn = document.getElementById('battleSceneDebugRunBtn');
       if (runBtn) runBtn.textContent = '开始';
       battleSceneDebugRestoreShellUI();
@@ -402,6 +431,13 @@ function battleSceneDebugApplyShellUI() {
       const btn = document.getElementById('battleSceneDebugAutoBtn');
       const sel = document.getElementById('battleSceneDebugSpeed');
       const runBtn = document.getElementById('battleSceneDebugRunBtn');
+      // C9 切片 3：大招手动开关（仅自动模式下有意义，手动模式隐藏）
+      const ultBtn = document.getElementById('battleSceneDebugUltBtn');
+      if (ultBtn && battleSceneDebugState) {
+        // ⚠️ hidden 必须写进 className 模板：后面整体赋值 className 会抹掉 toggle 加的类
+        ultBtn.className = `ui-btn ui-btn--sm ${battleSceneDebugState.manualUlt ? 'ui-btn--gold' : 'ui-btn--ghost'}${battleSceneDebugState.auto ? '' : ' hidden'}`;
+        ultBtn.textContent = battleSceneDebugState.manualUlt ? '大招·手动' : '大招·自动';
+      }
       if (btn && battleSceneDebugState) {
         btn.textContent = battleSceneDebugState.auto ? '自动' : '手动';
         btn.className = `px-3 py-1.5 rounded-lg border text-[10px] font-black ${battleSceneDebugState.auto ? 'bg-green-900 border-green-700 text-green-200' : 'bg-gray-900 border-gray-700 text-white'}`;
@@ -419,9 +455,76 @@ function battleSceneDebugApplyShellUI() {
       battleSceneDebugState.feed.push(line);
       const feed = document.getElementById('battleSceneDebugFeed');
       if (feed) {
-        feed.innerHTML = battleSceneDebugState.feed.slice(-60).map(t => `<div>${escapeHtml(t)}</div>`).join('');
+        feed.innerHTML = battleSceneDebugState.feed.slice(-60).map((t) => {
+          const tone = feedTone(t);
+          return `<div class="ui-feed__line"${tone ? ` data-tone="${tone}"` : ''}>${escapeHtml(t)}</div>`;
+        }).join('');
         feed.scrollTop = feed.scrollHeight;
       }
+    }
+
+    // 战斗日志分级（B7）：按关键词判语气色 —— 不动各调用点，渲染时统一着色
+    function feedTone(t) {
+      const s = String(t);
+      if (/治疗|回复|恢复|吸血/.test(s)) return 'heal';
+      if (/羁绊|共鸣|获得|提升|增加|附加|护盾|狂暴|免疫|反弹/.test(s)) return 'buff';
+      if (/倒下|失败|判定|回合上限/.test(s)) return 'system';
+      if (/造成|伤害|追击|反噬|牺牲/.test(s)) return 'damage';
+      return '';
+    }
+
+    /* ── 战斗反馈层（B7）─────────────────────────────────────────
+       飘字/技能特写挂在 #battleFloatLayer / #battleCastLayer（index.html 内），
+       不随 renderBattleSceneDebug 的 innerHTML 重建被抹掉。纯视觉，不进数值快照。 */
+
+    // 取单位卡相对战斗场景容器的中心坐标（用于定位飘字）
+    function unitAnchor(target) {
+      if (!battleSceneDebugState || !target) return null;
+      const host = document.getElementById('battleSceneDebug');
+      const side = target.isEnemy ? 'enemy' : 'player';
+      const list = target.isEnemy ? battleSceneDebugState.enemies : battleSceneDebugState.player;
+      const idx = list.indexOf(target);
+      if (!host || idx < 0) return null;
+      const grid = document.getElementById(side === 'enemy' ? 'battleSceneDebugEnemyGrid' : 'battleSceneDebugPlayerGrid');
+      const card = grid && grid.children[idx] ? grid.children[idx].firstElementChild : null;
+      if (!card || !card.getBoundingClientRect) return null;
+      const cr = card.getBoundingClientRect();
+      const hr = host.getBoundingClientRect();
+      if (!cr.height) return null;
+      return { x: cr.left - hr.left + cr.width / 2, y: cr.top - hr.top + cr.height * 0.34 };
+    }
+
+    // 飘字：tone = damage|crit|heal|shield|dodge|immune
+    function battleSceneDebugFloat(target, text, tone) {
+      const layer = document.getElementById('battleFloatLayer');
+      if (!layer || !text) return;
+      const at = unitAnchor(target);
+      if (!at) return;
+      const el = document.createElement('div');
+      el.className = 'ui-float' + (tone ? ` ui-float--${tone}` : '');
+      el.textContent = String(text);
+      el.style.left = `${at.x}px`;
+      el.style.top = `${at.y}px`;
+      layer.appendChild(el);
+      setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 1000);
+    }
+
+    // 技能特写：立绘 + 「技能名 · 角色名」横滑过场
+    function battleSceneDebugCast(actor, skill) {
+      const layer = document.getElementById('battleCastLayer');
+      if (!layer || !actor || !skill) return;
+      layer.innerHTML = '';
+      const name = skill && skill.name ? String(skill.name) : '';
+      const who = actor.displayName || actor.name || '';
+      const img = actor.imageUrl ? `<img class="ui-cast__img" src="${actor.imageUrl}" alt="">` : '';
+      const el = document.createElement('div');
+      el.className = 'ui-cast';
+      el.innerHTML = `${img}<div class="ui-cast__text">` +
+        `<span class="ui-cast__skill">${escapeHtml(name)}</span>` +
+        `<span class="ui-cast__who">${escapeHtml(who)}</span>` +
+        `</div><div class="ui-cast__sweep"></div>`;
+      layer.appendChild(el);
+      setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 900);
     }
 
     function renderBattleSceneDebug() {
@@ -431,11 +534,9 @@ function battleSceneDebugApplyShellUI() {
       if (roundEl) roundEl.textContent = String(battleSceneDebugState.round || 1);
       if (energyEl) energyEl.textContent = String(battleSceneDebugState.energy || 0);
 
-      const shortName = (name) => {
-        const t = String(name || '');
-        if (t.length <= 6) return t;
-        return `${t.slice(0, 5)}…`;
-      };
+      // B7：名字不再 JS 截断（原 6 字截断把「暴劲龙皇·…」全砍了），
+      // 完整交给 .ui-bt__name 的两行 clamp 处理
+      const shortName = (name) => String(name || '');
       const currentTurn = battleSceneDebugState.turnOrder && battleSceneDebugState.turnOrder[battleSceneDebugState.turnCursor];
 
       const renderGrid = (containerId, units, side) => {
@@ -445,45 +546,44 @@ function battleSceneDebugApplyShellUI() {
         for (let i = 0; i < 6; i++) {
           const unit = units[i];
           const cell = document.createElement('div');
-          cell.className = 'w-full min-w-0';
+          cell.className = 'w-full h-full min-w-0 min-h-0';
           if (!unit) {
-            cell.innerHTML = `<div class="w-full aspect-square rounded-xl border border-gray-800 bg-black/25"></div>`;
+            cell.innerHTML = `<div class="ui-bt" style="opacity:.35"></div>`;
             root.appendChild(cell);
             continue;
           }
           const name = unit.displayName || unit.name || '单位';
           const label = shortName(name);
           const img = unit.imageUrl
-            ? `<img src="${unit.imageUrl}" class="w-[92%] h-[92%] md:w-[94%] md:h-[94%] object-contain">`
-            : `<div class="w-[78%] h-[78%] rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-2xl font-black text-white">${escapeHtml(label.slice(0, 1))}</div>`;
+            ? `<img src="${unit.imageUrl}" class="ui-bt__img" alt="">`
+            : `<div class="ui-bt__ph">${escapeHtml(label.slice(0, 1))}</div>`;
           const dead = unit.currentHp <= 0;
-          const deadOverlay = dead ? `<div class="absolute inset-0 rounded-xl bg-black/60 flex items-center justify-center text-[10px] font-black text-red-300">已倒下</div>` : '';
           const hpPct = unit.maxHp > 0 ? Math.max(0, Math.min(100, Math.floor(unit.currentHp / unit.maxHp * 100))) : 0;
-          const outline = 'ring-1 ring-white/10';
+          // 血条分色：>50 绿 / 20-50 黄 / <20 红（.ui-bt__hp[data-hp]）
+          const hpTone = dead ? 'low' : (hpPct > 50 ? 'ok' : (hpPct > 20 ? 'mid' : 'low'));
+          const hpText = dead ? '—' : `${Math.max(0, Math.floor(unit.currentHp))}/${Math.floor(unit.maxHp)}`;
           const isActor = currentTurn && currentTurn.side === side && currentTurn.index === i;
-          const actorOutline = (isActor && !battleSceneDebugState.awaitingTarget) ? (side === 'player' ? 'ring-2 ring-sky-400' : 'ring-2 ring-red-400') : outline;
           const selecting = !!battleSceneDebugState.awaitingTarget;
           const pickSide = selecting ? battleSceneDebugState.awaitingTarget.pickSide : null;
           const targetable = selecting && pickSide === side && !dead;
-          const focus = targetable ? 'ring-2 ring-yellow-400' : actorOutline;
-          const dim = selecting && side !== pickSide && !isActor ? 'opacity-60' : '';
+          const dim = selecting && side !== pickSide && !isActor ? ' ui-bt--dim' : '';
           const fx = battleSceneDebugState.hitFx && battleSceneDebugState.hitFx.side === side && battleSceneDebugState.hitFx.index === i && battleSceneDebugState.hitFx.until > Date.now();
-          const fxOverlay = fx ? `<div class="absolute inset-0 bg-white/10 animate-pulse"></div>` : '';
+          const fxOverlay = fx ? `<div class="ui-bt--hit" style="position:absolute;inset:0;pointer-events:none;background:rgba(255,255,255,0.14)"></div>` : '';
+          const actorMark = (isActor && !selecting) ? `<div class="ui-bt__mark">▶</div>` : '';
+          const deadMark = dead ? `<div class="ui-bt__deadmark">已倒下</div>` : '';
           cell.innerHTML = `
-            <div class="relative overflow-hidden w-full aspect-square rounded-xl ${focus} ${dim} bg-black/20 border border-gray-800 flex items-center justify-center">
+            <div class="ui-bt${isActor && !selecting ? ' ui-bt--actor' : ''}${targetable ? ' ui-bt--target' : ''}${dim}${dead ? ' ui-bt--dead' : ''}">
               ${fxOverlay}
-              <div class="w-full h-full flex items-center justify-center">
-                <div class="w-[92%] h-[92%] md:w-[94%] md:h-[94%] flex items-center justify-center shadow-[0_10px_18px_rgba(0,0,0,0.75)]">
-                  ${img}
+              ${actorMark}
+              ${img}
+              <div class="ui-bt__info">
+                <div class="ui-bt__name">${escapeHtml(label)}</div>
+                <div class="ui-bt__hp" data-hp="${hpTone}">
+                  <div class="ui-bt__hpfill" style="width:${hpPct}%"></div>
+                  <div class="ui-bt__hpnum">${hpText}</div>
                 </div>
               </div>
-              <div class="absolute left-2 right-2 bottom-1">
-                <div class="text-[9px] leading-tight font-black text-white text-center truncate w-full">${escapeHtml(label)}</div>
-                <div class="mt-0.5 w-full h-1 rounded-full bg-gray-800 overflow-hidden border border-gray-700">
-                  <div class="h-full bg-gradient-to-r from-green-500 to-emerald-300" style="width:${hpPct}%"></div>
-                </div>
-              </div>
-              ${deadOverlay}
+              ${deadMark}
             </div>
           `;
           cell.classList.add('cursor-pointer');
@@ -505,8 +605,12 @@ function battleSceneDebugApplyShellUI() {
         const energy = battleSceneDebugState.energy || 0;
         const silenced = !!(actor && battleSceneDebugGetStatus(actor, 'silence'));
         if (hint) {
-          const pickText = battleSceneDebugState.awaitingTarget.pickSide === 'player' ? '点选我方目标' : '点选敌方目标';
-          hint.textContent = actor ? `操作：${actor.displayName || actor.name}，选择行动并${pickText}` : '请选择目标';
+          if (battleSceneDebugState.awaitingTarget.ultPause) {
+            hint.textContent = actor ? `⚡ ${actor.displayName || actor.name} 能量充足：选技能直接放，或交给 AI 普攻` : '请选择目标';
+          } else {
+            const pickText = battleSceneDebugState.awaitingTarget.pickSide === 'player' ? '点选我方目标' : '点选敌方目标';
+            hint.textContent = actor ? `操作：${actor.displayName || actor.name}，选择行动并${pickText}` : '请选择目标';
+          }
         }
         if (buttons) {
           buttons.innerHTML = '';
@@ -514,7 +618,8 @@ function battleSceneDebugApplyShellUI() {
             const b = document.createElement('button');
             b.textContent = text;
             b.disabled = !!disabled;
-            b.className = `px-4 py-2 rounded-lg border text-xs font-black flex-shrink-0 ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-900 border-gray-700 text-gray-500' : (selected ? 'bg-yellow-900 border-yellow-700 text-yellow-200' : 'bg-gray-900 border-gray-700 text-white')}`;
+            // B7：技能按钮迁组件库（.ui-btn--sm），选中态用金色，禁用交给 .ui-btn 原生 disabled 样式
+            b.className = `ui-btn ui-btn--sm flex-shrink-0 ${selected ? 'ui-btn--gold' : 'ui-btn--ghost'}`;
             b.onclick = onClick;
             buttons.appendChild(b);
           };
@@ -525,6 +630,14 @@ function battleSceneDebugApplyShellUI() {
             battleSceneDebugState.awaitingTarget.pickSide = 'enemy';
             renderBattleSceneDebug();
           });
+          // C9 切片 3：混合模式唤醒（能量够放技能）时提供"AI 代打"——本次行动交给自动决策
+          if (battleSceneDebugState.awaitingTarget.ultPause) {
+            addBtn('AI 代打', false, false, () => {
+              if (!battleSceneDebugState || !battleSceneDebugState.awaitingTarget) return;
+              battleSceneDebugState.awaitingTarget = null;
+              battleSceneDebugAutoAct(actor);
+            });
+          }
           const skills = actor && Array.isArray(actor.skills) ? actor.skills : [];
           skills.slice(0, 4).forEach((s, idx) => {
             const cost = battleSceneDebugGetSkillCost(s);
@@ -973,6 +1086,16 @@ function battleSceneDebugApplyShellUI() {
       battleSceneDebugCatLinkState.roundFollowUpUsed = true;
     }
 
+    /* ── C6：羁绊加成（队伍层面） ─────────────────────────────
+       数字全在 domain/bonds.js（单一真相源），这里只负责在进战斗时套到单位上。
+       不写进 calculateTotalStats —— 那是"角色个人"数值，装备/属性面板看的就是它。 */
+    function battleSceneDebugApplyBonds(stats) {
+      if (!stats || !battleSceneDebugBondTotal) return stats;
+      const bonds = window.__bonds;
+      if (!bonds || typeof bonds.applyToStats !== 'function') return stats;
+      return bonds.applyToStats(stats, battleSceneDebugBondTotal);
+    }
+
     function battleSceneDebugUpdateRainFlowerBondState() {
       if (!battleSceneDebugState) return;
       const koi = battleSceneDebugGetTeamUnit('char_sur_014');
@@ -1042,6 +1165,15 @@ function battleSceneDebugApplyShellUI() {
       }
     }
 
+    /** C9：职业克制乘数（唯一数值源 domain/counters.js；模块缺失时退中性 ×1，不崩） */
+    function battleSceneDebugClassCounter(attacker, target) {
+      try {
+        const api = (window.__counters || (window.Game && window.Game.domain && window.Game.domain.counters) || null);
+        if (api && typeof api.multOf === 'function') return api.multOf(attacker && attacker.class, target && target.class);
+      } catch (e) { /* ignore */ }
+      return { mult: 1, state: 'neutral', rel: null };
+    }
+
     function computeDebugDamage(attacker, target, mult, opts = {}) {
       const m = Number(mult);
       mult = Number.isFinite(m) ? m : 0;
@@ -1073,7 +1205,9 @@ function battleSceneDebugApplyShellUI() {
       }
       const atk = Math.max(1, (Number(attacker.attack) || 1) * (1 + atkUp / 100));
       const base = opts.rawOverride != null ? Number(opts.rawOverride) : (atk * mult);
-      const raw = base * (0.9 + Math.random() * 0.2) * (1 + dmgUp / 100);
+      // C9：职业克制乘区（克制 +15% / 被克 -15%，环见 assets/data/counters.json）
+      const counter = battleSceneDebugClassCounter(attacker, target);
+      const raw = base * (0.9 + Math.random() * 0.2) * (1 + dmgUp / 100) * counter.mult;
       const limitField = battleSceneDebugGetStatusValue(target, 'limitField');
       const ignoreDef = Math.max(
         typeof opts.ignoreDef === 'number' ? opts.ignoreDef : 0,
@@ -1111,7 +1245,7 @@ function battleSceneDebugApplyShellUI() {
       }
 
       if (!Number.isFinite(dmg)) dmg = 0;
-      return { immune: false, dodged: false, crit, block, damage: dmg };
+      return { immune: false, dodged: false, crit, block, damage: dmg, counterState: counter.state };
     }
 
     function battleSceneDebugParsePassiveText(text) {
@@ -1199,10 +1333,12 @@ function battleSceneDebugApplyShellUI() {
       const r = computeDebugDamage(attacker, target, multiplier, opts);
       if (r.immune) {
         pushBattleSceneDebugFeed(`${attacker.displayName || attacker.name} 的${label}被 ${target.displayName || target.name} 免疫`);
+        battleSceneDebugFloat(target, '免疫', 'immune');
         return { damage: 0 };
       }
       if (r.dodged) {
         pushBattleSceneDebugFeed(`${attacker.displayName || attacker.name} 的${label}被 ${target.displayName || target.name} 闪避`);
+        battleSceneDebugFloat(target, '闪避', 'dodge');
         if (!target.isEnemy && /成功闪避后下一次攻击必暴击/.test((target.passiveText || ''))) {
           battleSceneDebugAddStatus(target, 'nextCrit', 1, 3);
         }
@@ -1239,8 +1375,14 @@ function battleSceneDebugApplyShellUI() {
       const flags = [];
       if (r.crit) flags.push('暴击');
       if (r.block) flags.push('格挡');
+      if (r.counterState === 'counter') flags.push('克制');
+      if (r.counterState === 'weak') flags.push('被克');
       const flagStr = flags.length ? `（${flags.join('/')}）` : '';
       pushBattleSceneDebugFeed(`${attacker.displayName || attacker.name} 对 ${target.displayName || target.name} 使用${label}，造成 ${dealt}${flagStr}`);
+      // B7 伤害飘字：暴击走金色大字，普伤红色
+      if (dealt > 0) battleSceneDebugFloat(target, `-${dealt}`, r.crit ? 'crit' : 'damage');
+      // B9 音效：命中/暴击（engine 内部节流 + 静音判断，缺失时静默跳过）
+      if (window.Game && Game.audio) Game.audio.sfx(r.crit ? 'crit' : 'hit');
 
       const lifestealTotal = (attacker.lifesteal || 0) + battleSceneDebugGetStatusValue(attacker, 'lifestealUp');
       if (lifestealTotal > 0 && dealt > 0) {
@@ -1429,6 +1571,8 @@ function battleSceneDebugApplyShellUI() {
       if (battleSceneDebugState) {
         battleSceneDebugState.totalHealing = (battleSceneDebugState.totalHealing || 0) + (actual || 0);
       }
+      // B7 治疗飘字（纯视觉）
+      if (actual > 0) battleSceneDebugFloat(target, `+${actual}`, 'heal');
       return actual;
     }
 
@@ -1470,6 +1614,10 @@ function battleSceneDebugApplyShellUI() {
       if ((battleSceneDebugState.energy || 0) < cost) return false;
 
       battleSceneDebugState.energy -= cost;
+      // B9 音效：技能施放
+      if (window.Game && Game.audio) Game.audio.sfx('skill');
+      // B7 技能特写横幅（纯视觉，不影响任何数值）
+      battleSceneDebugCast(actor, skill);
 
       const enemies = battleSceneDebugState.enemies;
       const allies = battleSceneDebugState.player;
@@ -1745,12 +1893,20 @@ function battleSceneDebugApplyShellUI() {
 
     function battleSceneDebugFinish(isWin) {
       if (!battleSceneDebugState) return;
+      // B9 音效：胜负旋律（在 closeBattleSceneDebug 切回主城 BGM 前播）
+      if (window.Game && Game.audio) Game.audio.sfx(isWin ? 'victory' : 'defeat');
       battleSceneDebugState.running = false;
       battleSceneDebugSyncControls();
       const stage = stagesData.find(s => s && s.id === battleSceneDebugState.stageId);
       const result = battleSceneDebugToResult(stage, isWin);
       closeBattleSceneDebug();
       if (stage) showBattleResult(stage, result, false);
+      // C5：只有取胜才计入今日目标（败北不记，避免"刷失败"完成任务）
+      if (isWin) {
+        if (typeof window.bumpGoal === 'function') window.bumpGoal('battle', 1);
+        if (typeof window.renderDailyGoals === 'function') window.renderDailyGoals();
+        if (typeof window.refreshRedDots === 'function') window.refreshRedDots();
+      }
     }
 
     function battleSceneDebugStepOnce() {
@@ -1817,6 +1973,20 @@ function battleSceneDebugApplyShellUI() {
         return;
       }
 
+      // C9 切片 3：混合模式（自动 + 手动大招）—— 轮到我方且能量够放技能时暂停，
+      // 由玩家决定放不放/放谁；能量不够或没技能时照旧 AI 自动行动，不烦玩家。
+      if (turn.side === 'player' && battleSceneDebugState.auto && battleSceneDebugState.manualUlt) {
+        const aliveEnemy2 = battleSceneDebugState.enemies.some(u => u && u.currentHp > 0);
+        if (aliveEnemy2 && battleSceneDebugCanManualUlt(actor)) {
+          battleSceneDebugState.awaitingTarget = { actorIndex: turn.index, actionType: 'basic', skillIndex: null, pickSide: 'enemy', ultPause: true };
+          pushBattleSceneDebugFeed(`⏸ 等待指挥：${actor.displayName || actor.name} 能量充足，请决定技能释放（也可交给 AI）`);
+          battleSceneDebugState.running = false;
+          battleSceneDebugSyncControls();
+          renderBattleSceneDebug();
+          return;
+        }
+      }
+
       if (turn.side === 'player' && !battleSceneDebugState.auto) {
         const aliveEnemy = battleSceneDebugState.enemies.some(u => u && u.currentHp > 0);
         if (!aliveEnemy) return;
@@ -1842,6 +2012,23 @@ function battleSceneDebugApplyShellUI() {
         return;
       }
 
+      battleSceneDebugAutoAct(actor);
+    }
+
+    /* ── C9 切片 3：我方 AI 行动（单源）─────────────────────────
+       自动模式每步、混合模式"AI 代打"按钮都走这里：优先放技能（能量够且未被沉默），
+       否则普攻；收尾统一做 tick/推进/渲染/胜负判定。 */
+    function battleSceneDebugCanManualUlt(actor) {
+      if (!actor || !(actor.currentHp > 0)) return false;
+      if (battleSceneDebugGetStatus(actor, 'silence')) return false;
+      const skills = Array.isArray(actor.skills) ? actor.skills : [];
+      if (!skills.length || !skills[0]) return false;
+      const cost = battleSceneDebugGetSkillCost(skills[0]);
+      return (battleSceneDebugState.energy || 0) >= cost && cost > 0;
+    }
+
+    function battleSceneDebugAutoAct(actor) {
+      if (!battleSceneDebugState || !actor) return;
       const skills = Array.isArray(actor.skills) ? actor.skills : [];
       const hasSkill = skills.length > 0 && skills[0];
       let used = false;
@@ -1892,6 +2079,7 @@ function battleSceneDebugApplyShellUI() {
   window.openBattleSceneDebug = openBattleSceneDebug;
   window.closeBattleSceneDebug = closeBattleSceneDebug;
   window.battleSceneDebugSyncControls = battleSceneDebugSyncControls;
+  window.battleSceneDebugAutoAct = battleSceneDebugAutoAct;   // C9 切片 3：AI 代打路径，调试工具/回归脚本直接调用
   window.pushBattleSceneDebugFeed = pushBattleSceneDebugFeed;
   window.renderBattleSceneDebug = renderBattleSceneDebug;
   window.aliveCount = aliveCount;
@@ -1920,6 +2108,7 @@ function battleSceneDebugApplyShellUI() {
   window.battleSceneDebugTransferLifeLink = battleSceneDebugTransferLifeLink;
   window.battleSceneDebugTriggerStoredFollowUp = battleSceneDebugTriggerStoredFollowUp;
   window.battleSceneDebugUpdateRainFlowerBondState = battleSceneDebugUpdateRainFlowerBondState;
+  window.battleSceneDebugApplyBonds = battleSceneDebugApplyBonds;
   window.computeDebugDamage = computeDebugDamage;
   window.battleSceneDebugParsePassiveText = battleSceneDebugParsePassiveText;
   window.battleSceneDebugApplyHit = battleSceneDebugApplyHit;

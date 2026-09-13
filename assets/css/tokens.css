@@ -1,0 +1,104 @@
+/* ════════════════════════════════════════════════════════════════
+   幻卡传说 · 设计 Token（Stage 1 · B4）
+   ────────────────────────────────────────────────────────────────
+   这是全站视觉的**唯一真相源**：Tailwind config（index.html）、
+   内联 <style>、战斗特效（vfx.js / report.js）都引用这里的变量。
+   改这里 = 全站换肤。
+
+   规则（docs/07 · B4 验收）：
+   · 新代码禁止再写硬编码色值 —— 先来本文件登记 token，再引用。
+   · --*-rgb 三通道变量专门给 Tailwind 的 <alpha-value> 用
+     （bg-primary/20 这类透明度语法依赖它）。
+   · 已知例外：globals.js 的占位图是 data-URI SVG，var() 不生效，
+     允许保留 hex（已在此注释登记，不算违规）。
+   ════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── 品牌色 ─────────────────────────────────────────────── */
+  --c-primary: #4A90E2;            /* 主品牌蓝 */
+  --c-primary-rgb: 74 144 226;     /* 三通道，供 bg-primary/20 等 */
+  --c-primary-deep: #357ABD;       /* 按钮渐变深端 */
+  --c-primary-light: #5DA9FF;      /* 按钮描边 */
+  --c-primary-shadow: #2A5F96;     /* 按钮立体投影 */
+
+  --c-secondary: #50E3C2;          /* 辅助青绿 */
+  --c-secondary-rgb: 80 227 194;
+
+  --c-accent: #F5A623;             /* 强调金 */
+  --c-accent-rgb: 245 166 35;
+  --c-accent-deep: #D48806;        /* 金按钮渐变深端 */
+  --c-accent-light: #FFD17B;       /* 金按钮描边 */
+  --c-accent-shadow: #A66B04;      /* 金按钮立体投影 */
+
+  /* ── 稀有度（R / SR / SSR / UR / SUR）───────────────────── */
+  --c-rarity-r:   #7FB5FF;
+  --c-rarity-r-rgb:   127 181 255;
+  --c-rarity-sr:  #B18AFF;
+  --c-rarity-sr-rgb:  177 138 255;
+  --c-rarity-ssr: #FFD700;
+  --c-rarity-ssr-rgb: 255 215 0;
+  --c-rarity-ur:  #FF6B6B;
+  --c-rarity-ur-rgb:  255 107 107;
+  --c-rarity-sur: #FF00FF;
+  --c-rarity-sur-rgb: 255 0 255;
+
+  /* ── 职业色 ─────────────────────────────────────────────── */
+  --c-class-warrior: #FF5722;
+  --c-class-mage:    #9C27B0;
+  --c-class-assassin:#795548;
+  --c-class-archer:  #4CAF50;
+  --c-class-healer:  #2196F3;
+
+  /* ── 语义色 ─────────────────────────────────────────────── */
+  --c-success:      #34D399;
+  --c-success-rgb:  52 211 153;
+  --c-danger:       #F87171;
+  --c-danger-rgb:   248 113 113;
+  --c-danger-strong:#DC2626;       /* DEV 角标 */
+  --c-warning:      #FFBB33;
+  --c-warning-rgb:  255 187 51;
+  --c-info:         #38BDF8;
+  --c-info-rgb:     56 189 248;
+  --c-vfx-purple:   #A855F7;       /* 大招紫闪 */
+  --c-vfx-purple-rgb: 168 85 247;
+
+  /* ── 表面 / 文本 / 描边 ─────────────────────────────────── */
+  --c-surface:       rgba(15, 23, 42, 0.8);   /* 玻璃面板 */
+  --c-surface-solid: #0F172A;                 /* 不透明表面（同色系） */
+  --c-border-faint:  rgba(255, 255, 255, 0.1);
+  --c-border-strong: rgba(255, 255, 255, 0.2);
+  --c-text-hi:       #FFFFFF;
+  --c-text-dim:      #9CA3AF;
+
+  /* ── 调试日志台 ─────────────────────────────────────────── */
+  --c-log-bg:     rgba(0, 0, 0, 0.8);
+  --c-log-text:   #00FF00;
+  --c-log-border: #333333;
+
+  /* ── 字号（手写 CSS 用；Tailwind 自有刻度不受影响）───────── */
+  --text-xs:   10px;
+  --text-sm:   12px;
+  --text-base: 14px;
+  --text-lg:   16px;
+  --text-xl:   20px;
+  --text-2xl:  24px;
+
+  /* ── 圆角 ───────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* ── 阴影 ───────────────────────────────────────────────── */
+  --shadow-panel: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-btn:   0 8px 15px rgba(0, 0, 0, 0.4);
+  --shadow-btn-active: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-portrait: 0 0 20px rgba(0, 0, 0, 0.5);
+
+  /* ── 动效 ───────────────────────────────────────────────── */
+  --dur-fast: 0.1s;                 /* 按钮按压反馈 */
+  --dur-base: 0.3s;                 /* 常规过渡 */
+  --dur-slow: 0.5s;                 /* 弹层入场 */
+  --ease-game: cubic-bezier(0.4, 0, 0.6, 1);
+  --ease-out-soft: ease-out;
+}

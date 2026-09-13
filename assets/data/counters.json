@@ -1,0 +1,12 @@
+{
+  "_comment": "C9 切片 1 · 职业克制环。from 对 to 造成伤害 +counterPct%，反向 -counterPct%。只允许 6 职业构成单一有向环（每个职业恰好克 1 个、被 1 个克）——改环或改数值后必须跑 npm run check:counters，且伤害快照会整体漂移属预期（npm run snapshot 更新基线）。",
+  "counterPct": 15,
+  "ring": [
+    { "from": "tank", "to": "warrior", "text": "坚甲卸力" },
+    { "from": "warrior", "to": "archer", "text": "近身缠斗" },
+    { "from": "archer", "to": "healer", "text": "集火辅助" },
+    { "from": "healer", "to": "assassin", "text": "净化反制" },
+    { "from": "assassin", "to": "mage", "text": "切后突袭" },
+    { "from": "mage", "to": "tank", "text": "法术穿透" }
+  ]
+}
