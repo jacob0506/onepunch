@@ -232,6 +232,21 @@
         stage.isDaily === true ||
         (typeof stage.id === 'string' && stage.id.startsWith('daily_'))
       );
+      // E1：肉鸽远征 stage 也住在 stagesData 里 —— 同样**绝不能**走主线推进分支
+      const isExpeditionStage = stage && (
+        stage.isExpedition === true ||
+        (typeof stage.id === 'string' && stage.id.startsWith('exp_'))
+      );
+      // E3：周期挑战（周常首领）同样绝不能推进主线
+      const isChallengeStage = stage && (
+        stage.isChallenge === true ||
+        (typeof stage.id === 'string' && stage.id.startsWith('ch_'))
+      );
+      // E4：多队远征同样绝不能推进主线
+      const isSquadStage = stage && (
+        stage.isSquadRun === true ||
+        (typeof stage.id === 'string' && stage.id.startsWith('sq_'))
+      );
       
       if (result.isWin) {
         // 获得经验和金币
@@ -313,6 +328,14 @@
           if (window.__daily && typeof window.__daily.consume === 'function') {
             window.__daily.consume(stage.dailyKey);
           }
+        } else if (isExpeditionStage) {
+          // E1：远征不推进主线；胜利/失败都由 domain/expedition.js 决定推进与结算
+          //     （胜利 = 给远征币 + 祝福三选一；失败 = 本局结束）
+        } else if (isChallengeStage) {
+          // E3：周期挑战不推进主线；分数（累计伤害）已在 scene 的 Finish 里回写
+          //     并发放新达成的档位奖励 —— 这里只负责不污染主线进度。
+        } else if (isSquadStage) {
+          // E4：多队远征不推进主线；层推进由 domain/squads.js 的 advance 决定
         } else {
           const unlockedIndex = Math.max(0, stagesData.findIndex(s => s.id === gameData.currentStage));
           const clearedIndex = stagesData.findIndex(s => s.id === stage.id);
@@ -324,6 +347,10 @@
       } else {
         itemsContainer.innerHTML = '<div class="ui-result-empty">失败无奖励</div>';
         if (isTowerStage) window.__battleModifiers = null;
+        // E4：失败也要结算（保留队伍 HP、不推进层，可换队再上）
+        if (isSquadStage && window.__squads && typeof window.__squads.advance === 'function') {
+          window.__squads.advance(false);
+        }
       }
 
       lastBattleRecord = {
@@ -338,6 +365,28 @@
         itemsHtml: itemsContainer.innerHTML
       };
       updateLastBattleReportButton();
+
+      // E1：远征结算 —— 无论胜负都由 domain/expedition.js 推进（主线进度已在上面被拦住）
+      if (isExpeditionStage && window.__expedition && typeof window.__expedition.onBattleEnd === 'function') {
+        const expRet = window.__expedition.onBattleEnd(stage, result);
+        if (window.__expeditionUI && typeof window.__expeditionUI.afterBattle === 'function') {
+          window.__expeditionUI.afterBattle(expRet);
+        }
+      }
+      // E3：周期挑战结算 —— 把"本场累计伤害 / 是否破纪录 / 新达档位"补进结果弹窗
+      if (isChallengeStage && window.__challenge) {
+        const sum = (typeof window.__challenge.summary === 'function') ? window.__challenge.summary() : null;
+        if (sum && window.__challengeUI && typeof window.__challengeUI.afterBattle === 'function') {
+          window.__challengeUI.afterBattle(sum, result);
+        }
+      }
+      // E4：多队远征结算 —— 胜利推进层（发奖 / 营地恢复 / 通关）
+      if (isSquadStage && window.__squads && typeof window.__squads.advance === 'function') {
+        const adv = window.__squads.advance(result.isWin);
+        if (window.__squadsUI && typeof window.__squadsUI.afterBattle === 'function') {
+          window.__squadsUI.afterBattle(adv);
+        }
+      }
       
       // 显示战斗结果弹窗
       document.getElementById('battleResultModal').classList.remove('hidden');

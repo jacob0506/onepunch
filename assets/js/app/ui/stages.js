@@ -254,16 +254,38 @@
     const mainActive = mode === 'main';
     const towerActive = mode === 'tower';
     const dailyActive = mode === 'daily';
+    const expActive = mode === 'expedition';
+    const chActive = mode === 'challenge';
+    const sqActive = mode === 'squads';
+    const expSum = (window.__expedition && typeof window.__expedition.summary === 'function')
+      ? window.__expedition.summary() : null;
+    const chSum = (window.__challenge && typeof window.__challenge.summary === 'function')
+      ? window.__challenge.summary() : null;
+    const sqSum = (window.__squads && typeof window.__squads.summary === 'function')
+      ? window.__squads.summary() : null;
     const towerFloor = gameData.tower.floor || 1;
     const towerBest = gameData.tower.bestFloor || 0;
     const towerSeason = gameData.tower.seasonNo || 1;
     const dailySum = (window.__daily && typeof window.__daily.summary === 'function')
       ? window.__daily.summary() : null;
-    const rightInfo = dailyActive
-      ? `<div class="text-[10px] text-gray-400 whitespace-nowrap">今日剩余 <span class="text-primary font-black">${dailySum ? dailySum.left : 0}</span>/${dailySum ? dailySum.max : 0}</div>`
+    // 大数字简写（12.3万 / 4.5M）—— 周期挑战的伤害数字会很大
+    const fmtNum = (n) => {
+      const v = Number(n) || 0;
+      if (v >= 100000000) return (v / 100000000).toFixed(2) + '亿';
+      if (v >= 10000) return (v / 10000).toFixed(v >= 1000000 ? 0 : 1) + '万';
+      return String(Math.floor(v));
+    };
+    const rightInfo = chActive
+      ? `<div class="text-[10px] text-gray-400 whitespace-nowrap">剩余 <span class="text-primary font-black">${chSum ? chSum.triesLeft : 0}</span> 次 · 本周最佳 <span class="text-gray-200 font-black">${chSum ? fmtNum(chSum.best) : 0}</span></div>`
+      : (sqActive
+        ? `<div class="text-[10px] text-gray-400 whitespace-nowrap">第 <span class="text-primary font-black">${sqSum ? sqSum.layer : 0}</span>/${sqSum ? sqSum.layers : 12} 层 · 最远 <span class="text-gray-200 font-black">${sqSum ? sqSum.bestLayer : 0}</span></div>`
+        : (expActive
+      ? `<div class="text-[10px] text-gray-400 whitespace-nowrap">远征币 <span class="text-primary font-black">${expSum ? expSum.coins : 0}</span>${expSum && expSum.run ? ` · 第 <span class="text-primary font-black">${expSum.run.layer + 1}</span>/${expSum.run.layers} 层` : ''}</div>`
+      : (dailyActive
+        ? `<div class="text-[10px] text-gray-400 whitespace-nowrap">今日剩余 <span class="text-primary font-black">${dailySum ? dailySum.left : 0}</span>/${dailySum ? dailySum.max : 0}</div>`
       : (towerActive
         ? `<div class="text-[10px] text-gray-400 whitespace-nowrap">第<span class="text-primary font-black">${towerSeason}</span>季 · 当前层：<span class="text-primary font-black">${towerFloor}</span> · 最远：<span class="text-gray-200 font-black">${towerBest}</span></div>`
-        : `<div class="text-[10px] text-gray-400 whitespace-nowrap">第 <span class="text-gray-200 font-black">${String(gameData.currentStage || '-').replace(/^stage_0*/, '')}</span> 关</div>`);
+        : `<div class="text-[10px] text-gray-400 whitespace-nowrap">第 <span class="text-gray-200 font-black">${String(gameData.currentStage || '-').replace(/^stage_0*/, '')}</span> 关</div>`))));
     const modeBtn = (key, label, active) =>
       `<button type="button" class="ui-btn ui-btn--sm ${active ? 'ui-btn--primary' : 'ui-btn--ghost'}" data-mode="${key}">${label}</button>`;
     bar.innerHTML = `
@@ -273,6 +295,9 @@
             ${modeBtn('main', '主线', mainActive)}
             ${modeBtn('tower', '无尽塔', towerActive)}
             ${modeBtn('daily', '日常', dailyActive)}
+            ${modeBtn('expedition', '远征', expActive)}
+            ${modeBtn('challenge', '挑战', chActive)}
+            ${modeBtn('squads', '远征队', sqActive)}
           </div>
           <div class="text-right truncate min-w-0">${rightInfo}</div>
         </div>
@@ -622,6 +647,18 @@
     else if (mode === 'daily') {
       // C7：界面在 ui/daily.js（数值在 domain/daily.js）
       if (typeof window.renderDailyPanel === 'function') window.renderDailyPanel(stagesList);
+    }
+    else if (mode === 'expedition') {
+      // E1：肉鸽远征（数值在 domain/expedition.js，界面在 ui/expedition.js）
+      if (typeof window.renderExpeditionPanel === 'function') window.renderExpeditionPanel(stagesList);
+    }
+    else if (mode === 'challenge') {
+      // E3：周期挑战（数值在 domain/challenge.js，界面在 ui/challenge.js）
+      if (typeof window.renderChallengePanel === 'function') window.renderChallengePanel(stagesList);
+    }
+    else if (mode === 'squads') {
+      // E4：多队远征（数值在 domain/squads.js，界面在 ui/squads.js）
+      if (typeof window.renderSquadsPanel === 'function') window.renderSquadsPanel(stagesList);
     }
     else renderMainStages(stagesList);
   }

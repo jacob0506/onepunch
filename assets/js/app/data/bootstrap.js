@@ -35,6 +35,9 @@
           achievementsData = loaded.achievementsData || null;
           countersData = loaded.countersData || null;
           tutorialData = loaded.tutorialData || null;
+          expeditionData = loaded.expeditionData || null;
+      challengeData = loaded.challengeData || null;
+      squadsData = loaded.squadsData || null;
           // A4：json 配置覆盖内置兜底（GAME_CONFIG / BATTLE_SCENE_CONFIG / AWAKEN_PROFILES）
           // —— 必须在任何读配置的逻辑之前；powered by core/config.js（幂等，缺字段保留兜底）
           if (window.__config && typeof window.__config.apply === 'function') window.__config.apply(loaded);

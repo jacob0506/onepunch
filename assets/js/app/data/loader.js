@@ -83,6 +83,27 @@
     } catch (e) {
       console.warn('[loader] tutorial.json 加载失败，本次运行用内置引导步骤', e && e.message);
     }
+    // E1：肉鸽远征（拿不到则 domain/expedition.js 退回内置同值兜底）
+    let expeditionJson = null;
+    try {
+      expeditionJson = await fetchJson('assets/data/expedition.json');
+    } catch (e) {
+      console.warn('[loader] expedition.json 加载失败，本次运行用内置远征配置', e && e.message);
+    }
+    // E3：周期挑战（拿不到则 domain/challenge.js 退回内置同值兜底）
+    let challengeJson = null;
+    try {
+      challengeJson = await fetchJson('assets/data/challenge.json');
+    } catch (e) {
+      console.warn('[loader] challenge.json 加载失败，本次运行用内置周期挑战配置', e && e.message);
+    }
+    // E4：多队远征（拿不到则 domain/squads.js 退回内置同值兜底）
+    let squadsJson = null;
+    try {
+      squadsJson = await fetchJson('assets/data/squads.json');
+    } catch (e) {
+      console.warn('[loader] squads.json 加载失败，本次运行用内置多队远征配置', e && e.message);
+    }
     return {
       charactersData: charactersJson.characters || [],
       equipmentData: itemsJson.items || [],
@@ -94,6 +115,9 @@
       achievementsData: achievementsJson,
       countersData: countersJson,
       tutorialData: tutorialJson,
+      expeditionData: expeditionJson,
+      challengeData: challengeJson,
+      squadsData: squadsJson,
       configData: configJson,
       awakenProfilesData: awakenJson
     };

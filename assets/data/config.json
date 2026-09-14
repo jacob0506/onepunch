@@ -32,6 +32,14 @@
   },
   "battleScene": {
     "backgroundImageUrl": "./assets/backgrounds/battle_scene_bg.jpg",
-    "replaceFormal": true
+    "replaceFormal": true,
+    "formation": {
+      "_comment": "E2 布阵：gameData.formation 6 槽 = 前排 3 + 后排 3。frontTakenPct = 前排承伤加成（%），backDmgPct = 后排输出加成（%），assassinDiveBack = 刺客普攻优先切后排。",
+      "frontSlots": [0, 1, 2],
+      "backSlots": [3, 4, 5],
+      "frontTakenPct": 18,
+      "backDmgPct": 12,
+      "assassinDiveBack": true
+    }
   }
 }

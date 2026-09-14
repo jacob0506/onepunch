@@ -38,6 +38,305 @@ let battleSceneDebugBondTotal = null;
 /** C6：本场生效的羁绊清单（用于开场播报） */
 let battleSceneDebugBondActive = [];
 
+  /* ── E2 布阵（2026-09-15）：阵型规则唯一读取点 ──────────────────────────
+   * 真相源 = assets/data/config.json 的 battleScene.formation；json 缺字段时
+   * 用下面同值兜底（行为永远一致）。改数值只改 json，不要改代码。
+   *   · 槽位语义：gameData.formation 前 3 槽 = 前排，后 3 槽 = 后排
+   *   · frontTakenPct：前排承伤加成（%）—— 站前排要挨打，所以给后排输出补偿
+   *   · backDmgPct  ：后排输出加成（%）
+   *   · assassinDiveBack：刺客普攻可越前排直切后排
+   */
+  const FORMATION_FALLBACK = { frontTakenPct: 18, backDmgPct: 12, assassinDiveBack: true };
+  function battleSceneDebugFormationCfg() {
+    const bs = (typeof BATTLE_SCENE_CONFIG !== 'undefined' && BATTLE_SCENE_CONFIG) ? BATTLE_SCENE_CONFIG : {};
+    const f = (bs && bs.formation) || {};
+    return {
+      frontTakenPct: Number.isFinite(f.frontTakenPct) ? f.frontTakenPct : FORMATION_FALLBACK.frontTakenPct,
+      backDmgPct: Number.isFinite(f.backDmgPct) ? f.backDmgPct : FORMATION_FALLBACK.backDmgPct,
+      assassinDiveBack: (f.assassinDiveBack === undefined) ? FORMATION_FALLBACK.assassinDiveBack : !!f.assassinDiveBack
+    };
+  }
+
+  /** 槽位 → 站位（前 3 槽前排 / 后 3 槽后排） */
+  function battleSceneDebugSlotPosition(slotIndex) {
+    return (Number(slotIndex) || 0) < 3 ? 'front' : 'back';
+  }
+
+  /** 站位修正：目标在前排承伤 ↑，攻击者在后排输出 ↑（只在不为 0 时参与，老数据零影响） */
+  function battleSceneDebugPositionDmg(dmg, attacker, target) {
+    let v = dmg;
+    if (!Number.isFinite(v) || v <= 0) return v;
+    const cfg = battleSceneDebugFormationCfg();
+    if (target && (target.position || 'front') === 'front' && cfg.frontTakenPct > 0) {
+      v = Math.max(1, Math.floor(v * (1 + cfg.frontTakenPct / 100)));
+    }
+    if (attacker && (attacker.position || 'front') !== 'front' && cfg.backDmgPct > 0) {
+      v = Math.max(1, Math.floor(v * (1 + cfg.backDmgPct / 100)));
+    }
+    return v;
+  }
+
+  /* ── E1 肉鸽远征：祝福 hook（2026-09-15）────────────────────────────────
+   * 本场战斗生效的祝福由 stage.expeditionBlessings 注入（domain/expedition.js 构造
+   * 远征 stage 时写入完整祝福对象）。**非远征战斗该数组为空 ⇒ 下面所有 hook 直接
+   * 短路返回，主线 / 塔 / 日常副本的行为逐字节不变**（数值快照不会因此漂移）。
+   * 祝福定义见 assets/data/expedition.json，改数值只改 json。
+   */
+  let battleSceneDebugBlessings = [];
+
+  function battleSceneDebugSetBlessings(list) {
+    battleSceneDebugBlessings = Array.isArray(list) ? list.filter(Boolean) : [];
+  }
+  function battleSceneDebugBlessSum(type) {
+    if (!battleSceneDebugBlessings.length) return 0;
+    let s = 0;
+    battleSceneDebugBlessings.forEach(b => { if (b && b.type === type) s += (Number(b.value) || 0); });
+    return s;
+  }
+  /** 汇总 stat 型祝福的属性 mods（attacker/defender 共用的乘加区） */
+  function battleSceneDebugBlessStatMods() {
+    const acc = { atkMul: 1, hpMul: 1, defMul: 1, spdAdd: 0, critRateAdd: 0, critDmgAdd: 0, dmgReducAdd: 0, lifestealAdd: 0, penAdd: 0 };
+    if (!battleSceneDebugBlessings.length) return acc;
+    battleSceneDebugBlessings.forEach(b => {
+      if (!b || b.type !== 'stat' || !b.mods) return;
+      const m = b.mods;
+      if (Number.isFinite(m.atkMul)) acc.atkMul *= m.atkMul;
+      if (Number.isFinite(m.hpMul)) acc.hpMul *= m.hpMul;
+      if (Number.isFinite(m.defMul)) acc.defMul *= m.defMul;
+      if (Number.isFinite(m.spdAdd)) acc.spdAdd += m.spdAdd;
+      if (Number.isFinite(m.critRateAdd)) acc.critRateAdd += m.critRateAdd;
+      if (Number.isFinite(m.critDmgAdd)) acc.critDmgAdd += m.critDmgAdd;
+      if (Number.isFinite(m.dmgReducAdd)) acc.dmgReducAdd += m.dmgReducAdd;
+      if (Number.isFinite(m.lifestealAdd)) acc.lifestealAdd += m.lifestealAdd;
+      if (Number.isFinite(m.penAdd)) acc.penAdd += m.penAdd;
+    });
+    return acc;
+  }
+
+  /** 我方单位构建完成后套用：属性 mods + 开局护盾 / 能量 / 复活（仅远征有祝福时生效） */
+  function battleSceneDebugApplyBlessingStart(units, state) {
+    if (!battleSceneDebugBlessings.length || !Array.isArray(units)) return;
+    const mods = battleSceneDebugBlessStatMods();
+    const shieldPct = battleSceneDebugBlessSum('startShieldPct');
+    const startE = battleSceneDebugBlessSum('startEnergy');
+    const revivePct = battleSceneDebugBlessSum('reviveOnce');
+    units.forEach(u => {
+      if (!u || u.isEnemy) return;
+      if (mods.atkMul !== 1) u.attack = Math.floor((u.attack || 0) * mods.atkMul);
+      if (mods.defMul !== 1) u.defense = Math.floor((u.defense || 0) * mods.defMul);
+      if (mods.hpMul !== 1) {
+        u.maxHp = Math.floor((u.maxHp || 1) * mods.hpMul);
+        if (u.currentHp > 0) u.currentHp = Math.min(u.maxHp, Math.floor(u.currentHp * mods.hpMul));
+      }
+      if (mods.spdAdd) u.speed = (u.speed || 0) + mods.spdAdd;
+      if (mods.critRateAdd) u.critRate = Math.max(0, (u.critRate || 0) + mods.critRateAdd);
+      if (mods.critDmgAdd) u.critDmg = Math.max(150, (u.critDmg || 150) + mods.critDmgAdd);
+      if (mods.dmgReducAdd) u.dmgReduc = Math.min(80, (u.dmgReduc || 0) + mods.dmgReducAdd);
+      if (mods.lifestealAdd) u.lifesteal = (u.lifesteal || 0) + mods.lifestealAdd;
+      if (mods.penAdd) u.penetration = (u.penetration || 0) + mods.penAdd;
+      if (shieldPct > 0) {
+        u.shield = (u.shield || 0) + Math.floor((u.maxHp || 0) * shieldPct / 100);
+      }
+      if (revivePct > 0) {
+        // 复用引擎既有的 revive 状态（charges 机制），不新增死亡结算分支
+        battleSceneDebugAddStatus(u, 'revive', 1, 999, { charges: 1, hpPct: Math.max(0.05, Math.min(1, revivePct / 100)) });
+      }
+    });
+    if (startE > 0 && state) state.energy = (state.energy || 0) + startE;
+  }
+
+  /** 伤害乘区：狂热 / 背水 / 猎手 / 后排强袭（在站位乘区之后结算） */
+  function battleSceneDebugBlessingDmg(dmg, attacker, target) {
+    let v = dmg;
+    if (!battleSceneDebugBlessings.length || !Number.isFinite(v) || v <= 0 || !attacker || attacker.isEnemy) return v;
+    const flat = battleSceneDebugBlessSum('dmgUpPct');
+    if (flat) v = v * (1 + flat / 100);
+    const back = battleSceneDebugBlessSum('dmgUpBack');
+    if (back && (attacker.position || 'front') !== 'front') v = v * (1 + back / 100);
+    const low = battleSceneDebugBlessings.find(b => b && b.type === 'dmgUpLowHp');
+    if (low && attacker.maxHp > 0 && (attacker.currentHp / attacker.maxHp) * 100 < (Number(low.hpPct) || 40)) {
+      v = v * (1 + (Number(low.value) || 0) / 100);
+    }
+    const vsE = battleSceneDebugBlessings.find(b => b && b.type === 'dmgUpVsElite');
+    if (vsE && target && (target.isBoss || target.isElite)) v = v * (1 + (Number(vsE.value) || 0) / 100);
+    return Math.max(1, Math.floor(v));
+  }
+
+  /** 前排坚守：前排免伤（与 dmgReduc 同口径，上限 80） */
+  function battleSceneDebugBlessingReduc(target) {
+    if (!battleSceneDebugBlessings.length || !target || target.isEnemy) return 0;
+    if ((target.position || 'front') !== 'front') return 0;
+    return Math.min(80, battleSceneDebugBlessSum('drFront'));
+  }
+
+  /* ── E3 周期挑战：首领机制 hook（2026-09-15）────────────────────────────
+   * 与祝福同构：由 stage.challengeMechanics = { id, params, runtime } 注入
+   * （domain/challenge.js 构造挑战 stage 时写入）。**非挑战战斗为 null ⇒ 所有
+   * hook 短路返回，主线 / 塔 / 日常 / 远征行为逐字节不变。**
+   * 机制定义见 assets/data/challenge.json，改数值只改 json。
+   */
+  let battleSceneDebugMechanic = null;
+
+  function battleSceneDebugSetMechanic(m) {
+    battleSceneDebugMechanic = (m && m.id) ? m : null;
+  }
+  function mechP(key, dflt) {
+    const p = battleSceneDebugMechanic && battleSceneDebugMechanic.params;
+    const v = p ? Number(p[key]) : NaN;
+    return Number.isFinite(v) ? v : dflt;
+  }
+  function mechRt() {
+    if (!battleSceneDebugMechanic) return null;
+    if (!battleSceneDebugMechanic.runtime) battleSceneDebugMechanic.runtime = {};
+    return battleSceneDebugMechanic.runtime;
+  }
+
+  /** 开局：破盾首领上盾 */
+  function battleSceneDebugMechanicStart(enemies, state) {
+    if (!battleSceneDebugMechanic) return;
+    const rt = mechRt();
+    rt.shieldBroken = false;
+    rt.brokenUntil = 0;
+    rt.enraged = false;
+    rt.adds = [];
+    if (battleSceneDebugMechanic.id !== 'shield_break') return;
+    const pct = mechP('shieldPct', 35);
+    (enemies || []).forEach(e => {
+      if (!e || !e.isBoss) return;
+      e.shield = Math.floor((e.maxHp || 1) * pct / 100);
+      e.shieldMax = e.shield;
+    });
+    if (state) pushBattleSceneDebugFeed(`机制·铁壁：首领获得 ${pct}% 最大生命的护盾`);
+  }
+
+  /** 回合开始：召唤 / 禁疗流失 / 限时狂暴 */
+  function battleSceneDebugMechanicRound(state) {
+    if (!battleSceneDebugMechanic || !state) return;
+    const id = battleSceneDebugMechanic.id;
+    const rt = mechRt();
+    const round = state.round || 1;
+
+    if (id === 'summon') {
+      const every = Math.max(1, mechP('everyRounds', 3));
+      if (round % every === 0) {
+        const n = Math.max(1, mechP('count', 2));
+        const boss = (state.enemies || []).find(e => e && e.isBoss && e.currentHp > 0);
+        if (boss) {
+          const ratio = mechP('addPowerRatio', 0.18);
+          for (let i = 0; i < n; i++) {
+            const add = {
+              id: `ch_add_${round}_${i}`,
+              name: `随从·${round}-${i + 1}`,
+              displayName: `随从·${round}-${i + 1}`,
+              isEnemy: true,
+              isAdd: true,
+              class: boss.class || 'warrior',
+              position: 'front',
+              level: boss.level || 1,
+              stars: 1,
+              maxHp: Math.max(1, Math.floor((boss.maxHp || 1) * ratio)),
+              currentHp: Math.max(1, Math.floor((boss.maxHp || 1) * ratio)),
+              attack: Math.floor((boss.attack || 1) * 0.35),
+              defense: Math.floor((boss.defense || 1) * 0.5),
+              speed: boss.speed || 100,
+              critRate: 0, critDmg: 150, blockRate: 0, dmgReduc: 0,
+              shield: 0, imageUrl: boss.imageUrl || '',
+              skills: [], passiveText: '', passiveRuntime: null, statuses: []
+            };
+            state.enemies.push(add);
+            rt.adds.push(add.id);
+          }
+          pushBattleSceneDebugFeed(`机制·群兽：首领召唤 ${n} 名随从`);
+        }
+      }
+    }
+
+    if (id === 'no_heal') {
+      const pct = mechP('drainPctPerRound', 3);
+      (state.player || []).forEach(u => {
+        if (!u || u.currentHp <= 0) return;
+        const loss = Math.max(1, Math.floor((u.maxHp || 1) * pct / 100));
+        u.currentHp = Math.max(0, u.currentHp - loss);
+      });
+      pushBattleSceneDebugFeed(`机制·禁疗：我方流失 ${pct}% 最大生命`);
+    }
+
+    if (id === 'time_limit' && !rt.enraged) {
+      const er = Math.max(1, mechP('enrageRound', 10));
+      if (round >= er) {
+        rt.enraged = true;
+        const mult = mechP('enrageAtkMult', 3);
+        (state.enemies || []).forEach(e => {
+          if (e && e.currentHp > 0) e.attack = Math.floor((e.attack || 1) * mult);
+        });
+        pushBattleSceneDebugFeed(`机制·时限：首领狂暴（攻击 ×${mult}，但受到的伤害大幅提升）`);
+      }
+    }
+  }
+
+  /** 伤害乘区：破盾 / 元素弱点 / 随从减伤 / 狂暴易伤 / 背水递增 */
+  function battleSceneDebugChallengeDmg(dmg, attacker, target) {
+    if (!battleSceneDebugMechanic || !Number.isFinite(dmg) || dmg <= 0) return dmg;
+    const id = battleSceneDebugMechanic.id;
+    const rt = mechRt();
+    let v = dmg;
+
+    // 我方打敌方首领
+    if (target && target.isEnemy && attacker && !attacker.isEnemy) {
+      if (id === 'shield_break') {
+        if (!rt.shieldBroken && (target.shield || 0) > 0) {
+          v = v * (1 - Math.min(90, mechP('dmgReducWhileShield', 70)) / 100);
+        } else if (rt.shieldBroken && (battleSceneDebugState.round || 1) <= rt.brokenUntil) {
+          v = v * (1 + mechP('brokenVuln', 60) / 100);
+        }
+      }
+      if (id === 'element_weak') {
+        const weak = battleSceneDebugMechanic.params && battleSceneDebugMechanic.params.weakClass;
+        if (weak && (attacker.class || '') !== weak) {
+          v = v * (1 - Math.min(90, mechP('offClassDmgCut', 60)) / 100);
+        }
+      }
+      if (id === 'summon') {
+        const live = (battleSceneDebugState && battleSceneDebugState.enemies || [])
+          .filter(e => e && e.currentHp > 0 && e.isAdd).length;
+        if (live > 0) {
+          const cut = Math.min(mechP('reducCap', 60), live * mechP('reducPerAdd', 15));
+          v = v * (1 - cut / 100);
+        }
+      }
+      if (id === 'time_limit' && rt.enraged) {
+        v = v * (1 + mechP('enrageVuln', 100) / 100);
+      }
+    }
+
+    // 背水：双方伤害随回合递增（我方受伤也递增 ⇒ 拖久了必死）
+    if (id === 'backfire') {
+      const r = Math.max(1, (battleSceneDebugState && battleSceneDebugState.round || 1) - 1);
+      if (target && !target.isEnemy) v = v * (1 + r * mechP('bossDmgUpPerRound', 10) / 100);
+      else if (target && target.isEnemy) v = v * (1 + r * mechP('weDmgUpPerRound', 8) / 100);
+    }
+
+    return Math.max(1, Math.floor(v));
+  }
+
+  /** 护盾被击破的检测（在扣盾之后调用） */
+  function battleSceneDebugMechanicAfterDamage(target) {
+    if (!battleSceneDebugMechanic || battleSceneDebugMechanic.id !== 'shield_break') return;
+    const rt = mechRt();
+    if (rt.shieldBroken || !target || !target.isBoss) return;
+    if ((target.shield || 0) <= 0) {
+      rt.shieldBroken = true;
+      rt.brokenUntil = (battleSceneDebugState && battleSceneDebugState.round || 1) + Math.max(1, mechP('brokenTurns', 3));
+      pushBattleSceneDebugFeed('机制·铁壁：护盾击碎！首领陷入虚弱');
+    }
+  }
+
+  /** 治疗修正：禁疗 */
+  function battleSceneDebugMechanicHealMul() {
+    if (!battleSceneDebugMechanic || battleSceneDebugMechanic.id !== 'no_heal') return 1;
+    return 1 - Math.min(100, mechP('healCut', 100)) / 100;
+  }
+
   function battleSceneDebugStep() {
     if (!battleSceneDebugState) return;
     if (battleSceneDebugState.auto) {
@@ -68,7 +367,9 @@ let battleSceneDebugBondActive = [];
     if (pending.actionType === 'basic') {
       if (targetSide !== 'enemy') return;
       const frontAlive = (battleSceneDebugState.enemies || []).filter(u => u && u.currentHp > 0 && (u.position || 'front') === 'front');
-      if (frontAlive.length > 0 && (target.position || 'front') !== 'front') {
+      // E2：刺客可切入（越前排打后排），其余职业仍受前排阻挡
+      const canDive = battleSceneDebugFormationCfg().assassinDiveBack && actor && actor.class === 'assassin';
+      if (frontAlive.length > 0 && (target.position || 'front') !== 'front' && !canDive) {
         if (typeof pushBattleSceneDebugFeed === 'function') pushBattleSceneDebugFeed('普攻只能攻击敌方前排');
         renderBattleSceneDebug();
         return;
@@ -210,8 +511,22 @@ function battleSceneDebugApplyShellUI() {
           ? window.__bonds.formationInfo() : null;
         battleSceneDebugBondTotal = bondInfo ? bondInfo.total : null;
         battleSceneDebugBondActive = (bondInfo && bondInfo.active) ? bondInfo.active : [];
+        // E1：本场生效的祝福（仅远征 stage 带 expeditionBlessings；其余战斗为空数组）
+        battleSceneDebugSetBlessings(stage.expeditionBlessings);
+        // E3：本场生效的周期挑战机制（仅挑战 stage 带 challengeMechanics；其余为 null）
+        battleSceneDebugSetMechanic(stage.challengeMechanics || null);
         const picked = ids.map(id => gameData.characters.find(c => c.id === id)).filter(Boolean).slice(0, 6);
         const player = [];
+        if (Array.isArray(stage.expeditionTeam) && stage.expeditionTeam.length) {
+          // E1 远征：镜像队伍（属性与跨节点 HP 由 domain/expedition.js 构建）
+          // 深拷贝 —— 战斗里的 HP 变化绝不能写回远征存档（回写由结算时显式 captureTeam）
+          stage.expeditionTeam.slice(0, 6).forEach(u => { player.push(u ? JSON.parse(JSON.stringify(u)) : null); });
+          while (player.length < 6) player.push(null);
+        } else if (Array.isArray(stage.squadTeam_units) && stage.squadTeam_units.length) {
+          // E4 多队远征：指定队伍（真实练度 + 跨层累计 HP 由 domain/squads.js 构建）
+          stage.squadTeam_units.slice(0, 6).forEach(u => { player.push(u ? JSON.parse(JSON.stringify(u)) : null); });
+          while (player.length < 6) player.push(null);
+        } else {
         for (let i = 0; i < 6; i++) {
           const c = picked[i];
           if (!c) {
@@ -234,7 +549,7 @@ function battleSceneDebugApplyShellUI() {
             imageUrl: c.imageUrl,
             rarity: c.rarity,
             class: c.class,
-            position: c.position || 'back',
+            position: battleSceneDebugSlotPosition(i),
             isCore,
             maxHp: hp,
             currentHp: hp,
@@ -257,6 +572,7 @@ function battleSceneDebugApplyShellUI() {
             passiveText,
             passiveRuntime
           });
+        }
         }
 
         const enemies = [];
@@ -295,7 +611,8 @@ function battleSceneDebugApplyShellUI() {
             tenacity: typeof e.tenacity === 'number' ? e.tenacity : 0,
             enhancedHp: 0,
             enhancedHpMax: 0,
-            position: e.position || 'front',
+            // E2：敌人与玩家同构（前 3 前排 / 后 3 后排）—— 布阵才有意义
+            position: e.position || battleSceneDebugSlotPosition(i),
             isCore: false,
             isEnemy: true,
             isBoss: eBoss,
@@ -348,8 +665,18 @@ function battleSceneDebugApplyShellUI() {
           turnOrder: [],
           turnCursor: 0,
           maxDamage: 0,
-          totalHealing: 0
+          totalHealing: 0,
+          // E3：周期挑战累计伤害（非挑战战斗也会累计，但没人读它 —— 零成本）
+          totalDamage: 0
         };
+
+        // E1：祝福开场效果（属性 mods / 开局护盾 / 开局能量 / 复活）—— 非远征时为空操作
+        battleSceneDebugApplyBlessingStart(player, battleSceneDebugState);
+        if (battleSceneDebugBlessings.length) {
+          pushBattleSceneDebugFeed(`远征祝福生效：${battleSceneDebugBlessings.map(b => b.name).join(' · ')}`);
+        }
+        // E3：机制开场效果（破盾上盾）—— 非挑战时为空操作
+        battleSceneDebugMechanicStart(enemies, battleSceneDebugState);
 
         battleSceneDebugApplyShellUI();
 
@@ -694,12 +1021,18 @@ function battleSceneDebugApplyShellUI() {
       const coreGain = cores.reduce((sum, u) => sum + (u.id === 'char_sur_007' ? 6 : 4), 0);
       const gain = Math.max(0, 2 + coreGain);
       if (!isFirst) battleSceneDebugState.round += 1;
-      if (!isFirst && (battleSceneDebugState.round || 1) > 30) {
-        pushBattleSceneDebugFeed(`回合上限：超过 30 回合仍未结束，判定失败`);
+      // E3：周期挑战可带自定义回合上限（时限/背水等机制更短）；其余战斗仍为 30
+      const roundLimit = (battleSceneDebugMechanic && Number(battleSceneDebugMechanic.roundLimit) > 0)
+        ? Number(battleSceneDebugMechanic.roundLimit) : 30;
+      if (!isFirst && (battleSceneDebugState.round || 1) > roundLimit) {
+        pushBattleSceneDebugFeed(`回合上限：超过 ${roundLimit} 回合仍未结束，判定失败`);
         battleSceneDebugFinish(false);
         return;
       }
       battleSceneDebugState.energy = isFirst ? gain : ((battleSceneDebugState.energy || 0) + gain);
+      // E1 祝福：能量涌流（每回合额外回能）—— 非远征时为 0
+      const turnE = battleSceneDebugBlessSum('energyPerTurnAdd');
+      if (turnE > 0) battleSceneDebugState.energy = (battleSceneDebugState.energy || 0) + turnE;
       battleSceneDebugState.turnOrder = buildBattleSceneDebugTurnOrder();
       battleSceneDebugState.turnCursor = 0;
       battleSceneDebugState.awaitingTarget = null;
@@ -708,6 +1041,8 @@ function battleSceneDebugApplyShellUI() {
       battleSceneDebugApplyRoundStartPassives();
       // ★ A1 单源化：BOSS 机制（狂暴 / 脚本 / 阶段 / 召唤）统一走 battle/boss_mechanics.js
       battleSceneDebugRunBossRound();
+      // E3：周期挑战机制（召唤随从 / 禁疗流失 / 限时狂暴）—— 非挑战时为空操作
+      battleSceneDebugMechanicRound(battleSceneDebugState);
       // 召唤援军会改变战场人数 → 重算行动顺序
       battleSceneDebugState.turnOrder = buildBattleSceneDebugTurnOrder();
       battleSceneDebugState.turnCursor = 0;
@@ -1239,13 +1574,20 @@ function battleSceneDebugApplyShellUI() {
       const block = (Math.random() * 100) < Math.max(0, target.blockRate || 0);
       if (block) dmg = Math.max(1, Math.floor(dmg * 0.5));
 
-      const reduc = Math.min(80, (target.dmgReduc || 0) + dmgReducUp);
+      const reduc = Math.min(80, (target.dmgReduc || 0) + dmgReducUp + battleSceneDebugBlessingReduc(target));
       if (reduc > 0) dmg = Math.max(1, Math.floor(dmg * (1 - reduc / 100)));
       if (limitField > 0) dmg = Math.max(1, Math.floor(dmg * (1 + limitField / 100)));
 
       if (target && !target.isEnemy && battleSceneDebugAffixValue('dmgTakenUp') > 0) {
         dmg = Math.floor(dmg * (1 + battleSceneDebugAffixValue('dmgTakenUp') / 100));
       }
+
+      // E2 布阵：站位乘区（前排承伤 ↑ / 后排输出 ↑）—— 配置在 battleScene.formation
+      dmg = battleSceneDebugPositionDmg(dmg, attacker, target);
+      // E1 祝福：伤害乘区（狂热 / 背水 / 猎手 / 后排强袭）
+      dmg = battleSceneDebugBlessingDmg(dmg, attacker, target);
+      // E3 周期挑战：机制乘区（破盾 / 元素弱点 / 随从减伤 / 狂暴 / 背水递增）
+      dmg = battleSceneDebugChallengeDmg(dmg, attacker, target);
 
       if (!Number.isFinite(dmg)) dmg = 0;
       return { immune: false, dodged: false, crit, block, damage: dmg, counterState: counter.state };
@@ -1431,6 +1773,22 @@ function battleSceneDebugApplyShellUI() {
           if (!attacker.isEnemy && attacker.passiveRuntime && attacker.passiveRuntime.onKillImmuneTurns) {
             battleSceneDebugAddStatus(attacker, 'immune', 1, attacker.passiveRuntime.onKillImmuneTurns);
           }
+          // E1 祝福：击杀收益（战意高涨 / 嗜血 / 追猎）—— 仅远征生效
+          const killE = battleSceneDebugBlessSum('onKillEnergy');
+          if (killE > 0 && !attacker.isEnemy) {
+            battleSceneDebugState.energy = (battleSceneDebugState.energy || 0) + killE;
+            pushBattleSceneDebugFeed(`战意高涨：击杀回复 ${killE} 点能量`);
+          }
+          const killHeal = battleSceneDebugBlessSum('onKillHealPct');
+          if (killHeal > 0 && !attacker.isEnemy) {
+            const healed = battleSceneDebugApplyHeal(attacker, Math.floor((attacker.maxHp || 0) * killHeal / 100));
+            if (healed > 0) pushBattleSceneDebugFeed(`嗜血：${attacker.displayName || attacker.name} 回复 ${healed}`);
+          }
+          const pursue = battleSceneDebugBlessSum('onKillBasic');
+          if (pursue > 0 && !attacker.isEnemy && !opts.isFollowUp) {
+            const next = (battleSceneDebugState.enemies || []).find(u => u && u.currentHp > 0);
+            if (next) battleSceneDebugApplyHit(attacker, next, 1.0, '追猎', { isFollowUp: true });
+          }
         }
       }
 
@@ -1446,6 +1804,14 @@ function battleSceneDebugApplyShellUI() {
         const reflect = Math.max(1, Math.floor(dealt * tP.reflectPct / 100));
         attacker.currentHp = Math.max(0, attacker.currentHp - reflect);
         pushBattleSceneDebugFeed(`${target.displayName || target.name} 反弹伤害 ${reflect} 给 ${attacker.displayName || attacker.name}`);
+      }
+      // E1 祝福：荆棘之甲（我方前排受击时反弹伤害，只对远征队伍生效）
+      const bReflect = battleSceneDebugBlessings.find(b => b && b.type === 'reflect');
+      if (bReflect && dealt > 0 && attacker.currentHp > 0 && !target.isEnemy
+        && (!bReflect.pos || bReflect.pos === (target.position || 'front'))) {
+        const reflect = Math.max(1, Math.floor(dealt * (Number(bReflect.value) || 0) / 100));
+        attacker.currentHp = Math.max(0, attacker.currentHp - reflect);
+        pushBattleSceneDebugFeed(`荆棘之甲：${target.displayName || target.name} 反弹 ${reflect} 给 ${attacker.displayName || attacker.name}`);
       }
 
       if (!opts.isCounter && !target.isEnemy && target.currentHp > 0 && tP && tP.counter && attacker.currentHp > 0) {
@@ -1484,7 +1850,13 @@ function battleSceneDebugApplyShellUI() {
       let pool = alive;
       if (opts && opts.basic) {
         const front = alive.filter(u => (u.position || 'front') === 'front');
-        if (front.length) pool = front;
+        const back = alive.filter(u => (u.position || 'front') !== 'front');
+        // E2：刺客切入 —— 敌方有后排时直取后排（脆皮放后排不再绝对安全）
+        if (battleSceneDebugFormationCfg().assassinDiveBack && attacker && attacker.class === 'assassin' && back.length) {
+          pool = back;
+        } else if (front.length) {
+          pool = front;
+        }
       }
       if (pool.length === 0) return null;
       if (attacker && attacker.class === 'assassin') {
@@ -1552,12 +1924,18 @@ function battleSceneDebugApplyShellUI() {
           const extra = Math.floor(shieldAbsorb * breakPct / 100);
           target.shield = Math.max(0, target.shield - extra);
         }
+        // E3：破盾检测（铁壁机制）—— 非挑战时为空操作
+        battleSceneDebugMechanicAfterDamage(target);
       }
       const dealt = Math.min(target.currentHp, left);
       target.currentHp = Math.max(0, target.currentHp - dealt);
       if (!Number.isFinite(target.currentHp)) target.currentHp = 0;
       if (battleSceneDebugState) {
         battleSceneDebugState.maxDamage = Math.max(battleSceneDebugState.maxDamage || 0, dealt || 0);
+        // E3：累计伤害（周期挑战的分数 = 对敌方造成的总伤害，含被护盾吸收的部分）
+        if (target.isEnemy) {
+          battleSceneDebugState.totalDamage = (battleSceneDebugState.totalDamage || 0) + (dealt || 0) + (shieldAbsorb || 0);
+        }
       }
       return { dealt, shieldAbsorb };
     }
@@ -1567,7 +1945,10 @@ function battleSceneDebugApplyShellUI() {
       if (!Number.isFinite(target.currentHp)) target.currentHp = Math.max(0, Number(target.currentHp) || 0);
       if (!Number.isFinite(target.maxHp)) target.maxHp = Math.max(1, Number(target.maxHp) || 1);
       if (!(target.currentHp > 0)) return 0;
-      const heal = Math.max(0, Math.floor(Number(amount) || 0));
+      // E3：禁疗机制 —— 治疗量按机制削减（非挑战时为 ×1，行为不变）
+      const healMul = battleSceneDebugMechanicHealMul();
+      const raw = Math.max(0, Math.floor(Number(amount) || 0) * healMul);
+      const heal = raw;
       const actual = Math.min(target.maxHp - target.currentHp, heal);
       target.currentHp += actual;
       if (!Number.isFinite(target.currentHp)) target.currentHp = 0;
@@ -1581,13 +1962,17 @@ function battleSceneDebugApplyShellUI() {
 
     function battleSceneDebugGetSkillCost(skill) {
       if (!skill) return 2;
+      // E1 祝福：节能装置（技能消耗 -1，最低 0）—— 非远征时减 0，行为不变
+      const cut = battleSceneDebugBlessSum('cost');
+      const applyCut = (v) => (cut > 0 ? Math.max(0, v - cut) : v);
       // D1：数据显式 cost 优先（战术技 1 费、大招 3/4 费），未标 cost 的老技能走原启发式
-      if (Number.isFinite(skill.cost)) return Math.max(0, skill.cost);
+      if (Number.isFinite(skill.cost)) return applyCut(Math.max(0, skill.cost));
       const desc = typeof skill.description === 'string' ? skill.description : '';
       const effects = Array.isArray(skill.effects) ? skill.effects : [];
       const isSpeedSkill = /速度/.test(desc) && /(增加|提升)/.test(desc) && !/降低/.test(desc);
       const isSpeedEffect = effects.some(e => e && (e.stat === 'spdUp' || e.stat === 'spdFlatUp' || e.stat === 'speedUp'));
-      return (isSpeedSkill || isSpeedEffect) ? 0 : 2;
+      const base = (isSpeedSkill || isSpeedEffect) ? 0 : 2;
+      return applyCut(base);
     }
 
     function battleSceneDebugGetSkillTargetSpec(skill) {
@@ -1619,6 +2004,12 @@ function battleSceneDebugApplyShellUI() {
       if ((battleSceneDebugState.energy || 0) < cost) return false;
 
       battleSceneDebugState.energy -= cost;
+      // E1 祝福：能量回响（施放技能后额外回能）—— 非远征时为 0
+      const castBack = battleSceneDebugBlessSum('onCastEnergy');
+      if (castBack > 0 && !actor.isEnemy) {
+        battleSceneDebugState.energy = (battleSceneDebugState.energy || 0) + castBack;
+        pushBattleSceneDebugFeed(`能量回响：回复 ${castBack} 点能量`);
+      }
       // B9 音效：技能施放
       if (window.Game && Game.audio) Game.audio.sfx('skill');
       // B7 技能特写横幅（纯视觉，不影响任何数值）
@@ -1907,6 +2298,8 @@ function battleSceneDebugApplyShellUI() {
         rounds: Math.max(1, battleSceneDebugState ? battleSceneDebugState.round : 1),
         maxDamage: Math.max(0, battleSceneDebugState ? (battleSceneDebugState.maxDamage || 0) : 0),
         healing: Math.max(0, battleSceneDebugState ? (battleSceneDebugState.totalHealing || 0) : 0),
+        // E3：累计伤害（周期挑战分数；其余战斗不读）
+        totalDamage: Math.max(0, battleSceneDebugState ? (battleSceneDebugState.totalDamage || 0) : 0),
         logs,
         rewards: battleSceneDebugRollRewards(stage, isWin)
       };
@@ -1919,6 +2312,22 @@ function battleSceneDebugApplyShellUI() {
       battleSceneDebugState.running = false;
       battleSceneDebugSyncControls();
       const stage = stagesData.find(s => s && s.id === battleSceneDebugState.stageId);
+      // E1 远征：战斗结束即回写队伍血量（跨节点累计）—— 必须在 closeBattleSceneDebug 前
+      if (window.__expedition && typeof window.__expedition.captureTeam === 'function') {
+        window.__expedition.captureTeam(battleSceneDebugState.player || []);
+      }
+      // E3 周期挑战：回写本场累计伤害（分数）—— 同样必须在 closeBattleSceneDebug 前
+      if (window.__challenge && typeof window.__challenge.captureDamage === 'function') {
+        window.__challenge.captureDamage(
+          battleSceneDebugState.totalDamage || 0,
+          battleSceneDebugState.maxDamage || 0,
+          isWin
+        );
+      }
+      // E4 多队远征：回写本队血量（跨层累计）
+      if (window.__squads && typeof window.__squads.captureTeam === 'function') {
+        window.__squads.captureTeam(battleSceneDebugState.player || [], isWin);
+      }
       const result = battleSceneDebugToResult(stage, isWin);
       closeBattleSceneDebug();
       if (stage) showBattleResult(stage, result, false);

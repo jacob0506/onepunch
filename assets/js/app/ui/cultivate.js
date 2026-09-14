@@ -239,35 +239,90 @@
     });
   }
 
+  /**
+   * E2 布阵：3×2 阵型网格（前 3 槽 = 前排 / 后 3 槽 = 后排）
+   * 数值与排布规则在 domain/quick_ops.js（autoFormation），这里只负责画与点。
+   */
+  function formationRuleText() {
+    const f = (typeof BATTLE_SCENE_CONFIG !== 'undefined' && BATTLE_SCENE_CONFIG && BATTLE_SCENE_CONFIG.formation) || {};
+    const taken = Number.isFinite(f.frontTakenPct) ? f.frontTakenPct : 18;
+    const dmg = Number.isFinite(f.backDmgPct) ? f.backDmgPct : 12;
+    return { taken, dmg };
+  }
+
   function renderCultivateFormationUI() {
     ensureFormation();
-    const slotsEl = document.getElementById('cultivateFormationSlots');
+    const gridEl = document.getElementById('cultivateFormationGrid');
     const hintEl = document.getElementById('cultivateFormationHint');
     const toggleBtn = document.getElementById('toggleFormationBtn');
-    if (!slotsEl || !hintEl || !toggleBtn) return;
+    if (!gridEl || !hintEl || !toggleBtn) return;
 
     const ids = gameData.formation;
-    slotsEl.innerHTML = '';
-    for (let i = 0; i < 6; i++) {
-      const id = ids[i];
-      const char = id ? gameData.characters.find(c => c.id === id) : null;
-      const slot = document.createElement('button');
-      slot.className = 'h-9 w-9 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden';
-      if (char) {
-        slot.innerHTML = `<img src="${char.imageUrl}" class="w-full h-full object-cover">`;
-        slot.onclick = () => {
-          gameData.formation[i] = null;
-          saveGameProgress();
-          renderCultivateFormationUI();
-        };
-      } else {
-        slot.innerHTML = `<i class="fa fa-plus text-gray-600 text-xs"></i>`;
-      }
-      slotsEl.appendChild(slot);
+    const rule = formationRuleText();
+    gridEl.innerHTML = '';
+    const rows = [
+      { label: '前排', slots: [0, 1, 2], hint: `承伤 +${rule.taken}% · 优先被普攻锁定` },
+      { label: '后排', slots: [3, 4, 5], hint: `输出 +${rule.dmg}% · 会被刺客切入` }
+    ];
+    rows.forEach(row => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'mb-1';
+      const head = document.createElement('div');
+      head.className = 'flex items-center gap-1 mb-1';
+      head.innerHTML = '<span class="text-[10px] font-black text-gray-300">' + row.label + '</span>'
+        + '<span class="text-[10px] text-gray-500">' + row.hint + '</span>';
+      rowEl.appendChild(head);
+
+      const cells = document.createElement('div');
+      cells.className = 'grid grid-cols-3 gap-1';
+      row.slots.forEach(i => {
+        const id = ids[i];
+        const char = id ? gameData.characters.find(c => c.id === id) : null;
+        const slot = document.createElement('button');
+        slot.type = 'button';
+        slot.setAttribute('data-formation-slot', String(i));
+        slot.className = 'h-10 rounded-lg bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden relative';
+        if (char) {
+          slot.innerHTML = '<img src="' + String(char.imageUrl || '') + '" class="w-full h-full object-cover" alt="">';
+          slot.title = char.name;
+          slot.onclick = () => {
+            gameData.formation[i] = null;
+            saveGameProgress();
+            renderCultivateFormationUI();
+          };
+        } else {
+          slot.innerHTML = '<i class="fa fa-plus text-gray-600 text-xs"></i>';
+          slot.onclick = () => {
+            if (!selectedCharacter) { uiToast('先选择一个角色', 'ghost'); return; }
+            if (isCharacterInFormation(selectedCharacter.id)) { uiToast('该角色已在阵中', 'ghost'); return; }
+            gameData.formation[i] = selectedCharacter.id;
+            saveGameProgress();
+            renderCultivateFormationUI();
+          };
+        }
+        cells.appendChild(slot);
+      });
+      rowEl.appendChild(cells);
+      gridEl.appendChild(rowEl);
+    });
+
+    const autoBtn = document.getElementById('autoFormationBtn');
+    if (autoBtn) {
+      autoBtn.onclick = () => {
+        const r = (window.__quickOps && typeof window.__quickOps.autoDeploy === 'function')
+          ? window.__quickOps.autoDeploy() : { ok: false, reason: 'no_api' };
+        if (r && r.ok) {
+          if (r.changed) saveGameProgress();
+          uiToast(r.changed ? '已按职业自动布阵' : '当前已是推荐阵型', r.changed ? 'success' : 'ghost');
+        } else {
+          uiToast('一键布阵暂不可用', 'danger');
+        }
+        renderCultivateFormationUI();
+      };
     }
 
     const activeCount = ids.filter(Boolean).length;
-    hintEl.textContent = `已上阵 ${activeCount}/6（点击已上阵头像可移除）`;
+    hintEl.textContent = `已上阵 ${activeCount}/6（点空槽放入当前角色，点头像移除）`;
 
     // C6：上阵阵容一变，羁绊面板跟着重算（数值在 domain/bonds.js，这里只负责喊一声）
     if (typeof renderBonds === 'function') renderBonds();

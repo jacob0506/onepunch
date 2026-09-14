@@ -538,14 +538,16 @@
                   </div>
                 </div>
                 <div class="ui-panel rounded-xl p-4 border border-gray-800">
-                  <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase">上阵设置（最多6人）</h4>
-                  <div id="cultivateFormationSlots" class="grid grid-cols-6 gap-1 mb-3"></div>
+                  <!-- E2 布阵：前 3 槽 = 前排（承伤 ↑），后 3 槽 = 后排（输出 ↑） -->
+                  <h4 class="text-xs font-bold text-gray-500 mb-1 uppercase">阵型布置</h4>
+                  <div id="cultivateFormationGrid" class="mb-2"></div>
                   <div id="cultivateFormationHint" class="text-[10px] text-gray-500 mb-3">选择一个角色后，可加入/移除上阵</div>
                   <!-- C6：羁绊面板（数值 domain/bonds.js，渲染 ui/bonds.js） -->
                   <div id="cultivateBondPanel" class="mb-3"></div>
                   <!-- C9：职业克制一览（数值 domain/counters.js，渲染 ui/cultivate.js） -->
                   <div id="cultivateCounterPanel" class="mb-3"></div>
-                  <div class="grid grid-cols-2 gap-2">
+                  <div class="grid grid-cols-3 gap-2 mb-2">
+                    <button id="autoFormationBtn" class="ui-btn ui-btn--ghost ui-btn--sm w-full" title="按职业自动排布：坦克/战士前排，其余后排">一键布阵</button>
                     <button id="toggleFormationBtn" class="ui-btn ui-btn--ghost ui-btn--sm w-full">加入上阵</button>
                     <button id="resetCharacterBtn" class="ui-btn ui-btn--danger ui-btn--sm w-full">角色还原</button>
                   </div>
@@ -953,14 +955,14 @@
   <script src="./assets/js/app/core/names.js"></script>
   <script src="./assets/js/app/core/storage.js"></script>
   <script src="./assets/js/app/bridge.js"></script>
-  <script src="./assets/js/app/data/loader.js?v=34"></script>
+  <script src="./assets/js/app/data/loader.js?v=36"></script>
   <script src="./assets/js/app/ui/materials.js"></script>
   <script src="./assets/js/app/ui/components.js?v=36"></script>
   <script src="./assets/js/app/audio/engine.js?v=44"></script>
   <script src="./assets/js/app/ui/idle.js?v=34"></script>
   <script src="./assets/js/app/ui/navigation.js?v=44"></script>
-  <script src="./assets/js/app/ui/stages.js?v=38"></script>
-  <script src="./assets/js/app/ui/cultivate.js?v=36"></script>
+  <script src="./assets/js/app/ui/stages.js?v=40"></script>
+  <script src="./assets/js/app/ui/cultivate.js?v=37"></script>
   <script src="./assets/js/app/ui/modals.js?v=35"></script>
   <script src="./assets/js/app/ui/backpack.js?v=35"></script>
   <script src="./assets/js/app/domain/character.js"></script>
@@ -969,13 +971,19 @@
   <script src="./assets/js/app/domain/idle.js?v=34"></script>
   <script src="./assets/js/app/domain/goals.js?v=36"></script>
   <script src="./assets/js/app/domain/reddot.js?v=36"></script>
-  <script src="./assets/js/app/domain/quick_ops.js?v=40"></script>
+  <script src="./assets/js/app/domain/quick_ops.js?v=41"></script>
   <script src="./assets/js/app/domain/bonds.js?v=38"></script>
   <script src="./assets/js/app/domain/counters.js?v=41"></script>
   <script src="./assets/js/app/domain/daily.js?v=38"></script>
   <!-- C10：无尽塔赛季化（seasonNo/history 归档 + 手动重置发奖），进度字段沿用 floor/bestFloor，战斗结算零改动 -->
   <script src="./assets/js/app/domain/tower.js?v=34"></script>
   <script src="./assets/js/app/domain/tutorial.js?v=34"></script>
+<!-- E1：肉鸽远征数值源（domain/expedition.js）—— 战斗 hook 在 battle/scene.js，UI 在 ui/expedition.js -->
+<script src="./assets/js/app/domain/expedition.js?v=1"></script>
+<!-- E3：周期挑战数值源（domain/challenge.js）—— 战斗 hook 在 battle/scene.js，UI 在 ui/challenge.js -->
+<script src="./assets/js/app/domain/challenge.js?v=1"></script>
+<!-- E4：多队远征数值源（domain/squads.js）—— 战斗 hook 在 battle/scene.js，UI 在 ui/squads.js -->
+<script src="./assets/js/app/domain/squads.js?v=1"></script>
   <!-- C8：图鉴与成就。stats 是累计计数（成就的历史指标），codex 是收集记录，
        achievements 读前两者 + 现算状态得出进度。三者都是纯数值单源，无 DOM。 -->
   <script src="./assets/js/app/domain/stats.js?v=39"></script>
@@ -985,7 +993,7 @@
   <script src="./assets/js/app/battle/vfx.js"></script>
   <script src="./assets/js/app/battle/boss_mechanics.js"></script>
   <script src="./assets/js/app/battle/rewards.js?v=34"></script>
-  <script src="./assets/js/app/battle/scene.js?v=47"></script>
+  <script src="./assets/js/app/battle/scene.js?v=49"></script>
   <script src="./assets/js/app/ui/item_picker.js"></script>
   <script src="./assets/js/app/ui/inventory.js?v=35"></script>
   <script src="./assets/js/app/ui/offline.js"></script>
@@ -994,7 +1002,7 @@
        它们加载早于下面的内联脚本，并各自把函数名逐个挂到 window，
        因此内联与 HTML onclick 的调用点全部零改动。
        注意：这些文件加载时**只做函数定义**，不读写内联顶层的 let/const（会命中 TDZ）。 -->
-  <script src="./assets/js/app/data/bootstrap.js?v=42"></script>
+  <script src="./assets/js/app/data/bootstrap.js?v=44"></script>
   <script src="./assets/js/app/data/characters.js?v=35"></script>
   <script src="./assets/js/app/data/stage_expand.js?v=34"></script>
   <script src="./assets/js/app/domain/character_ops.js?v=35"></script>
@@ -1007,8 +1015,14 @@
   <script src="./assets/js/app/ui/codex.js?v=39"></script>
   <script src="./assets/js/app/ui/character_view.js?v=34"></script>
   <script src="./assets/js/app/ui/tutorial.js?v=34"></script>
+<!-- E1：肉鸽远征界面（数值在 domain/expedition.js） -->
+<script src="./assets/js/app/ui/expedition.js?v=1"></script>
+<!-- E3：周期挑战界面（数值在 domain/challenge.js） -->
+<script src="./assets/js/app/ui/challenge.js?v=1"></script>
+<!-- E4：多队远征界面（数值在 domain/squads.js） -->
+<script src="./assets/js/app/ui/squads.js?v=1"></script>
   <script src="./assets/js/app/battle/loadout_text.js?v=34"></script>
-  <script src="./assets/js/app/battle/fallback_hud.js?v=34"></script>
+  <script src="./assets/js/app/battle/fallback_hud.js?v=36"></script>
   <script src="./assets/js/app/debug/cheats.js?v=35"></script>
 
   <!-- 游戏数据 -->
@@ -1061,6 +1075,12 @@
     let countersData = null;
     // 新手引导步骤（C11，assets/data/tutorial.json；加载失败时 domain/tutorial.js 用内置同值步骤）
     let tutorialData = null;
+    // 肉鸽远征（E1，assets/data/expedition.json；加载失败时 domain/expedition.js 用内置同值兜底）
+    let expeditionData = null;
+    // 周期挑战（E3，assets/data/challenge.json；加载失败时 domain/challenge.js 用内置同值兜底）
+    let challengeData = null;
+    // 多队远征（E4，assets/data/squads.json；加载失败时 domain/squads.js 用内置同值兜底）
+    let squadsData = null;
 
     // 当前选中的角色/装备/铭文
     let selectedCharacter = null;

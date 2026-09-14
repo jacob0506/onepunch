@@ -327,6 +327,56 @@
     };
   }
 
+  /* ── E2 一键布阵：只重排槽位，不改上阵成员（2026-09-15） ───────────────
+   * 与 autoFormation（战力 Top6 换人）的区别：本函数**不换人**，只把当前已在
+   * 阵中的角色按职业摆到正确的排 —— 坦克/战士前排，其余（法/射/辅/刺）后排。
+   * 一侧人数溢出时溢出者补到另一侧，保证 6 槽语义（前 3 前排 / 后 3 后排）成立。
+   * ⚠️ 幂等：结果已是推荐阵型时 changed=false，UI 提示"当前已是推荐阵型"。
+   */
+  const FRONT_CLASSES = ['tank', 'warrior'];
+
+  function autoDeploy() {
+    const d = gd();
+    if (!d) return { ok: false, reason: 'no-data' };
+    const size = formationSize();
+    const half = Math.ceil(size / 2);
+    const chars = (d.characters || []).filter(Boolean);
+    if (typeof window.ensureFormation === 'function') { try { window.ensureFormation(); } catch (e) { /* ignore */ } }
+
+    const before = (d.formation || []).slice();
+    const members = before.filter(Boolean).map(id => chars.find(c => c.id === id)).filter(Boolean);
+    if (members.length === 0) return { ok: false, reason: 'no-member' };
+
+    const byPower = (a, b) => {
+      const pa = power(a), pb = power(b);
+      if (pa !== pb) return pb - pa;
+      return String(a.id || '').localeCompare(String(b.id || ''));
+    };
+    const isFront = c => FRONT_CLASSES.indexOf(c.class) >= 0;
+    const front = members.filter(isFront).sort(byPower);
+    const back = members.filter(c => !isFront(c)).sort(byPower);
+
+    // 一侧溢出 → 溢出者补到另一侧（前排溢出把最弱的挪去后排，反之亦然）
+    while (front.length > half) back.unshift(front.pop());
+    while (front.length < half && back.length > 0) front.push(back.shift());
+
+    const after = new Array(size).fill(null);
+    front.forEach((c, i) => { if (i < half) after[i] = c.id; });
+    back.forEach((c, i) => { if (half + i < size) after[half + i] = c.id; });
+
+    const changed = after.some((v, i) => v !== before[i]);
+    if (changed) d.formation = after;
+
+    return {
+      ok: true,
+      changed,
+      before,
+      after,
+      front: front.map(c => ({ id: c.id, name: c.name || '?', class: c.class })),
+      back: back.map(c => ({ id: c.id, name: c.name || '?', class: c.class }))
+    };
+  }
+
   /* ── 一键升级（升到当前星级上限或金币耗尽，静默版）────── */
 
   function maxLevelOf(char) {
@@ -394,7 +444,7 @@
 
   const api = {
     EQUIP_SLOTS, SLOT_NAMES, INS_SLOTS, TOP_K,
-    autoLevelUp, autoEquipBest, autoEquipAll, autoFormation, claimAll,
+    autoLevelUp, autoEquipBest, autoEquipAll, autoFormation, autoDeploy, claimAll,
     maxLevelOf, formationSize
   };
   const segs = 'Game.domain.quickOps'.split('.');

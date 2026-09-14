@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "_comment": "E3 周期挑战（周常机制 Boss）。改数值只改这里；机制在引擎的应用点见 battle/scene.js 的 challenge 段（无机制时全部短路，主线/塔/日常/远征逐字节不变）。",
+
+  "cycleDays": 7,
+  "anchorDate": "2026-09-14",
+  "dailyTries": 3,
+
+  "boss": {
+    "hpPerPower": 8,
+    "atkPerPower": 0.05,
+    "defPerPower": 0.06,
+    "spd": 96,
+    "critRate": 10,
+    "dmgReduc": 5,
+    "namePrefix": "周常首领"
+  },
+
+  "bosses": [
+    {
+      "id": "boss_shield",
+      "name": "铁壁·巴尔杜",
+      "imageUrl": "./assets/sprites/熔岩巨盾·巴尔杜.png",
+      "title": "熔岩巨盾",
+      "class": "tank",
+      "mechanic": "shield_break",
+      "teaser": "护盾未破时几乎无法造成伤害，破盾后短暂虚弱。"
+    },
+    {
+      "id": "boss_element",
+      "name": "元素·莉莉丝",
+      "imageUrl": "./assets/sprites/星海歌姬·莉莉丝.png",
+      "title": "星海歌姬",
+      "class": "mage",
+      "mechanic": "element_weak",
+      "teaser": "只有特定职业能打出全额伤害，其余职业伤害大幅衰减。"
+    },
+    {
+      "id": "boss_summon",
+      "name": "万母·盖亚",
+      "imageUrl": "./assets/sprites/万物之母·盖亚.png",
+      "title": "万物之母",
+      "class": "support",
+      "mechanic": "summon",
+      "teaser": "不断召唤随从，随从存活越久，首领越难被撼动。"
+    },
+    {
+      "id": "boss_time",
+      "name": "时狩·克罗诺斯",
+      "imageUrl": "./assets/sprites/时空猎人·克罗诺斯.png",
+      "title": "时空猎人",
+      "class": "assassin",
+      "mechanic": "time_limit",
+      "teaser": "限时内尽可能输出，超时将陷入狂暴。"
+    },
+    {
+      "id": "boss_noheal",
+      "name": "收割者·赛恩",
+      "imageUrl": "./assets/sprites/灵魂收割者.png",
+      "title": "灵魂收割者",
+      "class": "warrior",
+      "mechanic": "no_heal",
+      "teaser": "治疗完全无效，且每回合持续流失生命。"
+    },
+    {
+      "id": "boss_backfire",
+      "name": "终焉·神王",
+      "imageUrl": "./assets/sprites/终焉神王境.png",
+      "title": "终焉神王",
+      "class": "warrior",
+      "mechanic": "backfire",
+      "teaser": "战斗拖得越久越危险，双方伤害同步攀升。"
+    }
+  ],
+
+  "mechanics": {
+    "shield_break": {
+      "name": "铁壁",
+      "desc": "首领开局获得护盾；护盾存在时受到的伤害大幅降低，击碎护盾后首领进入虚弱。",
+      "hint": "集中爆发打破护盾，破盾后再开大招收益最高。",
+      "shieldPct": 35,
+      "dmgReducWhileShield": 70,
+      "brokenVuln": 60,
+      "brokenTurns": 3,
+      "roundLimit": 20
+    },
+    "element_weak": {
+      "name": "元素弱点",
+      "desc": "只有指定职业能对首领造成全额伤害，其他职业伤害大幅衰减。",
+      "hint": "按本周弱点职业重组队伍，比堆战力更有效。",
+      "weakClass": "mage",
+      "weakClassLabel": "法师",
+      "offClassDmgCut": 60,
+      "roundLimit": 15
+    },
+    "summon": {
+      "name": "群兽",
+      "desc": "首领周期性召唤随从，每名存活随从都会让首领受到的伤害降低。",
+      "hint": "优先清理随从，否则首领几乎无法击破。",
+      "everyRounds": 3,
+      "count": 2,
+      "reducPerAdd": 15,
+      "reducCap": 60,
+      "addPowerRatio": 0.18,
+      "roundLimit": 18
+    },
+    "time_limit": {
+      "name": "时限",
+      "desc": "限定回合内全力输出；超时后首领陷入狂暴，但也会变得脆弱。",
+      "hint": "这是一场纯粹的爆发竞速 —— 带够输出，别带坦克。",
+      "enrageRound": 10,
+      "enrageAtkMult": 3,
+      "enrageVuln": 100,
+      "roundLimit": 16
+    },
+    "no_heal": {
+      "name": "禁疗",
+      "desc": "我方所有治疗无效，且每回合结束流失一定比例的最大生命。",
+      "hint": "护盾与减伤是唯一的续航手段，治疗型角色本周无用武之地。",
+      "healCut": 100,
+      "drainPctPerRound": 3,
+      "roundLimit": 15
+    },
+    "backfire": {
+      "name": "背水",
+      "desc": "每回合双方造成的伤害都会递增，拖延对双方都致命。",
+      "hint": "越快结束越好 —— 拖到第 10 回合基本必死。",
+      "weDmgUpPerRound": 8,
+      "bossDmgUpPerRound": 10,
+      "roundLimit": 14
+    }
+  },
+
+  "tiers": [
+    { "damage": 20000, "label": "初探", "rewards": { "gold": 5000 } },
+    { "damage": 60000, "label": "攻坚", "rewards": { "gold": 12000, "gems": 100 } },
+    { "damage": 150000, "label": "破阵", "rewards": { "gold": 25000, "gems": 200 } },
+    { "damage": 350000, "label": "碾压", "rewards": { "gold": 50000, "gems": 300 } },
+    { "damage": 800000, "label": "屠龙", "rewards": { "gold": 100000, "gems": 500 } }
+  ],
+
+  "rewards": {
+    "perTryGold": 2000,
+    "historyBestNote": "历史最佳只记录，不重置；每周档位从零重新领取。"
+  }
+}
