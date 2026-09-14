@@ -1,4 +1,4 @@
-const CACHE_NAME = 'card-game-v53';
+const CACHE_NAME = 'card-game-v54';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -19,6 +19,7 @@ const ASSETS_TO_CACHE = [
   './assets/data/expedition.json',
   './assets/data/challenge.json',
   './assets/data/squads.json',
+  './assets/data/dispatch.json',
   './assets/js/app/globals.js',
   './assets/js/app/dev.js',
   './assets/js/app/bridge.js',
@@ -56,6 +57,7 @@ const ASSETS_TO_CACHE = [
   './assets/js/app/domain/expedition.js?v=1',
   './assets/js/app/domain/challenge.js?v=1',
   './assets/js/app/domain/squads.js?v=1',
+  './assets/js/app/domain/dispatch.js?v=1',
   './assets/js/app/domain/stats.js?v=39',
   './assets/js/app/domain/codex.js?v=39',
   './assets/js/app/domain/achievements.js?v=40',
@@ -81,6 +83,7 @@ const ASSETS_TO_CACHE = [
   './assets/js/app/ui/expedition.js?v=1',
   './assets/js/app/ui/challenge.js?v=1',
   './assets/js/app/ui/squads.js?v=1',
+  './assets/js/app/ui/dispatch.js?v=1',
   './assets/js/app/battle/loadout_text.js?v=34',
   './assets/js/app/battle/fallback_hud.js?v=36',
   './assets/js/app/debug/cheats.js?v=35',
@@ -160,7 +163,7 @@ const ASSETS_TO_CACHE = [
   './assets/vendor/font-awesome/fonts/fontawesome-webfont.woff?v=4.7.0',
   // 设计 Token（B4，2026-09-12）—— 全站颜色的唯一真相源，必须预缓存否则离线丢色
   './assets/css/tokens.css?v=34',
-  './assets/css/components.css?v=44',
+  './assets/css/components.css?v=45',
 ];
 
 self.addEventListener('message', (event) => {

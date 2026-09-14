@@ -175,6 +175,7 @@
       level: Math.max(1, Math.round(team.reduce((s, u) => s + (u.level || 1), 0) / n)),
       stars: 5,
       maxHp: hp,
+      health: hp,
       currentHp: hp,
       attack: Math.max(1, Math.floor(sumAtk / n * (Number(bc.atkPerPower) || 0.05) * 20)),
       defense: Math.max(0, Math.floor(sumDef / n * (Number(bc.defPerPower) || 0.06) * 20)),

@@ -35,7 +35,8 @@
     { id: 'battle',  name: '通关关卡 3 次',  desc: '挑战并取胜',            target: 3, event: 'battle',      page: 'stages',     reward: { gold: 5000 } },
     { id: 'levelup', name: '角色升级 5 次',  desc: '任意角色升 1 级算 1 次', target: 5, event: 'levelup',     page: 'characters', reward: { gold: 8000 } },
     { id: 'sweep',   name: '扫荡 5 次',      desc: '已通关关卡快速扫荡',    target: 5, event: 'sweep',       page: 'home',       reward: { gems: 80 } },
-    { id: 'idle',    name: '领取挂机 2 次',  desc: '把挂机收益收进口袋',    target: 2, event: 'idle_claim',  page: 'home',       reward: { materials: { enhanceStone: 20 } } }
+    { id: 'idle',    name: '领取挂机 2 次',  desc: '把挂机收益收进口袋',    target: 2, event: 'idle_claim',  page: 'home',       reward: { materials: { enhanceStone: 20 } } },
+    { id: 'dispatch', name: '完成派驻 1 次', desc: '派小队探险并领取回报',  target: 1, event: 'dispatch',    page: 'home',       reward: { gems: 80 } }
   ];
 
   const defOf = (id) => GOALS.filter(g => g.id === id)[0] || null;

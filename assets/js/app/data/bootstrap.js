@@ -38,6 +38,7 @@
           expeditionData = loaded.expeditionData || null;
       challengeData = loaded.challengeData || null;
       squadsData = loaded.squadsData || null;
+      dispatchData = loaded.dispatchData || null;
           // A4：json 配置覆盖内置兜底（GAME_CONFIG / BATTLE_SCENE_CONFIG / AWAKEN_PROFILES）
           // —— 必须在任何读配置的逻辑之前；powered by core/config.js（幂等，缺字段保留兜底）
           if (window.__config && typeof window.__config.apply === 'function') window.__config.apply(loaded);
@@ -61,6 +62,8 @@
       checkOfflineRewards();
       // 放置闭环（C1/C3）：挂机面板 + 定时刷新 + 红点
       if (typeof initIdle === 'function') initIdle();
+      // E7：派驻探险面板（主页挂机面板下方；数值单源 domain/dispatch.js）
+      if (typeof initDispatch === 'function') initDispatch();
       // 一键操作集（C4）：穿戴 / 上阵 / 全员配装 / 升级
       if (typeof initQuickOps === 'function') initQuickOps();
       // 今日目标（C5）：跨日重置 + 面板渲染（必须在 renderIdlePanel 之后，红点才拿得到最新挂机态）

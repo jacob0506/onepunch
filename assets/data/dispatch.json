@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "_comment": "E7 派驻探险（挂机深度化）。改数值只改这里；数值单源 domain/dispatch.js。设计：挂机收菜之外叠一层「主动放置」——派哪支队、去哪个地点、结算时事件三选一。全程确定性（种子 PRNG，禁 Math.random），发奖走 goals.grant 单源。",
+
+  "slotCount": 3,
+  "minChars": 1,
+  "maxChars": 5,
+  "cancelRefundPct": 50,
+  "cancelMinMinutes": 5,
+  "minGambleRatio": 1.2,
+  "okGambleRatio": 0.8,
+
+  "places": [
+    {
+      "id": "mine",
+      "name": "星辉矿道",
+      "hours": 8,
+      "recPower": 8000,
+      "risk": "低",
+      "imageUrl": "",
+      "desc": "近郊矿脉，安全但收益平平。",
+      "rewards": { "gold": 9000, "exp": 2000 }
+    },
+    {
+      "id": "forest",
+      "name": "翡翠林地",
+      "hours": 8,
+      "recPower": 15000,
+      "risk": "低",
+      "imageUrl": "",
+      "desc": "精灵故地，适合练级与采集强化石。",
+      "rewards": { "gold": 6000, "exp": 6500, "materials": { "enhanceStone": 45 } }
+    },
+    {
+      "id": "canyon",
+      "name": "雷鸣峡谷",
+      "hours": 12,
+      "recPower": 26000,
+      "risk": "中",
+      "imageUrl": "",
+      "desc": "雷霆风暴的中心，出产铭文粉尘。",
+      "rewards": { "gold": 20000, "exp": 9000, "materials": { "inscriptionDust": 25 } }
+    },
+    {
+      "id": "abyss",
+      "name": "深渊裂隙",
+      "hours": 24,
+      "recPower": 42000,
+      "risk": "高",
+      "imageUrl": "",
+      "desc": "只有最强的队伍才敢踏足的远地点。",
+      "rewards": { "gold": 60000, "exp": 26000, "gems": 120, "materials": { "lockCrystal": 6 } }
+    }
+  ],
+
+  "events": [
+    {
+      "id": "ev_merchant",
+      "name": "流浪商队",
+      "text": "一支流浪商队在营地外停了下来，愿意用大价钱换一趟「顺路」的护送。",
+      "options": [
+        { "label": "公平交易", "desc": "稳拿一笔报酬", "kind": "safe", "mult": 0.3 },
+        { "label": "豪赌一票", "desc": "押上全部货款，成功翻倍", "kind": "gamble", "mult": 1.0 },
+        { "label": "以物易物", "desc": "换成强化石更实在", "kind": "materials", "mult": 0, "materials": { "enhanceStone": 40 } }
+      ]
+    },
+    {
+      "id": "ev_ruins",
+      "name": "上古遗迹",
+      "text": "斥候发现了一处未被开垦的上古遗迹，石门上刻着看不懂的符文。",
+      "options": [
+        { "label": "小心搜刮", "desc": "外围能拿的都拿走", "kind": "safe", "mult": 0.35 },
+        { "label": "深入核心", "desc": "机关重重，成败看实力", "kind": "gamble", "mult": 1.2 },
+        { "label": "拓印符文", "desc": "带铭文粉尘回去", "kind": "materials", "mult": 0.1, "materials": { "inscriptionDust": 22 } }
+      ]
+    },
+    {
+      "id": "ev_beast",
+      "name": "兽群夜袭",
+      "text": "入夜后营地被魔物兽群围住，嚎叫声在山谷间回荡。",
+      "options": [
+        { "label": "结阵死守", "desc": "稳扎稳打，驱散兽群", "kind": "safe", "mult": 0.3 },
+        { "label": "反杀头领", "desc": "猎杀兽王，缴获丰厚", "kind": "gamble", "mult": 1.1 },
+        { "label": "收集兽核", "desc": "锁定核心有价无市", "kind": "materials", "mult": 0.1, "materials": { "lockCrystal": 3 } }
+      ]
+    },
+    {
+      "id": "ev_refugee",
+      "name": "落难商旅",
+      "text": "一队商旅被劫匪洗劫，向你求救。",
+      "options": [
+        { "label": "伸出援手", "desc": "报酬虽薄，心意已领", "kind": "safe", "mult": 0.25 },
+        { "label": "追剿劫匪", "desc": "夺回赃物，见者有份", "kind": "gamble", "mult": 1.1 },
+        { "label": "收购行李", "desc": "低价收下一批强化石", "kind": "materials", "mult": 0, "materials": { "enhanceStone": 55 } }
+      ]
+    },
+    {
+      "id": "ev_storm",
+      "name": "魔物风暴",
+      "text": "天色骤变，魔物风暴正在逼近营地，撤还是赌？",
+      "options": [
+        { "label": "立即撤离", "desc": "保住大部分收成", "kind": "safe", "mult": 0.4 },
+        { "label": "风暴淘金", "desc": "风暴眼里有宝物，九死一生", "kind": "gamble", "mult": 1.3 },
+        { "label": "收拢残片", "desc": "风暴过后满地重铸粉尘", "kind": "materials", "mult": 0.05, "materials": { "reforgeDust": 18 } }
+      ]
+    },
+    {
+      "id": "ev_blacksmith",
+      "name": "随行铁匠",
+      "text": "队伍里的老铁匠想借营地的炉火打点东西。",
+      "options": [
+        { "label": "帮他护法", "desc": "打完东西分你一份", "kind": "safe", "mult": 0.3 },
+        { "label": "试试秘方", "desc": "传说中的秘方，成不成看天", "kind": "gamble", "mult": 1.0 },
+        { "label": "买断成品", "desc": "直接拿走一批强化石", "kind": "materials", "mult": 0, "materials": { "enhanceStone": 50 } }
+      ]
+    }
+  ]
+}

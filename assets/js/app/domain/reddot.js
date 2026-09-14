@@ -100,6 +100,15 @@
     return !!g.hasClaimable();
   });
 
+  // E7：派驻探险有队伍抵达（或事件待处理）—— "有东西可处理"才亮，空槽/在途不亮
+  register('dispatch', ['home'], () => {
+    const d = window.__dispatch;
+    if (!d || typeof d.summary !== 'function') return false;
+    try {
+      return d.summary().slots.some(s => s.state === 'ready' || s.state === 'event');
+    } catch (e) { return false; }
+  });
+
   /* ── 导出 ─────────────────────────────────────────────────── */
 
   const api = {

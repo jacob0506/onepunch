@@ -303,7 +303,7 @@
         isBoss: layer === (Number(c.layers) || 12) - 1 && i === 0,
         position: i < 3 ? 'front' : 'back',
         level: lv, stars: 1,
-        maxHp: hp, currentHp: hp,
+        maxHp: hp, health: hp, currentHp: hp,
         attack: Math.floor((180 + lv * 12) * scale),
         defense: Math.floor((90 + lv * 6) * scale),
         speed: 90 + (i % 3) * 5,

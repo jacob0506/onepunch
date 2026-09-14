@@ -23,11 +23,12 @@
     battle: ['battleWins'],
     levelup: ['levelUps'],
     sweep: ['sweeps'],
-    idle_claim: ['idleClaims']
+    idle_claim: ['idleClaims'],
+    dispatch: ['dispatches']
   };
 
   /** 全部统计键（用于存档结构自检 / 界面展示） */
-  const KEYS = ['gachaTotal', 'battleWins', 'levelUps', 'sweeps', 'idleClaims'];
+  const KEYS = ['gachaTotal', 'battleWins', 'levelUps', 'sweeps', 'idleClaims', 'dispatches'];
 
   function gd() {
     try { return (typeof gameData !== 'undefined' && gameData) ? gameData : null; }

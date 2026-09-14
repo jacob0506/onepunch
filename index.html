@@ -19,7 +19,7 @@
 
   <!-- 设计 Token（B4，2026-09-12）：全站颜色的唯一真相源，改这里 = 换肤 -->
   <link href="./assets/css/tokens.css?v=34" rel="stylesheet">
-  <link href="./assets/css/components.css?v=44" rel="stylesheet">
+  <link href="./assets/css/components.css?v=45" rel="stylesheet">
 
   <!-- 站点图标 / iOS 主屏图标（本地素材，见 tools/gen-brand.mjs） -->
   <link rel="icon" type="image/svg+xml" href="./assets/brand/favicon.svg">
@@ -337,6 +337,17 @@
                   <button id="idleSweep5" class="ui-btn ui-btn--sm ui-btn--ghost">扫荡 x5</button>
                   <button id="idleSweep10" class="ui-btn ui-btn--sm ui-btn--ghost">扫荡 x10</button>
                 </div>
+              </div>
+
+              <!-- E7 派驻探险：数值单源 domain/dispatch.js，界面 ui/dispatch.js。
+                   挂机深度化 —— 派哪支队、去哪个地点、结算事件三选一。 -->
+              <div id="dispatchPanel" class="ui-panel rounded-xl p-4 mb-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                  <i class="fa fa-map-signs text-green-400 mr-2"></i>
+                  派驻探险
+                  <span class="ml-auto text-[10px] font-normal text-gray-400">派出小队 · 途中遭遇自己选</span>
+                </h2>
+                <div id="dispatchBody" class="space-y-3"></div>
               </div>
 
               <div class="ui-panel rounded-xl p-4">
@@ -984,6 +995,8 @@
 <script src="./assets/js/app/domain/challenge.js?v=1"></script>
 <!-- E4：多队远征数值源（domain/squads.js）—— 战斗 hook 在 battle/scene.js，UI 在 ui/squads.js -->
 <script src="./assets/js/app/domain/squads.js?v=1"></script>
+<!-- E7：派驻探险数值源（domain/dispatch.js）—— 纯数值层，不打战斗引擎，UI 在 ui/dispatch.js -->
+<script src="./assets/js/app/domain/dispatch.js?v=1"></script>
   <!-- C8：图鉴与成就。stats 是累计计数（成就的历史指标），codex 是收集记录，
        achievements 读前两者 + 现算状态得出进度。三者都是纯数值单源，无 DOM。 -->
   <script src="./assets/js/app/domain/stats.js?v=39"></script>
@@ -1021,6 +1034,8 @@
 <script src="./assets/js/app/ui/challenge.js?v=1"></script>
 <!-- E4：多队远征界面（数值在 domain/squads.js） -->
 <script src="./assets/js/app/ui/squads.js?v=1"></script>
+<!-- E7：派驻探险界面（数值在 domain/dispatch.js） -->
+<script src="./assets/js/app/ui/dispatch.js?v=1"></script>
   <script src="./assets/js/app/battle/loadout_text.js?v=34"></script>
   <script src="./assets/js/app/battle/fallback_hud.js?v=36"></script>
   <script src="./assets/js/app/debug/cheats.js?v=35"></script>
@@ -1081,6 +1096,8 @@
     let challengeData = null;
     // 多队远征（E4，assets/data/squads.json；加载失败时 domain/squads.js 用内置同值兜底）
     let squadsData = null;
+    // 派驻探险（E7，assets/data/dispatch.json；加载失败时 domain/dispatch.js 用内置同值兜底）
+    let dispatchData = null;
 
     // 当前选中的角色/装备/铭文
     let selectedCharacter = null;

@@ -104,6 +104,13 @@
     } catch (e) {
       console.warn('[loader] squads.json 加载失败，本次运行用内置多队远征配置', e && e.message);
     }
+    // E7：派驻探险（拿不到则 domain/dispatch.js 退回内置同值兜底）
+    let dispatchJson = null;
+    try {
+      dispatchJson = await fetchJson('assets/data/dispatch.json');
+    } catch (e) {
+      console.warn('[loader] dispatch.json 加载失败，本次运行用内置派驻配置', e && e.message);
+    }
     return {
       charactersData: charactersJson.characters || [],
       equipmentData: itemsJson.items || [],
@@ -118,6 +125,7 @@
       expeditionData: expeditionJson,
       challengeData: challengeJson,
       squadsData: squadsJson,
+      dispatchData: dispatchJson,
       configData: configJson,
       awakenProfilesData: awakenJson
     };
