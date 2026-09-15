@@ -48,7 +48,7 @@
       '<div class="w-20 h-24 rounded-lg overflow-hidden border border-gray-800 flex-shrink-0" style="background:var(--c-surface-2,#111)">' +
       (boss.imageUrl
         ? '<img src="' + esc(boss.imageUrl) + '" alt="" class="w-full h-full object-cover">'
-        : '<div class="w-full h-full flex items-center justify-center"><i class="fa fa-skull text-2xl text-gray-600"></i></div>') +
+        : '<div class="w-full h-full flex items-center justify-center"><i class="fa fa-user text-2xl text-gray-600"></i></div>') +
       '</div>' +
       '<div class="min-w-0 flex-1">' +
       '<div class="text-[10px] text-gray-500">本周首领 · 第 ' + (s.weekNo + 1) + ' 期 · ' + s.daysLeft + ' 天后轮换</div>' +
@@ -114,11 +114,19 @@
     }
   }
 
+  /** 材料中文名走 idle.materialName 单源（拿不到才退回 key） */
+  function matName(key) {
+    const idle = window.__idle;
+    if (idle && typeof idle.materialName === 'function') {
+      try { const n = idle.materialName(key); if (n) return n; } catch (e) { /* 兜底用 key */ }
+    }
+    return key;
+  }
   function rewardText(r) {
     const parts = [];
     if (r && r.gold) parts.push('金币 ' + fmtNum(r.gold));
     if (r && r.gems) parts.push('钻石 ' + fmtNum(r.gems));
-    if (r && r.materials) Object.keys(r.materials).forEach(k => parts.push(k + ' ×' + r.materials[k]));
+    if (r && r.materials) Object.keys(r.materials).forEach(k => parts.push(matName(k) + ' ×' + r.materials[k]));
     return parts.length ? parts.join(' · ') : '无';
   }
 

@@ -36,9 +36,14 @@
           countersData = loaded.countersData || null;
           tutorialData = loaded.tutorialData || null;
           expeditionData = loaded.expeditionData || null;
-      challengeData = loaded.challengeData || null;
-      squadsData = loaded.squadsData || null;
-      dispatchData = loaded.dispatchData || null;
+          challengeData = loaded.challengeData || null;
+          squadsData = loaded.squadsData || null;
+          dispatchData = loaded.dispatchData || null;
+          arenaData = loaded.arenaData || null;
+          seasonData = loaded.seasonData || null;
+          // E5：好感数值 + 角色档案剧情（拿不到则 domain/favor.js 用内置兜底曲线 + 空白档案）
+          favorData = loaded.favorData || null;
+          storiesData = loaded.storiesData || null;
           // A4：json 配置覆盖内置兜底（GAME_CONFIG / BATTLE_SCENE_CONFIG / AWAKEN_PROFILES）
           // —— 必须在任何读配置的逻辑之前；powered by core/config.js（幂等，缺字段保留兜底）
           if (window.__config && typeof window.__config.apply === 'function') window.__config.apply(loaded);
@@ -64,6 +69,9 @@
       if (typeof initIdle === 'function') initIdle();
       // E7：派驻探险面板（主页挂机面板下方；数值单源 domain/dispatch.js）
       if (typeof initDispatch === 'function') initDispatch();
+      // E6：赛季活动循环（数值单源 domain/season.js）—— 必须晚于 initDispatch/目标统计，
+      //      因为赛季经验读的是 stats 增量（sync 会在此刻建立本季基线）。
+      if (typeof initSeason === 'function') initSeason();
       // 一键操作集（C4）：穿戴 / 上阵 / 全员配装 / 升级
       if (typeof initQuickOps === 'function') initQuickOps();
       // 今日目标（C5）：跨日重置 + 面板渲染（必须在 renderIdlePanel 之后，红点才拿得到最新挂机态）
@@ -79,6 +87,9 @@
       // 图鉴与成就（C8）：同步收录记录（只增不减）+ 渲染 + 注册「有成就可领」红点。
       // ⚠️ 必须在 initRedDot 之后：initCodex 里注册的 achievements 规则要靠它开轮询。
       if (typeof initCodex === 'function') initCodex();
+      // E5：角色档案 / 好感（数值单源 domain/favor.js）。必须在 initCodex 之后：
+      //      档案面板挂的是图鉴页第三个 tab，且要复用它绑好的 #codexRoot。
+      if (typeof initFavor === 'function') initFavor();
       saveGameProgress();
       populateDebugCharSelect();
     }

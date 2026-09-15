@@ -50,6 +50,17 @@
       }
     }
 
+    // E5：好感加成（角色个人层面，Lv1 恒为 0 —— 未接触好感系统的存档战力逐字节不变）
+    const favApi = window.__favor;
+    if (favApi && typeof favApi.attrBonus === 'function') {
+      const fb = favApi.attrBonus(char.id);
+      if (fb) {
+        stats.atkPercent += Number(fb.atkPercent) || 0;
+        stats.defPercent += Number(fb.defPercent) || 0;
+        stats.hpPercent += Number(fb.hpPercent) || 0;
+      }
+    }
+
     const equipments = char.equipments || {};
     const eqTags = {};
     Object.values(equipments).forEach(item => {

@@ -247,6 +247,16 @@
         stage.isSquadRun === true ||
         (typeof stage.id === 'string' && stage.id.startsWith('sq_'))
       );
+      // E8：镜像竞技场同样绝不能推进主线（段位由 domain/arena.js 的 captureResult 决定）
+      const isArenaStage = stage && (
+        stage.isArena === true ||
+        (typeof stage.id === 'string' && stage.id.startsWith('ar_'))
+      );
+      // E6-2：赛季秘境同样绝不能推进主线（层进度由 domain/season_trial.js 的 advance 决定）
+      const isTrialStage = stage && (
+        stage.isSeasonTrial === true ||
+        (typeof stage.id === 'string' && stage.id.startsWith('tr_'))
+      );
       
       if (result.isWin) {
         // 获得经验和金币
@@ -336,6 +346,10 @@
           //     并发放新达成的档位奖励 —— 这里只负责不污染主线进度。
         } else if (isSquadStage) {
           // E4：多队远征不推进主线；层推进由 domain/squads.js 的 advance 决定
+        } else if (isArenaStage) {
+          // E8：镜像竞技场不推进主线；段位升降由 domain/arena.js 的 captureResult 决定
+        } else if (isTrialStage) {
+          // E6-2：赛季秘境不推进主线；层解锁与首通发奖由 domain/season_trial.js 的 advance 决定
         } else {
           const unlockedIndex = Math.max(0, stagesData.findIndex(s => s.id === gameData.currentStage));
           const clearedIndex = stagesData.findIndex(s => s.id === stage.id);
@@ -347,10 +361,8 @@
       } else {
         itemsContainer.innerHTML = '<div class="ui-result-empty">失败无奖励</div>';
         if (isTowerStage) window.__battleModifiers = null;
-        // E4：失败也要结算（保留队伍 HP、不推进层，可换队再上）
-        if (isSquadStage && window.__squads && typeof window.__squads.advance === 'function') {
-          window.__squads.advance(false);
-        }
+        // E4：失败结算统一由下方通用结算段的 advance(false) 处理（此处不重复调用；
+        //     历史版本在这里额外调过一次，属冗余 —— advance 本身幂等所以无害，但收敛掉更清晰）
       }
 
       lastBattleRecord = {
@@ -385,6 +397,20 @@
         const adv = window.__squads.advance(result.isWin);
         if (window.__squadsUI && typeof window.__squadsUI.afterBattle === 'function') {
           window.__squadsUI.afterBattle(adv);
+        }
+      }
+      // E8：镜像竞技场结算 —— 星数/段位变更（非幂等，全局只在此处调用一次，胜负都走）
+      if (isArenaStage && window.__arena && typeof window.__arena.captureResult === 'function') {
+        const arRet = window.__arena.captureResult(!!result.isWin);
+        if (window.__arenaUI && typeof window.__arenaUI.afterBattle === 'function') {
+          window.__arenaUI.afterBattle(arRet, result);
+        }
+      }
+      // E6-2：赛季秘境结算 —— 层解锁 / 首通发奖（非幂等，全局只在此处调用一次，胜负都走）
+      if (isTrialStage && window.__trial && typeof window.__trial.advance === 'function') {
+        const trRet = window.__trial.advance(!!result.isWin);
+        if (window.__trialUI && typeof window.__trialUI.afterBattle === 'function') {
+          window.__trialUI.afterBattle(trRet, result);
         }
       }
       

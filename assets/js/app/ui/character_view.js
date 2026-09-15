@@ -93,6 +93,21 @@
         '<div class="text-[10px]" style="color:var(--c-text-dim)">' + label + '</div>' +
         '<div class="font-black text-sm">' + C.esc(val) + '</div></div>';
 
+      // E5：好感一行 —— 养成页是玩家最常看角色的地方，好感入口放这里最好找
+      const favApi = window.__favor;
+      let favLine = '';
+      if (favApi && char.id && typeof favApi.progress === 'function') {
+        try {
+          const fp = favApi.progress(char.id);
+          const fs = favApi.summary(char.id);
+          const chN = (fs.chapters || []).length;
+          favLine = '<div class="text-xs mt-1" style="color:var(--c-text-dim)">' +
+            '<i class="fa fa-heart mr-1" style="color:var(--c-accent)"></i>好感 Lv.' + C.esc(fp.level) + ' ' + C.esc(fp.title) +
+            (chN ? ' · 剧情 ' + fs.readCount + '/' + chN + ' 章' : '') +
+            '</div>';
+        } catch (e) { favLine = ''; }
+      }
+
       const skill = (char.skills || [])[0];
       const skillHtml = skill
         ? '<div class="ui-panel ui-panel--tight"><div class="flex justify-between items-center">' +
@@ -112,6 +127,7 @@
             '<div class="text-xs mt-1.5" style="color:var(--c-text-dim)">Lv.' + C.esc(char.level) + ' / ' + maxLevel + ' · 碎片 ' + C.esc(fragments) + '</div>' +
             '<div class="mt-1">' + C.progress(expPct, 'accent', true) + '</div>' +
             '<div class="mt-1.5 text-sm font-black" style="color:var(--c-accent)"><i class="fa fa-bolt mr-1"></i>战力 ' + C.esc(Math.round(calculateCharacterPower(char)).toLocaleString()) + '</div>' +
+            favLine +
           '</div>' +
         '</div>' +
         '<hr class="ui-divider">' +
@@ -140,7 +156,16 @@
       C.openModal({
         title: char.name,
         body,
-        actions: [{ label: '关闭', tone: 'ghost' }]
+        actions: [
+          {
+            label: '查看档案', tone: 'primary',
+            onClick: (close) => {
+              close();
+              if (typeof window.openCharArchive === 'function') window.openCharArchive(char.id);
+            }
+          },
+          { label: '关闭', tone: 'ghost' }
+        ]
       });
     }
 

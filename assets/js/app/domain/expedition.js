@@ -56,7 +56,7 @@
     event: { name: '未知事件', icon: 'fa-question', desc: '随机收获（也可能空手）' },
     shop: { name: '流浪商人', icon: 'fa-shopping-bag', desc: '用远征币换取祝福' },
     rest: { name: '营地', icon: 'fa-home', desc: '全队回复生命' },
-    boss: { name: '首领', icon: 'fa-skull', desc: '本层终局，重奖' }
+    boss: { name: '首领', icon: 'fa-bomb', desc: '本层终局，重奖' }
   };
 
   /* ── 种子随机（自带，绝不碰 Math.random）───────────────────────────── */

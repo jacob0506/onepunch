@@ -111,6 +111,34 @@
     } catch (e) {
       console.warn('[loader] dispatch.json 加载失败，本次运行用内置派驻配置', e && e.message);
     }
+    // E8：镜像竞技场（拿不到则 domain/arena.js 退回内置同值兜底）
+    let arenaJson = null;
+    try {
+      arenaJson = await fetchJson('assets/data/arena.json');
+    } catch (e) {
+      console.warn('[loader] arena.json 加载失败，本次运行用内置竞技场配置', e && e.message);
+    }
+    // E6：赛季活动循环（拿不到则 domain/season.js 退化为"无内容赛季"，不报错）
+    let seasonJson = null;
+    try {
+      seasonJson = await fetchJson('assets/data/season.json');
+    } catch (e) {
+      console.warn('[loader] season.json 加载失败，本次运行用内置赛季兜底', e && e.message);
+    }
+    // E5：好感数值（拿不到则 domain/favor.js 用内置同值曲线兜底）
+    let favorJson = null;
+    try {
+      favorJson = await fetchJson('assets/data/favor.json');
+    } catch (e) {
+      console.warn('[loader] favor.json 加载失败，本次运行用内置好感曲线', e && e.message);
+    }
+    // E5：角色档案剧情（拿不到则全员退化为"由阵营+职业组合的通用档案"，不空白）
+    let storiesJson = null;
+    try {
+      storiesJson = await fetchJson('assets/data/stories.json');
+    } catch (e) {
+      console.warn('[loader] stories.json 加载失败，本次运行无专属剧情', e && e.message);
+    }
     return {
       charactersData: charactersJson.characters || [],
       equipmentData: itemsJson.items || [],
@@ -126,6 +154,10 @@
       challengeData: challengeJson,
       squadsData: squadsJson,
       dispatchData: dispatchJson,
+      arenaData: arenaJson,
+      seasonData: seasonJson,
+      favorData: favorJson,
+      storiesData: storiesJson,
       configData: configJson,
       awakenProfilesData: awakenJson
     };

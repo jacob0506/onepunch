@@ -218,7 +218,19 @@
     const tab = (key, label, icon) =>
       `<button type="button" class="ui-codex__tab${activeTab === key ? ' is-active' : ''}" data-codex-tab="${esc(key)}">` +
       `<i class="fa ${icon}"></i><span>${esc(label)}</span></button>`;
-    return `<div class="ui-codex__tabs">${tab('codex', '角色图鉴', 'fa-book')}${tab('achieve', '成就', 'fa-trophy')}</div>`;
+    return `<div class="ui-codex__tabs">${tab('codex', '角色图鉴', 'fa-book')}${tab('achieve', '成就', 'fa-trophy')}${tab('favor', '档案', 'fa-heart')}</div>`;
+  }
+
+  /** E5：档案面板由 ui/favor.js 渲染（数值在 domain/favor.js），这里只转发 */
+  function favorPanelHtml() {
+    if (typeof window.renderFavorPanel === 'function') return window.renderFavorPanel();
+    return `<div class="ui-favor__empty">档案数据未就绪</div>`;
+  }
+
+  function bodyHtml() {
+    if (activeTab === 'achieve') return achievePanelHtml();
+    if (activeTab === 'favor') return favorPanelHtml();
+    return codexPanelHtml();
   }
 
   function renderCodexPage() {
@@ -236,7 +248,7 @@
         `<h2 class="text-lg md:text-xl font-bold flex items-center"><i class="fa fa-book text-primary mr-2"></i>图鉴与成就</h2>` +
         tabHtml() +
       `</div>` +
-      `<div id="codexTabBody">${activeTab === 'codex' ? codexPanelHtml() : achievePanelHtml()}</div>`;
+      `<div id="codexTabBody">${bodyHtml()}</div>`;
 
     bindGrid(root);
     return true;
@@ -304,7 +316,21 @@
       `<div class="ui-result-block mt-3"><div class="ui-result-block__title">技能</div>${skills}</div>`;
 
     document.querySelectorAll('.ui-modal').forEach(m => m.remove());
-    C.openModal({ title: '图鉴详情', body, actions: [{ label: '关闭', tone: 'ghost' }] });
+    C.openModal({
+      title: '图鉴详情',
+      body,
+      actions: [
+        {
+          label: '查看档案', tone: 'primary',
+          onClick: (close) => {
+            close();
+            // E5：从图鉴直接跳到档案浮层（先关弹窗再开，避免两层叠着）
+            if (typeof window.openCharArchive === 'function') window.openCharArchive(id);
+          }
+        },
+        { label: '关闭', tone: 'ghost' }
+      ]
+    });
   }
 
   /* ── 交互 ─────────────────────────────────────────────────── */
@@ -415,7 +441,7 @@
   const api = {
     renderCodexPage, initCodex, openCharDetail,
     get tab() { return activeTab; },
-    setTab(k) { activeTab = k === 'achieve' ? 'achieve' : 'codex'; renderCodexPage(); },
+    setTab(k) { activeTab = (k === 'achieve' || k === 'favor') ? k : 'codex'; renderCodexPage(); },
     resetFilters() { filterRarity = 'all'; filterOwned = 'all'; }
   };
 

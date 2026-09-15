@@ -1,0 +1,107 @@
+{
+  "_comment": "E5 好感与角色档案 · 数值配置。改这里即可调好感曲线 / 礼物 / 关系称谓，不用碰代码。文案在 stories.json。",
+  "version": 1,
+  "maxLevel": 10,
+
+  "levels": [
+    { "lv": 1, "xp": 0 },
+    { "lv": 2, "xp": 50 },
+    { "lv": 3, "xp": 130 },
+    { "lv": 4, "xp": 250 },
+    { "lv": 5, "xp": 420 },
+    { "lv": 6, "xp": 650 },
+    { "lv": 7, "xp": 940 },
+    { "lv": 8, "xp": 1300 },
+    { "lv": 9, "xp": 1720 },
+    { "lv": 10, "xp": 2200 }
+  ],
+
+  "_routineComment": "每日谈心：每名角色每天一次免费好感，跨日重置。它是长线保底 —— 不花钱也能慢慢推。",
+  "routine": { "xp": 20, "label": "谈心", "icon": "fa-comments-o" },
+
+  "_giftComment": "赠礼：消耗金币换好感。单价越高的规格每点好感越便宜（鼓励攒钱一次性投给真爱的角色）。",
+  "gifts": [
+    { "id": "gift_small", "name": "素笺", "icon": "fa-envelope-o", "gold": 1000, "xp": 30, "tone": "muted" },
+    { "id": "gift_mid", "name": "异域珍玩", "icon": "fa-gift", "gold": 6000, "xp": 230, "tone": "accent" },
+    { "id": "gift_big", "name": "传家宝器", "icon": "fa-diamond", "gold": 30000, "xp": 1400, "tone": "gold" }
+  ],
+
+  "_readComment": "首次读完一章剧情给的一次性好感（保证不花钱也能推进解锁）",
+  "readXp": 50,
+  "_unlockComment": "第 1/2/3 章分别在好感等级 2/4/6 解锁",
+  "unlockLevels": [2, 4, 6],
+
+  "_titleComment": "关系称谓（通用，按等级取达到的最高档）；角色固有称号在 stories.json 的 title 字段",
+  "titleTiers": [
+    { "lv": 1, "title": "初识" },
+    { "lv": 3, "title": "熟识" },
+    { "lv": 5, "title": "信赖" },
+    { "lv": 7, "title": "知己" },
+    { "lv": 10, "title": "命定" }
+  ],
+
+  "_attrComment": "好感属性加成：每级（在 Lv1 之上）给角色的百分比加成；Lv1 = 0（保证默认存档数值基线不变）。进 calculateTotalStats。",
+  "attrPerLevel": { "atkPercent": 0.5, "defPercent": 0.5, "hpPercent": 0.5 },
+
+  "_factionComment": "阵营世界观（22 种）—— 非 SUR 角色的档案由「阵营世界观 + 职业信条」组合而来，保证每个人都有自己的来处。",
+  "factions": {
+    "knight": { "worldview": "骑士团以誓约立国，剑锋所指皆为守护。", "tone": "守序" },
+    "void": { "worldview": "虚空不生不灭，它只是把一切归还成「无」。", "tone": "疏离" },
+    "light": { "worldview": "光不会追问被它照亮的影子去了哪里。", "tone": "悲悯" },
+    "dragon": { "worldview": "龙的血脉只认强者，不认姓氏。", "tone": "骄傲" },
+    "star": { "worldview": "星海无岸，只有歌声能穿过那片黑暗。", "tone": "温柔" },
+    "abyss": { "worldview": "深渊从不吞噬灵魂，它只是替他们保管记忆。", "tone": "沉郁" },
+    "tech": { "worldview": "血肉会腐朽，图纸不会。", "tone": "理性" },
+    "nature": { "worldview": "森林记得每一棵树的死，却从不为它哀悼。", "tone": "沉静" },
+    "war": { "worldview": "战火里没有胜负，只有谁先熄灭。", "tone": "狂烈" },
+    "beast": { "worldview": "兽族的规矩很简单：活着，然后护住同窝的。", "tone": "直率" },
+    "god": { "worldview": "神明的重量，只有站在神座前的人才知道。", "tone": "威严" },
+    "time": { "worldview": "时间不回头，但它会在同一个地方留下划痕。", "tone": "旁观" },
+    "sun": { "worldview": "烈阳照出真相，也烧掉看真相的眼睛。", "tone": "灼热" },
+    "fire": { "worldview": "火只忠于点燃它的那一刻。", "tone": "炽烈" },
+    "dark": { "worldview": "暗处的人不需要被理解，只需要被畏惧。", "tone": "冷厉" },
+    "earth": { "worldview": "大地的沉默不是软弱，是承载。", "tone": "厚重" },
+    "wind": { "worldview": "风无立场，它只是路过所有人的命运。", "tone": "轻快" },
+    "thunder": { "worldview": "雷霆的审判不需要证据，只需要速度。", "tone": "果决" },
+    "water": { "worldview": "流水不争，绕过一切，也磨穿一切。", "tone": "柔和" },
+    "rogue": { "worldview": "游侠的义气，比律法更早到达。", "tone": "豪爽" },
+    "ice": { "worldview": "冰封的不是秘密，是没说完的话。", "tone": "清冷" },
+    "moon": { "worldview": "月光下没有秘密，只有不愿被提起的故事。", "tone": "哀婉" }
+  },
+
+  "_classComment": "职业信条 + 通用座右铭（按名字确定性取一条，不用随机）",
+  "classes": {
+    "warrior": {
+      "creed": "用剑说话的人，先把话说清楚。",
+      "quotes": ["剑出鞘的理由，比剑快更重要。", "退一步，是为了再进一步。", "我不怕输，我怕来不及。"]
+    },
+    "mage": {
+      "creed": "知识是唯一的武器，代价是唯一的价格。",
+      "quotes": ["答案在纸上，代价在手上。", "我离答案更近了，也离人更远了。", "别打断我——这几行很关键。"]
+    },
+    "archer": {
+      "creed": "先看清，再出手，然后不再看。",
+      "quotes": ["风向、距离、呼吸。剩下的交给箭。", "我看得比你们远，所以先按兵不动。", "一箭的事，不必说第二句。"]
+    },
+    "tank": {
+      "creed": "站在最前面的人，没有退后的选项。",
+      "quotes": ["我身后站着的，都是我要带回去的人。", "疼？等打完再说。", "盾不会说话，但它一直在。"]
+    },
+    "healer": {
+      "creed": "治愈者不能流血，因为没人替她止血。",
+      "quotes": ["伤会好的，只要你肯等到明天。", "别谢我，下次记得躲开。", "我治得好伤口，治不了你想死的心。"]
+    },
+    "assassin": {
+      "creed": "最干净的一刀，是最不像刀的那一刀。",
+      "quotes": ["你已经死了，只是还没收到通知。", "别回头——回头也看不见我。", "安静一点，我在工作。"]
+    }
+  },
+
+  "_fallbackComment": "数据缺字段时的兜底档案（保证任何角色都有东西看，不出现空白）",
+  "fallback": {
+    "title": "无名者",
+    "traits": ["来历不详", "沉默", "待考证"],
+    "quote": "……（对方只是看了你一眼，没有说话。）",
+    "profile": "关于这名角色的记录还很稀少。图鉴保留了他/她的名字，剩下的要等你亲手写。"
+  }
+}

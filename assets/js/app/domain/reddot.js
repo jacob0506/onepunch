@@ -109,6 +109,25 @@
     } catch (e) { return false; }
   });
 
+  // E8：镜像竞技场 —— 只在「本段满星、升段赛待打」且今日还有次数时亮。
+  //     不注册"今日还有次数"那种常亮规则（见上面的反例清单）。
+  register('arena', ['stages'], () => {
+    const a = window.__arena;
+    if (!a || typeof a.canFight !== 'function' || typeof a.segment !== 'function') return false;
+    try {
+      if (!a.canFight().ok) return false;
+      const e = a.ensure();
+      return !!a.segment(e ? e.total : 0).isPromotion;
+    } catch (err) { return false; }
+  });
+
+  // E6：赛季奖励轨 / 赛季任务有可领项 —— 只在真能领时亮，不做"赛季进行中"常亮。
+  register('season', ['home'], () => {
+    const s = window.__season;
+    if (!s || typeof s.claimableCount !== 'function') return false;
+    try { return s.claimableCount() > 0; } catch (e) { return false; }
+  });
+
   /* ── 导出 ─────────────────────────────────────────────────── */
 
   const api = {

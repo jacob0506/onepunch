@@ -1438,10 +1438,211 @@
 /* 卡面内容压在光晕之上，避免立绘被盖 */
 .ui-card--rare > * { position: relative; z-index: 1; }
 
+/* ── E5 角色档案 / 好感 / 剧情演出（ui/favor.js）──────────────────
+   列表复用图鉴的角色卡（.ui-card）；这里只加"好感条 + 剧情节"这一层，
+   以及两个全屏层：档案浮层(.ui-archive) / 剧情演出(.ui-story)。
+   全屏层用 position:fixed + 自身滚动，**不动 body 样式**（避免残留内联样式）。 */
+
+/* ① 列表：总览 */
+.ui-favor__sum { display: flex; flex-direction: column; gap: 8px; }
+.ui-favor__sum-main { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.ui-favor__sum-label { font-size: 12px; color: var(--c-text-dim); }
+.ui-favor__sum-pct { font-size: 26px; font-weight: 700; color: var(--c-text-hi); line-height: 1; }
+.ui-favor__sum-pct span { font-size: 13px; font-weight: 400; color: var(--c-text-dim); }
+.ui-favor__sum-count { margin-left: 10px; font-size: 12px; color: var(--c-accent); }
+.ui-favor__sum-extra { font-size: 12px; color: var(--c-text-dim); }
+.ui-favor__bar { margin-top: 6px; }
+.ui-favor__empty { padding: 18px 12px; text-align: center; font-size: 12px; color: var(--c-text-dim); }
+
+/* ② 列表：筛选 + 网格 */
+.ui-favor__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.ui-favor__chip {
+  padding: 5px 12px; border-radius: 999px; font-size: 12px; cursor: pointer;
+  border: 1px solid var(--c-border-faint); background: var(--c-surface); color: var(--c-text-dim);
+  transition: color 0.16s, border-color 0.16s, background 0.16s;
+}
+.ui-favor__chip.is-active {
+  color: var(--c-text-hi); border-color: var(--c-primary);
+  background: rgb(var(--c-primary-rgb) / 0.16);
+}
+.ui-favor__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(106px, 1fr)); gap: 10px; }
+.ui-favor__cell-meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 10px; color: var(--c-text-dim); }
+.ui-favor__cell-lv { color: var(--c-accent); font-weight: 600; }
+.ui-favor__cell-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-favor__cell-ch { opacity: 0.8; }
+/* 有专属剧情的角标（挂在 .ui-card__overlay 里） */
+.ui-favor__story-flag {
+  position: absolute; right: 6px; bottom: 6px; width: 20px; height: 20px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 10px;
+  color: var(--c-accent); background: rgba(4, 8, 16, 0.68); border: 1px solid var(--c-accent);
+}
+
+/* ③ 档案浮层 */
+.ui-archive {
+  position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center;
+  padding: 16px; overflow-y: auto; opacity: 0; transition: opacity 0.22s ease;
+  background: rgba(3, 6, 16, 0.74); backdrop-filter: blur(6px);
+}
+.ui-archive.is-open { opacity: 1; }
+.ui-archive__panel {
+  position: relative; width: min(760px, 100%); max-height: calc(100vh - 32px);
+  display: flex; flex-direction: column; gap: 14px; padding: 18px; overflow-y: auto;
+  background: var(--c-surface); border: 1px solid var(--c-border-strong); border-radius: 18px;
+  transform: translateY(12px) scale(0.985); transition: transform 0.24s var(--ease-game);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+.ui-archive.is-open .ui-archive__panel { transform: none; }
+.ui-archive__close {
+  position: absolute; top: 10px; right: 10px; z-index: 2; width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  color: var(--c-text-dim); background: rgba(4, 8, 16, 0.6); border: 1px solid var(--c-border-faint);
+}
+.ui-archive__close:hover { color: var(--c-text-hi); border-color: var(--c-primary); }
+.ui-archive__hero { display: flex; gap: 14px; align-items: flex-start; }
+.ui-archive__img {
+  flex: none; width: 132px; height: 152px; object-fit: cover; border-radius: 12px;
+  border: 1px solid var(--c-border-faint); background: rgba(255, 255, 255, 0.03);
+}
+.ui-archive__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ui-archive__name { font-size: 18px; font-weight: 700; color: var(--c-text-hi); }
+.ui-archive__tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.ui-archive__title { font-size: 13px; color: var(--c-accent); }
+.ui-archive__traits { display: flex; flex-wrap: wrap; gap: 6px; }
+.ui-archive__trait {
+  padding: 2px 8px; border-radius: 999px; font-size: 11px;
+  color: var(--c-text-dim); border: 1px dashed var(--c-border-faint);
+}
+.ui-archive__quote {
+  padding-left: 9px; font-size: 12px; line-height: 1.6; font-style: italic;
+  color: var(--c-text-dim); border-left: 2px solid var(--c-primary);
+}
+.ui-archive__profile {
+  padding: 10px 12px; border-radius: 12px; font-size: 13px; line-height: 1.75;
+  color: var(--c-text-hi); opacity: 0.92; background: rgba(255, 255, 255, 0.03);
+}
+.ui-archive__sec {
+  display: flex; flex-direction: column; gap: 8px;
+  padding-top: 12px; border-top: 1px solid var(--c-border-faint);
+}
+.ui-archive__sec-title { font-size: 13px; font-weight: 600; color: var(--c-text-hi); }
+.ui-archive__favor-head {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px;
+  font-size: 11px; color: var(--c-text-dim);
+}
+.ui-favor__bonus { color: var(--c-success); }
+.ui-favor__bonus.is-off { color: var(--c-text-dim); opacity: 0.7; }
+.ui-archive__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ui-archive__gifts { display: grid; grid-template-columns: repeat(auto-fit, minmax(152px, 1fr)); gap: 8px; }
+.ui-archive__gift {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 8px 10px; border-radius: 10px; cursor: pointer; text-align: left;
+  color: var(--c-text-hi); background: var(--c-surface); border: 1px solid var(--c-border-faint);
+  transition: border-color 0.16s, transform 0.16s;
+}
+.ui-archive__gift:hover:not(:disabled) { border-color: var(--c-primary); transform: translateY(-1px); }
+.ui-archive__gift.is-poor, .ui-archive__gift:disabled { opacity: 0.45; cursor: not-allowed; }
+.ui-archive__gift-name { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; }
+.ui-archive__gift-cost { font-size: 10px; color: var(--c-text-dim); }
+.ui-archive__gold { font-size: 11px; color: var(--c-text-dim); }
+.ui-archive__chapters { display: flex; flex-direction: column; gap: 8px; }
+.ui-archive__chapter {
+  display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02); border: 1px solid var(--c-border-faint);
+}
+.ui-archive__chapter.is-locked { opacity: 0.55; }
+.ui-archive__ch-head { display: flex; align-items: center; gap: 8px; }
+.ui-archive__ch-num {
+  width: 22px; height: 22px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center; font-size: 11px;
+  color: var(--c-text-dim); background: rgba(255, 255, 255, 0.06);
+}
+.ui-archive__ch-title { font-size: 13px; font-weight: 600; color: var(--c-text-hi); }
+.ui-archive__ch-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-size: 11px; color: var(--c-text-dim);
+}
+.ui-archive__ch-read { color: var(--c-success); }
+.ui-archive__ch-new { color: var(--c-accent); }
+.ui-archive__ch-lock { color: var(--c-text-dim); }
+
+/* ④ 剧情演出（全屏） */
+.ui-story {
+  position: fixed; inset: 0; z-index: 1400; display: flex; flex-direction: column; overflow: hidden;
+  opacity: 0; transition: opacity 0.2s ease;
+  background: radial-gradient(120% 90% at 50% 0%, #14223d 0%, #070b16 62%, #03050c 100%);
+}
+.ui-story.is-open { opacity: 1; }
+.ui-story__top {
+  flex: none; display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; font-size: 12px; color: var(--c-text-dim);
+}
+.ui-story__chapter { letter-spacing: 0.05em; }
+.ui-story__skip {
+  padding: 4px 12px; border-radius: 999px; font-size: 12px; cursor: pointer;
+  color: var(--c-text-dim); background: transparent; border: 1px solid var(--c-border-faint);
+}
+.ui-story__skip:hover { color: var(--c-text-hi); border-color: var(--c-primary); }
+.ui-story__stage {
+  position: relative;
+  flex: 1; min-height: 0; display: flex; align-items: flex-end; justify-content: center; padding: 0 16px;
+}
+/* 底部渐隐：让立绘"站"进画面，而不是纸片一样浮在台词框上 */
+.ui-story__stage::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 24%;
+  background: linear-gradient(to bottom, rgba(7, 11, 22, 0), rgba(7, 11, 22, 0.92));
+  pointer-events: none;
+}
+.ui-story__img {
+  max-width: 100%; max-height: min(58vh, 470px); object-fit: contain;
+  border-radius: 14px;
+  /* 立绘是方形图：底部渐隐，让它"站"在画面上而不是浮着一张图 */
+  -webkit-mask-image: linear-gradient(to bottom, #000 78%, rgba(0, 0, 0, 0.08) 100%);
+  mask-image: linear-gradient(to bottom, #000 78%, rgba(0, 0, 0, 0.08) 100%);
+  filter: saturate(1.06) contrast(1.02);
+  animation: ui-story-in 0.35s var(--ease-game);
+}
+@keyframes ui-story-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.ui-story__box {
+  flex: none; min-height: 152px; margin: 12px 16px 20px; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 8px; cursor: pointer;
+  border-radius: 16px; border: 1px solid var(--c-border-strong);
+  background: rgba(9, 14, 26, 0.86); box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.45);
+}
+.ui-story__who { font-size: 13px; font-weight: 700; color: var(--c-accent); }
+.ui-story__text { flex: 1; font-size: 14px; line-height: 1.85; color: var(--c-text-hi); }
+.ui-story__hint {
+  align-self: flex-end; font-size: 11px; color: var(--c-text-dim);
+  animation: ui-story-hint 1.6s ease-in-out infinite;
+}
+@keyframes ui-story-hint {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+.ui-story__end {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; text-align: center;
+}
+.ui-story__end-title { font-size: 16px; font-weight: 700; letter-spacing: 0.2em; color: var(--c-text-hi); }
+.ui-story__end-gain { font-size: 13px; color: var(--c-accent); }
+.ui-story__end-gain.is-none { font-size: 12px; color: var(--c-text-dim); }
+
+/* 窄屏：立绘与信息上下排 */
+@media (max-width: 520px) {
+  .ui-archive__hero { flex-direction: column; align-items: center; text-align: center; }
+  .ui-archive__meta { align-items: center; }
+  .ui-archive__quote { text-align: left; }
+  .ui-archive__img { width: 118px; height: 136px; }
+  .ui-story__box { margin: 10px 10px 14px; }
+}
+
 /* 系统开启"减弱动效"时整体关闭（无障碍） */
 @media (prefers-reduced-motion: reduce) {
   .ui-bt--strike, .ui-bt--crit, .ui-shake,
-  .ui-card__img--breath, .ui-portrait-breath, .ui-card--rare::after {
+  .ui-card__img--breath, .ui-portrait-breath, .ui-card--rare::after,
+  .ui-story__img, .ui-story__hint {
     animation: none !important;
   }
   .ui-card--lift { transition: none; }

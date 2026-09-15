@@ -24,11 +24,13 @@
     levelup: ['levelUps'],
     sweep: ['sweeps'],
     idle_claim: ['idleClaims'],
-    dispatch: ['dispatches']
+    dispatch: ['dispatches'],
+    arena_win: ['arenaWins'],
+    trial: ['trialClears']
   };
 
   /** 全部统计键（用于存档结构自检 / 界面展示） */
-  const KEYS = ['gachaTotal', 'battleWins', 'levelUps', 'sweeps', 'idleClaims', 'dispatches'];
+  const KEYS = ['gachaTotal', 'battleWins', 'levelUps', 'sweeps', 'idleClaims', 'dispatches', 'arenaWins', 'trialClears'];
 
   function gd() {
     try { return (typeof gameData !== 'undefined' && gameData) ? gameData : null; }

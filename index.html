@@ -19,7 +19,7 @@
 
   <!-- 设计 Token（B4，2026-09-12）：全站颜色的唯一真相源，改这里 = 换肤 -->
   <link href="./assets/css/tokens.css?v=34" rel="stylesheet">
-  <link href="./assets/css/components.css?v=45" rel="stylesheet">
+  <link href="./assets/css/components.css?v=47" rel="stylesheet">
 
   <!-- 站点图标 / iOS 主屏图标（本地素材，见 tools/gen-brand.mjs） -->
   <link rel="icon" type="image/svg+xml" href="./assets/brand/favicon.svg">
@@ -348,6 +348,18 @@
                   <span class="ml-auto text-[10px] font-normal text-gray-400">派出小队 · 途中遭遇自己选</span>
                 </h2>
                 <div id="dispatchBody" class="space-y-3"></div>
+              </div>
+
+              <!-- E6 赛季活动循环：数值单源 domain/season.js，界面 ui/season.js。
+                   全系统（战斗/扫荡/升级/抽卡/挂机/派驻/竞技场）都喂赛季经验，
+                   赛季末自动归档、结算、开新季。 -->
+              <div id="seasonPanel" class="ui-panel rounded-xl p-4 mb-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                  <i class="fa fa-trophy text-yellow-400 mr-2"></i>
+                  赛季活动
+                  <span id="seasonCountdown" class="ml-auto text-[10px] font-normal text-gray-400">-</span>
+                </h2>
+                <div id="seasonBody" class="space-y-3"></div>
               </div>
 
               <div class="ui-panel rounded-xl p-4">
@@ -966,13 +978,13 @@
   <script src="./assets/js/app/core/names.js"></script>
   <script src="./assets/js/app/core/storage.js"></script>
   <script src="./assets/js/app/bridge.js"></script>
-  <script src="./assets/js/app/data/loader.js?v=36"></script>
+  <script src="./assets/js/app/data/loader.js?v=38"></script>
   <script src="./assets/js/app/ui/materials.js"></script>
   <script src="./assets/js/app/ui/components.js?v=36"></script>
   <script src="./assets/js/app/audio/engine.js?v=44"></script>
   <script src="./assets/js/app/ui/idle.js?v=34"></script>
   <script src="./assets/js/app/ui/navigation.js?v=44"></script>
-  <script src="./assets/js/app/ui/stages.js?v=40"></script>
+  <script src="./assets/js/app/ui/stages.js?v=41"></script>
   <script src="./assets/js/app/ui/cultivate.js?v=37"></script>
   <script src="./assets/js/app/ui/modals.js?v=35"></script>
   <script src="./assets/js/app/ui/backpack.js?v=35"></script>
@@ -980,8 +992,8 @@
   <script src="./assets/js/app/domain/inventory.js"></script>
   <script src="./assets/js/app/domain/progression.js"></script>
   <script src="./assets/js/app/domain/idle.js?v=34"></script>
-  <script src="./assets/js/app/domain/goals.js?v=36"></script>
-  <script src="./assets/js/app/domain/reddot.js?v=36"></script>
+  <script src="./assets/js/app/domain/goals.js?v=37"></script>
+  <script src="./assets/js/app/domain/reddot.js?v=38"></script>
   <script src="./assets/js/app/domain/quick_ops.js?v=41"></script>
   <script src="./assets/js/app/domain/bonds.js?v=38"></script>
   <script src="./assets/js/app/domain/counters.js?v=41"></script>
@@ -990,16 +1002,24 @@
   <script src="./assets/js/app/domain/tower.js?v=34"></script>
   <script src="./assets/js/app/domain/tutorial.js?v=34"></script>
 <!-- E1：肉鸽远征数值源（domain/expedition.js）—— 战斗 hook 在 battle/scene.js，UI 在 ui/expedition.js -->
-<script src="./assets/js/app/domain/expedition.js?v=1"></script>
+<script src="./assets/js/app/domain/expedition.js?v=2"></script>
 <!-- E3：周期挑战数值源（domain/challenge.js）—— 战斗 hook 在 battle/scene.js，UI 在 ui/challenge.js -->
 <script src="./assets/js/app/domain/challenge.js?v=1"></script>
 <!-- E4：多队远征数值源（domain/squads.js）—— 战斗 hook 在 battle/scene.js，UI 在 ui/squads.js -->
 <script src="./assets/js/app/domain/squads.js?v=1"></script>
 <!-- E7：派驻探险数值源（domain/dispatch.js）—— 纯数值层，不打战斗引擎，UI 在 ui/dispatch.js -->
 <script src="./assets/js/app/domain/dispatch.js?v=1"></script>
+<!-- E8：镜像竞技场数值源（domain/arena.js）—— 战斗走通用引擎，UI 在 ui/arena.js -->
+<script src="./assets/js/app/domain/arena.js?v=1"></script>
+<!-- E6：赛季活动循环数值源（domain/season.js）—— XP 由 stats 增量派生，不发新埋点 -->
+<script src="./assets/js/app/domain/season.js?v=2"></script>
+<!-- E6-2：赛季秘境数值源（domain/season_trial.js）—— 主题驱动的 5 层关卡，配置在 season.json 的 trial 段 -->
+<script src="./assets/js/app/domain/season_trial.js?v=1"></script>
+<!-- E5：角色档案 / 好感数值源（domain/favor.js）—— 加成进 calculateTotalStats（Lv1=0）；UI 在 ui/favor.js -->
+<script src="./assets/js/app/domain/favor.js?v=1"></script>
   <!-- C8：图鉴与成就。stats 是累计计数（成就的历史指标），codex 是收集记录，
        achievements 读前两者 + 现算状态得出进度。三者都是纯数值单源，无 DOM。 -->
-  <script src="./assets/js/app/domain/stats.js?v=39"></script>
+  <script src="./assets/js/app/domain/stats.js?v=40"></script>
   <script src="./assets/js/app/domain/codex.js?v=39"></script>
   <script src="./assets/js/app/domain/achievements.js?v=40"></script>
   <script src="./assets/js/app/battle/report.js"></script>
@@ -1015,7 +1035,7 @@
        它们加载早于下面的内联脚本，并各自把函数名逐个挂到 window，
        因此内联与 HTML onclick 的调用点全部零改动。
        注意：这些文件加载时**只做函数定义**，不读写内联顶层的 let/const（会命中 TDZ）。 -->
-  <script src="./assets/js/app/data/bootstrap.js?v=44"></script>
+  <script src="./assets/js/app/data/bootstrap.js?v=46"></script>
   <script src="./assets/js/app/data/characters.js?v=35"></script>
   <script src="./assets/js/app/data/stage_expand.js?v=34"></script>
   <script src="./assets/js/app/domain/character_ops.js?v=35"></script>
@@ -1026,18 +1046,26 @@
   <script src="./assets/js/app/ui/bonds.js?v=37"></script>
   <script src="./assets/js/app/ui/daily.js?v=38"></script>
   <script src="./assets/js/app/ui/codex.js?v=39"></script>
-  <script src="./assets/js/app/ui/character_view.js?v=34"></script>
+  <script src="./assets/js/app/ui/character_view.js?v=35"></script>
   <script src="./assets/js/app/ui/tutorial.js?v=34"></script>
 <!-- E1：肉鸽远征界面（数值在 domain/expedition.js） -->
 <script src="./assets/js/app/ui/expedition.js?v=1"></script>
 <!-- E3：周期挑战界面（数值在 domain/challenge.js） -->
-<script src="./assets/js/app/ui/challenge.js?v=1"></script>
+<script src="./assets/js/app/ui/challenge.js?v=3"></script>
 <!-- E4：多队远征界面（数值在 domain/squads.js） -->
 <script src="./assets/js/app/ui/squads.js?v=1"></script>
 <!-- E7：派驻探险界面（数值在 domain/dispatch.js） -->
 <script src="./assets/js/app/ui/dispatch.js?v=1"></script>
+<!-- E8：镜像竞技场界面（数值在 domain/arena.js） -->
+<script src="./assets/js/app/ui/arena.js?v=1"></script>
+<!-- E6-2：赛季秘境面板（数值在 domain/season_trial.js），插进赛季面板 -->
+<script src="./assets/js/app/ui/season_trial.js?v=1"></script>
+<!-- E6：赛季活动面板（数值在 domain/season.js） -->
+<script src="./assets/js/app/ui/season.js?v=2"></script>
+<!-- E5：角色档案面板 + 剧情演出（数值在 domain/favor.js）—— 挂图鉴页第三个子 tab -->
+<script src="./assets/js/app/ui/favor.js?v=1"></script>
   <script src="./assets/js/app/battle/loadout_text.js?v=34"></script>
-  <script src="./assets/js/app/battle/fallback_hud.js?v=36"></script>
+  <script src="./assets/js/app/battle/fallback_hud.js?v=37"></script>
   <script src="./assets/js/app/debug/cheats.js?v=35"></script>
 
   <!-- 游戏数据 -->
@@ -1098,6 +1126,14 @@
     let squadsData = null;
     // 派驻探险（E7，assets/data/dispatch.json；加载失败时 domain/dispatch.js 用内置同值兜底）
     let dispatchData = null;
+    // 镜像竞技场（E8，assets/data/arena.json；加载失败时 domain/arena.js 用内置同值兜底）
+    let arenaData = null;
+    // 赛季活动循环（E6，assets/data/season.json；加载失败时 domain/season.js 退化为空赛季）
+    let seasonData = null;
+    // 角色好感数值（E5，assets/data/favor.json；加载失败时 domain/favor.js 用内置同值曲线）
+    let favorData = null;
+    // 角色档案剧情（E5，assets/data/stories.json；加载失败时全员退化为"阵营+职业组合档案"）
+    let storiesData = null;
 
     // 当前选中的角色/装备/铭文
     let selectedCharacter = null;

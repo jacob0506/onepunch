@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "cycleDays": 7,
+  "anchorDate": "2026-09-14",
+  "dailyTries": 5,
+  "starsPerRank": 3,
+  "winStreakBonus": 3,
+  "_note": "E8 镜像竞技场。段位进度用连续总星数表示：total = rankIdx * starsPerRank + star。升段赛（每段最后一星）对手是玩家自己上阵队伍的镜像。跨周按最高段位发周奖并降一段（不低于青铜），历史最高段位永久保留。",
+  "unit": {
+    "lvBase": 0,
+    "hpBase": 2200,
+    "hpPerLevel": 120,
+    "atkBase": 180,
+    "atkPerLevel": 12,
+    "defBase": 90,
+    "defPerLevel": 6,
+    "spdBase": 92,
+    "spdStep": 4
+  },
+  "mirror": {
+    "hpMul": 1.0,
+    "atkMul": 1.0,
+    "defMul": 1.0
+  },
+  "ranks": [
+    { "id": "bronze", "name": "青铜", "icon": "fa-shield", "scale": 0.85, "weekly": { "gold": 3000, "gems": 20 } },
+    { "id": "silver", "name": "白银", "icon": "fa-shield", "scale": 0.95, "weekly": { "gold": 5000, "gems": 35, "materials": { "enhanceStone": 30 } } },
+    { "id": "gold", "name": "黄金", "icon": "fa-trophy", "scale": 1.05, "weekly": { "gold": 8000, "gems": 50, "materials": { "enhanceStone": 50, "reforgeDust": 20 } } },
+    { "id": "platinum", "name": "铂金", "icon": "fa-trophy", "scale": 1.15, "weekly": { "gold": 12000, "gems": 80, "materials": { "enhanceStone": 80, "reforgeDust": 35 } } },
+    { "id": "diamond", "name": "钻石", "icon": "fa-diamond", "scale": 1.28, "weekly": { "gold": 18000, "gems": 120, "materials": { "enhanceStone": 120, "inscriptionDust": 40 } } },
+    { "id": "king", "name": "王者", "icon": "fa-crown", "scale": 1.45, "weekly": { "gold": 25000, "gems": 180, "materials": { "enhanceStone": 200, "lockCrystal": 10 } } }
+  ],
+  "themes": [
+    {
+      "id": "ironwall", "name": "钢铁壁垒", "desc": "三层重盾轮转，磨到你没有蓝",
+      "hint": "带破甲与真实伤害，别跟它拼消耗",
+      "comp": ["tank", "tank", "tank", "warrior", "healer", "healer"],
+      "mods": { "hpMul": 1.25, "atkMul": 0.85, "spdMul": 1.0 }
+    },
+    {
+      "id": "firestorm", "name": "烈焰风暴", "desc": "四法齐鸣，一轮下来前排就没了",
+      "hint": "脆皮高爆发，抢在第二轮之前打掉后排",
+      "comp": ["mage", "mage", "mage", "mage", "warrior", "healer"],
+      "mods": { "hpMul": 0.85, "atkMul": 1.25, "spdMul": 1.0 }
+    },
+    {
+      "id": "shadowblade", "name": "暗影利刃", "desc": "四名刺客，专挑你的后排下手",
+      "hint": "刺客会切入后排，留个前排或带保护技能",
+      "comp": ["assassin", "assassin", "assassin", "assassin", "archer", "healer"],
+      "mods": { "hpMul": 0.85, "atkMul": 1.2, "spdMul": 1.15 }
+    },
+    {
+      "id": "arrowrain", "name": "万箭穿心", "desc": "全程远程齐射，起手就是一轮集火",
+      "hint": "撑住前三回合，之后就是你的回合",
+      "comp": ["archer", "archer", "archer", "archer", "tank", "healer"],
+      "mods": { "hpMul": 1.0, "atkMul": 1.15, "spdMul": 1.1 }
+    },
+    {
+      "id": "holybulwark", "name": "圣光壁垒", "desc": "三名治疗互相补血，常规输出打不动",
+      "hint": "用禁疗或爆发，优先秒掉治疗",
+      "comp": ["tank", "tank", "healer", "healer", "healer", "mage"],
+      "mods": { "hpMul": 1.2, "atkMul": 0.9, "spdMul": 1.0 }
+    },
+    {
+      "id": "wolfsong", "name": "群狼战团", "desc": "五名狂战士压上来，没有退路",
+      "hint": "前排硬度决定成败，别让阵型崩掉",
+      "comp": ["warrior", "warrior", "warrior", "warrior", "warrior", "healer"],
+      "mods": { "hpMul": 1.0, "atkMul": 1.2, "spdMul": 1.05 }
+    },
+    {
+      "id": "balanced", "name": "均衡阵列", "desc": "六职业齐全的教科书阵容",
+      "hint": "没有短板，比的是练度与细节",
+      "comp": ["warrior", "mage", "archer", "tank", "healer", "assassin"],
+      "mods": { "hpMul": 1.0, "atkMul": 1.0, "spdMul": 1.0 }
+    },
+    {
+      "id": "twinblade", "name": "双刃突袭", "desc": "双刺客起手秒人，节奏极快",
+      "hint": "先手很关键，速度与减伤都要考虑",
+      "comp": ["assassin", "assassin", "warrior", "warrior", "archer", "healer"],
+      "mods": { "hpMul": 1.0, "atkMul": 1.15, "spdMul": 1.05 }
+    },
+    {
+      "id": "arcane", "name": "秘法议会", "desc": "三法师叠术，法伤铺满全场",
+      "hint": "法术抗性装备在这里价值翻倍",
+      "comp": ["mage", "mage", "mage", "healer", "healer", "tank"],
+      "mods": { "hpMul": 0.9, "atkMul": 1.2, "spdMul": 1.0 }
+    },
+    {
+      "id": "vanguard", "name": "先锋铁骑", "desc": "重装冲锋，抗性高得离谱",
+      "hint": "靠控制与减速拖住节奏，再打输出",
+      "comp": ["warrior", "warrior", "warrior", "tank", "tank", "archer"],
+      "mods": { "hpMul": 1.15, "atkMul": 1.05, "spdMul": 1.0 }
+    },
+    {
+      "id": "moonlight", "name": "月光猎团", "desc": "极速游猎，谁先倒下全看速度",
+      "hint": "你的速度决定先手，别被抢节奏",
+      "comp": ["archer", "archer", "assassin", "assassin", "mage", "healer"],
+      "mods": { "hpMul": 0.95, "atkMul": 1.1, "spdMul": 1.2 }
+    },
+    {
+      "id": "eternal", "name": "永世守卫", "desc": "纯肉阵，四个重装两个奶",
+      "hint": "伤害不够会打满回合上限，带百分比或真伤",
+      "comp": ["tank", "tank", "tank", "tank", "healer", "healer"],
+      "mods": { "hpMul": 1.35, "atkMul": 0.8, "spdMul": 1.0 }
+    }
+  ]
+}

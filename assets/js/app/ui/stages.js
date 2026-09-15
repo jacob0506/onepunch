@@ -257,6 +257,7 @@
     const expActive = mode === 'expedition';
     const chActive = mode === 'challenge';
     const sqActive = mode === 'squads';
+    const arActive = mode === 'arena';
     const expSum = (window.__expedition && typeof window.__expedition.summary === 'function')
       ? window.__expedition.summary() : null;
     const chSum = (window.__challenge && typeof window.__challenge.summary === 'function')
@@ -298,6 +299,7 @@
             ${modeBtn('expedition', '远征', expActive)}
             ${modeBtn('challenge', '挑战', chActive)}
             ${modeBtn('squads', '远征队', sqActive)}
+            ${modeBtn('arena', '竞技场', arActive)}
           </div>
           <div class="text-right truncate min-w-0">${rightInfo}</div>
         </div>
@@ -659,6 +661,10 @@
     else if (mode === 'squads') {
       // E4：多队远征（数值在 domain/squads.js，界面在 ui/squads.js）
       if (typeof window.renderSquadsPanel === 'function') window.renderSquadsPanel(stagesList);
+    }
+    else if (mode === 'arena') {
+      // E8：镜像竞技场（数值在 domain/arena.js，界面在 ui/arena.js）
+      if (typeof window.renderArenaPanel === 'function') window.renderArenaPanel(stagesList);
     }
     else renderMainStages(stagesList);
   }

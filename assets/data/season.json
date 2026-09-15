@@ -1,0 +1,151 @@
+{
+  "version": 2,
+  "durationDays": 28,
+  "xpWeights": {
+    "battleWins": 8,
+    "sweeps": 3,
+    "levelUps": 4,
+    "gachaTotal": 2,
+    "idleClaims": 5,
+    "dispatches": 20,
+    "arenaWins": 12,
+    "trialClears": 25
+  },
+  "themePool": [
+    {
+      "id": "theme_starfall",
+      "name": "星陨之季",
+      "tagline": "陨星坠海，谁拾其辉",
+      "icon": "fa-star",
+      "color": "#7dd3fc",
+      "desc": "群星坠入星海，卡牌之力被重新唤醒。本季所有远征与挑战的对手都染上了星辉。",
+      "task": { "name": "拾星者", "desc": "本季累计赢得 60 场战斗", "stat": "battleWins", "target": 60 },
+      "reward": { "gems": 300, "materials": { "lockCrystal": 3 } },
+      "edict": { "focus": "battleWins", "focusXpMult": 1.5, "text": "本季每场战斗胜利，赛季经验 +50%" },
+      "trial": {
+        "title": "星陨回廊",
+        "intro": "坠落的星骸在回廊尽头堆成一座小山。拾级而上的人，先被星辉灼伤，再被它照亮。",
+        "affixes": [
+          { "name": "星屑", "desc": "敌人生命 +15%", "enemyHp": 1.15 },
+          { "name": "星芒", "desc": "敌人攻击 +18%", "enemyAtk": 1.18 },
+          { "name": "星蚀", "desc": "敌人防御 +25%，通关金币 +20%", "enemyDef": 1.25, "rewardMult": 1.2 },
+          { "name": "星潮", "desc": "敌人生命 +20%、攻击 +12%", "enemyHp": 1.2, "enemyAtk": 1.12 },
+          { "name": "星陨", "desc": "敌人全属性 +28%，通关金币 +60%", "enemyHp": 1.28, "enemyAtk": 1.28, "enemyDef": 1.28, "rewardMult": 1.6 }
+        ]
+      }
+    },
+    {
+      "id": "theme_blaze",
+      "name": "烈焰之季",
+      "tagline": "以火试金，以战证道",
+      "icon": "fa-fire",
+      "color": "#fb923c",
+      "desc": "熔炉之城燃起不灭之焰，唯有经受千锤百炼者方能留名。",
+      "task": { "name": "百炼成钢", "desc": "本季累计升级角色 120 次", "stat": "levelUps", "target": 120 },
+      "reward": { "gems": 300, "materials": { "enhanceStone": 200 } },
+      "edict": { "focus": "levelUps", "focusXpMult": 1.5, "text": "本季每次角色升级，赛季经验 +50%" },
+      "trial": {
+        "title": "熔炉深窟",
+        "intro": "炉火烧了三百年没熄过。进去的人说，最后一道门后面什么都没有——只有更热的空气。",
+        "affixes": [
+          { "name": "余烬", "desc": "敌人攻击 +20%", "enemyAtk": 1.2 },
+          { "name": "灼风", "desc": "敌人生命 +20%、攻击 +10%", "enemyHp": 1.2, "enemyAtk": 1.1 },
+          { "name": "熔岩", "desc": "敌人防御 +30%，通关金币 +25%", "enemyDef": 1.3, "rewardMult": 1.25 },
+          { "name": "炽壁", "desc": "敌人生命 +30%", "enemyHp": 1.3 },
+          { "name": "焚尽", "desc": "敌人全属性 +30%，通关金币 +60%", "enemyHp": 1.3, "enemyAtk": 1.3, "enemyDef": 1.3, "rewardMult": 1.6 }
+        ]
+      }
+    },
+    {
+      "id": "theme_abyss",
+      "name": "深渊之季",
+      "tagline": "愈往下，愈见真我",
+      "icon": "fa-eye",
+      "color": "#a78bfa",
+      "desc": "深渊裂隙再度扩张，远征队与驻扎的探险者都被卷入更深的黑暗。",
+      "task": { "name": "深渊回响", "desc": "本季累计完成 12 次派驻", "stat": "dispatches", "target": 12 },
+      "reward": { "gems": 300, "materials": { "reforgeDust": 60 } },
+      "edict": { "focus": "dispatches", "focusXpMult": 1.5, "text": "本季每次派驻完成，赛季经验 +50%" },
+      "trial": {
+        "title": "深渊回廊",
+        "intro": "回廊没有尽头，只有一层比一层更低的气压。走到最底的人，会听见自己在上面喊的那句话。",
+        "affixes": [
+          { "name": "低语", "desc": "敌人生命 +25%", "enemyHp": 1.25 },
+          { "name": "沉影", "desc": "敌人攻击 +22%、防御 +10%", "enemyAtk": 1.22, "enemyDef": 1.1 },
+          { "name": "黑潮", "desc": "敌人数量 +1，通关金币 +20%", "enemyExtra": 1, "rewardMult": 1.2 },
+          { "name": "蚀骨", "desc": "敌人防御 +35%，通关金币 +25%", "enemyDef": 1.35, "rewardMult": 1.25 },
+          { "name": "深渊", "desc": "敌人全属性 +32%，通关金币 +60%", "enemyHp": 1.32, "enemyAtk": 1.32, "enemyDef": 1.32, "rewardMult": 1.6 }
+        ]
+      }
+    },
+    {
+      "id": "theme_dawn",
+      "name": "破晓之季",
+      "tagline": "长夜将尽，锋芒初现",
+      "icon": "fa-sun-o",
+      "color": "#fbbf24",
+      "desc": "黎明前的竞技场最是喧嚣，名宿们都在等待一个能与他们并肩的人。",
+      "task": { "name": "破晓之名", "desc": "本季累计赢下 30 场竞技场", "stat": "arenaWins", "target": 30 },
+      "reward": { "gems": 300, "materials": { "inscriptionDust": 120 } },
+      "edict": { "focus": "arenaWins", "focusXpMult": 1.5, "text": "本季每场竞技场胜利，赛季经验 +50%" },
+      "trial": {
+        "title": "破晓高台",
+        "intro": "高台九百级，第一级结霜，最后一级被日出晒得发烫。守台的人从不多话——他们只问你走到第几级。",
+        "affixes": [
+          { "name": "晨霜", "desc": "敌人防御 +20%", "enemyDef": 1.2 },
+          { "name": "破风", "desc": "敌人攻击 +25%", "enemyAtk": 1.25 },
+          { "name": "光棱", "desc": "敌人生命 +25%、攻击 +10%", "enemyHp": 1.25, "enemyAtk": 1.1 },
+          { "name": "长夜", "desc": "敌人生命 +30%、防御 +15%", "enemyHp": 1.3, "enemyDef": 1.15 },
+          { "name": "破晓", "desc": "敌人全属性 +30%，通关金币 +60%", "enemyHp": 1.3, "enemyAtk": 1.3, "enemyDef": 1.3, "rewardMult": 1.6 }
+        ]
+      }
+    }
+  ],
+  "trial": {
+    "layers": 5,
+    "dailyTries": 3,
+    "enemyCountByLayer": [3, 3, 4, 5, 6],
+    "hpByLayer": [9000, 13000, 19000, 27000, 38000],
+    "atkByLayer": [900, 1200, 1600, 2100, 2800],
+    "defByLayer": [500, 650, 820, 1000, 1220],
+    "speedBase": 92,
+    "firstClearRewards": [
+      { "gold": 5000, "materials": { "enhanceStone": 40 } },
+      { "gold": 8000, "materials": { "inscriptionDust": 40 } },
+      { "gold": 12000, "gems": 100 },
+      { "gold": 18000, "materials": { "reforgeDust": 40 } },
+      { "gold": 30000, "gems": 300, "materials": { "lockCrystal": 3 } }
+    ],
+    "repeatReward": { "gold": 1000 },
+    "failReward": { "gold": 300 }
+  },
+  "levels": [
+    { "lv": 1,  "need": 0,    "rewards": { "gold": 2000 } },
+    { "lv": 2,  "need": 100,  "rewards": { "materials": { "enhanceStone": 20 } } },
+    { "lv": 3,  "need": 130,  "rewards": { "gold": 3000 } },
+    { "lv": 4,  "need": 165,  "rewards": { "gems": 60 } },
+    { "lv": 5,  "need": 205,  "rewards": { "materials": { "inscriptionDust": 30 } } },
+    { "lv": 6,  "need": 250,  "rewards": { "gold": 5000 } },
+    { "lv": 7,  "need": 305,  "rewards": { "materials": { "enhanceStone": 40 } } },
+    { "lv": 8,  "need": 370,  "rewards": { "gems": 80 } },
+    { "lv": 9,  "need": 445,  "rewards": { "gold": 8000 } },
+    { "lv": 10, "need": 530,  "rewards": { "materials": { "lockCrystal": 2 } } },
+    { "lv": 11, "need": 630,  "rewards": { "gold": 10000 } },
+    { "lv": 12, "need": 740,  "rewards": { "gems": 100 } },
+    { "lv": 13, "need": 870,  "rewards": { "materials": { "reforgeDust": 30 } } },
+    { "lv": 14, "need": 1015, "rewards": { "gold": 13000 } },
+    { "lv": 15, "need": 1180, "rewards": { "materials": { "inscriptionDust": 60 } } },
+    { "lv": 16, "need": 1370, "rewards": { "gems": 120 } },
+    { "lv": 17, "need": 1585, "rewards": { "gold": 16000 } },
+    { "lv": 18, "need": 1830, "rewards": { "materials": { "enhanceStone": 100 } } },
+    { "lv": 19, "need": 2110, "rewards": { "gems": 150 } },
+    { "lv": 20, "need": 2430, "rewards": { "gems": 300, "materials": { "lockCrystal": 5 } } }
+  ],
+  "settleTiers": [
+    { "minLevel": 1,  "gems": 50 },
+    { "minLevel": 5,  "gems": 120 },
+    { "minLevel": 10, "gems": 250 },
+    { "minLevel": 15, "gems": 450 },
+    { "minLevel": 20, "gems": 800 }
+  ]
+}
