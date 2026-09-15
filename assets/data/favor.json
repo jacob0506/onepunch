@@ -103,5 +103,28 @@
     "traits": ["来历不详", "沉默", "待考证"],
     "quote": "……（对方只是看了你一眼，没有说话。）",
     "profile": "关于这名角色的记录还很稀少。图鉴保留了他/她的名字，剩下的要等你亲手写。"
+  },
+
+  "_frameComment": "好感外观奖励（E5-B）：主页展示位 + 头像框。纯外观、零属性 —— 不给任何战斗加成，数值基线不受影响。global = 靠全队好感里程碑解锁；charFrame = 单个角色好感达标解锁一枚以她命名的框。",
+  "frames": {
+    "_globalComment": "req.type：none 恒解锁 / bondPoints 全队好感累计等级（Σ(lv-1)）/ maxLevel 任意角色达到的等级 / storyRead 累计读完章节数 / minLevelCount 达到 level 级的人数达 value",
+    "global": [
+      { "id": "f_none",     "name": "不加框",     "icon": "fa-ban",          "tone": "muted",  "req": { "type": "none" },                                        "desc": "素面朝天，不佩戴任何头像框" },
+      { "id": "f_first",    "name": "初识之环",   "icon": "fa-dot-circle-o", "tone": "muted",  "req": { "type": "bondPoints", "value": 3 },                    "desc": "全队好感累计达到 3 级" },
+      { "id": "f_silver",   "name": "银辉之环",   "icon": "fa-circle-o",     "tone": "muted",  "req": { "type": "bondPoints", "value": 12 },                   "desc": "全队好感累计达到 12 级" },
+      { "id": "f_reader",   "name": "阅卷者",     "icon": "fa-bookmark",     "tone": "accent", "req": { "type": "storyRead", "value": 12 },                    "desc": "累计读完 12 章专属剧情" },
+      { "id": "f_gold",     "name": "鎏金之环",   "icon": "fa-certificate",  "tone": "gold",   "req": { "type": "bondPoints", "value": 30 },                   "desc": "全队好感累计达到 30 级" },
+      { "id": "f_bond",     "name": "知己之证",   "icon": "fa-link",         "tone": "accent", "req": { "type": "maxLevel", "value": 7 },                      "desc": "任意一名角色好感达到 Lv.7（知己）" },
+      { "id": "f_court",    "name": "满堂之环",   "icon": "fa-users",        "tone": "gold",   "req": { "type": "minLevelCount", "level": 5, "value": 5 },     "desc": "有 5 名角色好感达到 Lv.5（信赖）" },
+      { "id": "f_destiny",  "name": "命定之环",   "icon": "fa-diamond",      "tone": "gold",   "req": { "type": "maxLevel", "value": 10 },                     "desc": "任意一名角色好感达到 Lv.10（命定）" },
+      { "id": "f_star",     "name": "星海之环",   "icon": "fa-star-o",       "tone": "rare",   "req": { "type": "bondPoints", "value": 60 },                   "desc": "全队好感累计达到 60 级" }
+    ],
+    "_charComment": "角色专属框：某名角色好感达到 lv 时，解锁一枚以她命名的头像框（id = cf_<charId>_<lv>）。全员可解锁，但只有达标的才在列表里出现。",
+    "charFrame": {
+      "levels": [
+        { "lv": 7,  "suffix": "之约", "icon": "fa-heart-o", "tone": "accent" },
+        { "lv": 10, "suffix": "之誓", "icon": "fa-heart",   "tone": "gold" }
+      ]
+    }
   }
 }

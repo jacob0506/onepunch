@@ -58,6 +58,9 @@
 
       // 挂机面板（C1/C3）：推关 / 变强后速率会变，顺带刷新
       if (typeof renderIdlePanel === 'function') renderIdlePanel();
+
+      // E5-B：主页羁绊展示位（好感等级/佩戴的头像框会变，顺带刷新）
+      if (typeof renderFavorDisplay === 'function') renderFavorDisplay();
     }
 
     function updateHomeRecommendedStage() {

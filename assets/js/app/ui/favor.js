@@ -180,6 +180,23 @@
       ? `<button type="button" class="ui-btn ui-btn--sm ui-btn--primary" data-favor-routine="1"><i class="fa fa-comments-o"></i> 谈心 +${fmt(s.routineXp)}</button>`
       : `<button type="button" class="ui-btn ui-btn--sm ui-btn--ghost" disabled>今日已谈心</button>`;
 
+    // E5-B：主页展示位入口 —— 好感的"看得见的回报"就挂在主页右侧
+    const owned = (function () {
+      try { return (gameData.characters || []).some(c => c && c.id === s.id); }
+      catch (e) { return false; }
+    })();
+    const isDisplay = (function () {
+      try {
+        const F = favorApi();
+        return !!(F && F.displayInfo && F.displayInfo().id === s.id);
+      } catch (e) { return false; }
+    })();
+    const displayBtn = isDisplay
+      ? `<button type="button" class="ui-btn ui-btn--sm ui-btn--ghost" disabled><i class="fa fa-check"></i> 已展示在主页</button>`
+      : (owned
+        ? `<button type="button" class="ui-btn ui-btn--sm ui-btn--gold" data-favor-display="1"><i class="fa fa-heart"></i> 设为主页展示</button>`
+        : `<button type="button" class="ui-btn ui-btn--sm ui-btn--ghost" disabled>未拥有</button>`);
+
     const chapters = s.chapters.length
       ? `<div class="ui-archive__chapters">${s.chapters.map(c => chapterHtml(c, s)).join('')}</div>`
       : `<div class="ui-favor__empty">${esc(persona.name)} 的专属剧情还在书写中 —— 档案先收下了。</div>`;
@@ -202,7 +219,7 @@
           `<span>${p.isMax ? '好感已满' : `${fmt(p.into)} / ${fmt(p.need)}（距下一级 ${fmt(p.toNext)}）`}</span>` +
           bonus +
         `</div>` +
-        `<div class="ui-archive__actions">` + routineBtn + `</div>` +
+        `<div class="ui-archive__actions">` + routineBtn + displayBtn + `</div>` +
         `<div class="ui-archive__gifts">${s.gifts.map(g => giftBtnHtml(g, gold)).join('')}</div>` +
         `<div class="ui-archive__gold">当前金币：<b>${fmt(gold)}</b> · 已赠礼 ${fmt(s.giftsGiven)} 次</div>` +
       `</div>` +
@@ -401,6 +418,20 @@
           toast('今天已经聊过了，明天再来', 'ghost');
         } else if (r.reason === 'maxed') {
           toast('好感已满', 'ghost');
+        }
+        return;
+      }
+
+      const dispBtn = t.closest('[data-favor-display]');
+      if (dispBtn && !dispBtn.disabled) {
+        const api = favorApi();
+        const r = api.setDisplay(archiveId);
+        if (r.ok) {
+          toast('已设为主页展示角色', 'success');
+          afterChange();
+          refreshArchive();
+        } else if (r.reason === 'notowned') {
+          toast('还没拥有这名角色', 'warning');
         }
         return;
       }

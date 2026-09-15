@@ -19,7 +19,7 @@
 
   <!-- 设计 Token（B4，2026-09-12）：全站颜色的唯一真相源，改这里 = 换肤 -->
   <link href="./assets/css/tokens.css?v=34" rel="stylesheet">
-  <link href="./assets/css/components.css?v=47" rel="stylesheet">
+  <link href="./assets/css/components.css?v=48" rel="stylesheet">
 
   <!-- 站点图标 / iOS 主屏图标（本地素材，见 tools/gen-brand.mjs） -->
   <link rel="icon" type="image/svg+xml" href="./assets/brand/favicon.svg">
@@ -383,6 +383,18 @@
 
             <!-- 右侧信息 -->
             <div>
+              <!-- E5-B 好感外观展示：主页展示位 + 头像框（domain/favor.js 的 displayInfo/setDisplay/setFrame，
+                   ui/favor_display.js 渲染）。纯外观、**零属性加成** —— 好感的数值回报只在 attrBonus 里，
+                   这里再给战力会动到数值基线。 -->
+              <div id="favorDisplayPanel" class="ui-panel rounded-xl p-4 mb-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                  <i class="fa fa-heart text-red-400 mr-2"></i>
+                  羁绊展示
+                  <span id="favorDisplayHint" class="ml-auto text-[10px] font-normal text-gray-400">-</span>
+                </h2>
+                <div id="favorDisplayBody"></div>
+              </div>
+
               <!-- 今日目标（C5）：数值在 domain/goals.js，渲染在 ui/goals.js。
                    取代了此前写死的两个假任务（按钮只会 switchPage，没有进度也没有领取）。 -->
               <div id="dailyGoalsPanel" class="ui-panel rounded-xl p-4 mb-6">
@@ -1064,6 +1076,8 @@
 <script src="./assets/js/app/ui/season.js?v=2"></script>
 <!-- E5：角色档案面板 + 剧情演出（数值在 domain/favor.js）—— 挂图鉴页第三个子 tab -->
 <script src="./assets/js/app/ui/favor.js?v=1"></script>
+<!-- E5-B：好感外观展示（主页展示位 + 头像框，同一份 domain/favor.js） -->
+<script src="./assets/js/app/ui/favor_display.js?v=1"></script>
   <script src="./assets/js/app/battle/loadout_text.js?v=34"></script>
   <script src="./assets/js/app/battle/fallback_hud.js?v=37"></script>
   <script src="./assets/js/app/debug/cheats.js?v=35"></script>

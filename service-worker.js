@@ -1,4 +1,4 @@
-const CACHE_NAME = 'card-game-v59';
+const CACHE_NAME = 'card-game-v60';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -96,6 +96,7 @@ const ASSETS_TO_CACHE = [
   './assets/js/app/ui/season_trial.js?v=1',
   './assets/js/app/ui/season.js?v=2',
   './assets/js/app/ui/favor.js?v=1',
+  './assets/js/app/ui/favor_display.js?v=1',
   './assets/js/app/battle/loadout_text.js?v=34',
   './assets/js/app/battle/fallback_hud.js?v=37',
   './assets/js/app/debug/cheats.js?v=35',
@@ -175,7 +176,7 @@ const ASSETS_TO_CACHE = [
   './assets/vendor/font-awesome/fonts/fontawesome-webfont.woff?v=4.7.0',
   // 设计 Token（B4，2026-09-12）—— 全站颜色的唯一真相源，必须预缓存否则离线丢色
   './assets/css/tokens.css?v=34',
-  './assets/css/components.css?v=47',
+  './assets/css/components.css?v=48',
 ];
 
 self.addEventListener('message', (event) => {

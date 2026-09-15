@@ -392,6 +392,223 @@
     return { ok: true, xpGain, levelUp: res.levelUp };
   }
 
+  /* ── 外观展示（E5-B）：主页展示位 + 头像框 ─────────────────── */
+
+  /*
+   * 设计口径：**纯外观、零属性**。
+   * 好感的数值回报已经由 attrBonus 给出（攻/防/生各 (lv-1)×0.5%）。
+   * 这里再叠加任何加成都会动到数值基线（snapshot-numbers 会红），
+   * 所以展示位只负责"把你的投入摆到主页上"，不给一点战力。
+   */
+
+  const DEFAULT_FRAME = 'f_none';
+
+  function frameCfg() {
+    const c = cfg();
+    return (c && c.frames && typeof c.frames === 'object') ? c.frames : {};
+  }
+
+  /** 展示位存档段（create=false 时**不写档**，返回只读默认值） */
+  function metaOf(d, create) {
+    const data = d || gd();
+    const fallback = { display: '', frame: DEFAULT_FRAME };
+    if (!data) return fallback;
+    let m = data.favorMeta;
+    if (!m || typeof m !== 'object') {
+      if (!create) return fallback;
+      m = data.favorMeta = { display: '', frame: DEFAULT_FRAME };
+    }
+    if (typeof m.display !== 'string') {
+      if (!create) return fallback;
+      m.display = '';
+    }
+    if (typeof m.frame !== 'string' || !m.frame) {
+      if (!create) return fallback;
+      m.frame = DEFAULT_FRAME;
+    }
+    return m;
+  }
+
+  /** 当前持有的角色 id（展示位只能放持有中的人 —— 拿不到的不能摆出来） */
+  function ownedIds(d) {
+    const data = d || gd();
+    const arr = (data && Array.isArray(data.characters)) ? data.characters : [];
+    return arr.map(c => (c && (c.id || c.charId)) || '').filter(Boolean);
+  }
+
+  /** 好感里程碑统计（头像框解锁判定的唯一数据源） */
+  function favorStats(d) {
+    const data = d || gd();
+    let bondPoints = 0;
+    let maxLv = 1;
+    let storyRead = 0;
+    const atLeast = {};
+    allIds().forEach(id => {
+      const lv = levelOf(id, data);
+      if (lv > 1) bondPoints += lv - 1;      // 基线 0：没人碰好感时恒为 0
+      if (lv > maxLv) maxLv = lv;
+      for (let L = 2; L <= lv; L++) atLeast[L] = (atLeast[L] || 0) + 1;
+      const rec = recOf(id, data, false);
+      if (rec && Array.isArray(rec.read)) storyRead += rec.read.length;
+    });
+    return {
+      bondPoints, maxLevel: maxLv, storyRead,
+      countAtLeast: (L) => atLeast[L] || 0
+    };
+  }
+
+  function globalFrames() {
+    return (frameCfg().global || []).filter(f => f && f.id).map(f => ({
+      id: f.id,
+      name: f.name || f.id,
+      icon: f.icon || 'fa-circle-o',
+      tone: f.tone || 'muted',
+      desc: f.desc || '',
+      kind: 'global',
+      req: f.req || { type: 'none' }
+    }));
+  }
+
+  function charFrameDefs() {
+    const c = frameCfg().charFrame;
+    return (c && Array.isArray(c.levels)) ? c.levels.filter(x => x && Number(x.lv) > 0) : [];
+  }
+
+  /** 角色专属框：id 形如 cf_<charId>_<lv>，名字 = 角色名 + 档位后缀 */
+  function charFrameOf(charId, lv) {
+    const ch = charOf(charId);
+    if (!ch || !ch.name) return null;
+    const def = charFrameDefs().filter(x => Number(x.lv) === Number(lv))[0];
+    if (!def) return null;
+    const L = Number(def.lv);
+    return {
+      id: `cf_${charId}_${L}`,
+      name: `${ch.name}${def.suffix || ''}`,
+      icon: def.icon || 'fa-heart',
+      tone: def.tone || 'accent',
+      desc: `${ch.name} 的好感达到 Lv.${L}`,
+      kind: 'char',
+      charId,
+      level: L,
+      req: { type: 'charLevel', charId, level: L }
+    };
+  }
+
+  function reqMet(req, d, stat) {
+    const r = req || {};
+    const v = Number(r.value) || 0;
+    switch (r.type) {
+      case 'none': return true;
+      case 'bondPoints': return stat.bondPoints >= v;
+      case 'maxLevel': return stat.maxLevel >= v;
+      case 'storyRead': return stat.storyRead >= v;
+      case 'minLevelCount': return stat.countAtLeast(Number(r.level) || 1) >= v;
+      case 'charLevel': return levelOf(r.charId, d) >= (Number(r.level) || 0);
+      default: return false;
+    }
+  }
+
+  /** 全部「已拿到 + 还没拿到」的通用框 + **已拿到**的专属框（未达标的专属框不列出，避免 222 条刷屏） */
+  function frameCatalog(d) {
+    const data = d || gd();
+    const stat = favorStats(data);
+    const out = globalFrames().map(f => {
+      const o = Object.assign({}, f);
+      o.unlocked = reqMet(f.req, data, stat);
+      return o;
+    });
+    charFrameDefs().forEach(def => {
+      allIds().forEach(id => {
+        if (levelOf(id, data) < Number(def.lv)) return;
+        const f = charFrameOf(id, def.lv);
+        if (!f) return;
+        f.unlocked = true;
+        out.push(f);
+      });
+    });
+    return out;
+  }
+
+  function frameById(id, d) {
+    const data = d || gd();
+    if (!id) return frameById(DEFAULT_FRAME, data);
+    const g = globalFrames().filter(f => f.id === id)[0];
+    if (g) {
+      g.unlocked = reqMet(g.req, data, favorStats(data));
+      return g;
+    }
+    const m = /^cf_(.+)_(\d+)$/.exec(id);
+    if (m) {
+      const f = charFrameOf(m[1], Number(m[2]));
+      if (f) { f.unlocked = levelOf(m[1], data) >= f.level; return f; }
+    }
+    return null;
+  }
+
+  /** 头像框收集进度（专属框总量 = 全角色 × 档位数） */
+  function frameProgress(d) {
+    const data = d || gd();
+    const defs = charFrameDefs();
+    const ids = allIds();
+    let charGot = 0;
+    defs.forEach(def => ids.forEach(id => { if (levelOf(id, data) >= Number(def.lv)) charGot++; }));
+    const globals = globalFrames();
+    const stat = favorStats(data);
+    return {
+      charGot,
+      charTotal: defs.length * ids.length,
+      globalGot: globals.filter(f => reqMet(f.req, data, stat)).length,
+      globalTotal: globals.length
+    };
+  }
+
+  /** 设为主页展示（必须持有；传空 = 取消展示） */
+  function setDisplay(id, d) {
+    const data = d || gd();
+    if (!data) return { ok: false, reason: 'nodata' };
+    if (!id) {
+      metaOf(data, true).display = '';
+      save();
+      return { ok: true };
+    }
+    if (!charOf(id)) return { ok: false, reason: 'unknown' };
+    if (ownedIds(data).indexOf(id) < 0) return { ok: false, reason: 'notowned' };
+    metaOf(data, true).display = id;
+    save();
+    return { ok: true };
+  }
+
+  /** 佩戴头像框（必须已解锁） */
+  function setFrame(id, d) {
+    const data = d || gd();
+    if (!data) return { ok: false, reason: 'nodata' };
+    const f = frameById(id, data);
+    if (!f) return { ok: false, reason: 'unknown' };
+    if (!f.unlocked) return { ok: false, reason: 'locked', frame: f };
+    metaOf(data, true).frame = f.id;
+    save();
+    return { ok: true, frame: f };
+  }
+
+  /** 主页展示位的完整视图（UI 只读这一个） */
+  function displayInfo(d) {
+    const data = d || gd();
+    const m = metaOf(data, false);
+    const id = m.display || '';
+    const owned = id ? ownedIds(data).indexOf(id) >= 0 : false;
+    const f = frameById(m.frame, data);
+    const frame = (f && f.unlocked)
+      ? f
+      : (frameById(DEFAULT_FRAME, data) || { id: DEFAULT_FRAME, name: '不加框', icon: 'fa-ban', tone: 'muted', desc: '', kind: 'global', unlocked: true });
+    return {
+      id, owned,
+      name: id ? ((charOf(id) || {}).name || '') : '',
+      summary: (id && owned) ? summary(id, data) : null,
+      frame,
+      candidates: ownedIds(data)
+    };
+  }
+
   /* ── 视图聚合（UI 只读这一个） ────────────────────────────── */
 
   function summary(id, d) {
@@ -465,7 +682,10 @@
     table, maxLevel, totalXp, xpOf, levelOf, levelOfXp, titleOf, progress, attrBonus,
     personaOf, chaptersOf, markRead, addXp,
     giftList, giftById, giveGift, canRoutine, routine,
-    summary, storyCharIds, overview, allIds
+    summary, storyCharIds, overview, allIds,
+    /* E5-B 外观展示：纯外观零属性 */
+    metaOf, ownedIds, favorStats, frameCatalog, frameById, frameProgress,
+    setDisplay, setFrame, displayInfo, DEFAULT_FRAME
   };
 
   const segs = 'Game.domain.favor'.split('.');

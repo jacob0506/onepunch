@@ -90,6 +90,8 @@
       // E5：角色档案 / 好感（数值单源 domain/favor.js）。必须在 initCodex 之后：
       //      档案面板挂的是图鉴页第三个 tab，且要复用它绑好的 #codexRoot。
       if (typeof initFavor === 'function') initFavor();
+      // E5-B：主页羁绊展示位（展示角色 / 头像框）。只读 + 绑事件，不改数值。
+      if (typeof initFavorDisplay === 'function') initFavorDisplay();
       saveGameProgress();
       populateDebugCharSelect();
     }
